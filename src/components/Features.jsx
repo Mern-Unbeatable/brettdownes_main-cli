@@ -1,0 +1,98 @@
+import { Dna, Leaf } from 'lucide-react'
+
+/** Lucide-style bacteria icon (not in this lucide version) */
+function Bacteria({ className, strokeWidth = 2 }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={strokeWidth}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden
+    >
+      <circle cx="12" cy="12" r="7" />
+      <circle cx="12" cy="12" r="2" />
+      <circle cx="8" cy="9" r="1" fill="currentColor" stroke="none" />
+      <circle cx="15" cy="8.5" r="1" fill="currentColor" stroke="none" />
+      <circle cx="16" cy="14" r="1" fill="currentColor" stroke="none" />
+      <circle cx="9" cy="15" r="1" fill="currentColor" stroke="none" />
+      <path d="M12 5v-2M12 21v-2M5 12H3M21 12h-2M7.05 7.05L5.6 5.6M18.4 18.4l-1.45-1.45M16.95 7.05L18.4 5.6M5.6 18.4l1.45-1.45" />
+    </svg>
+  )
+}
+
+/** Plus-style target — center + four arms */
+function TargetPlus({ className, strokeWidth = 1.6 }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={strokeWidth}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden
+    >
+      <circle cx="12" cy="12" r="2.25" />
+      <path d="M12 4.5v4M12 15.5v4M4.5 12h4M15.5 12h4" />
+    </svg>
+  )
+}
+
+const features = [
+  {
+    icon: Dna,
+    title: 'Cellular Activation',
+    text: 'Peptides trigger repair processes at a molecular level.',
+  },
+  {
+    icon: TargetPlus,
+    title: 'Targeted Delivery',
+    text: 'Each compound interacts with specific receptors for precision results.',
+  },
+  {
+    icon: Leaf,
+    title: 'Natural Response',
+    text: "Supports your body's innate ability to regenerate and balance.",
+  },
+]
+
+export default function Features() {
+  return (
+    <section className="bg-white py-[70px] md:py-24">
+      <div className="mx-auto flex max-w-10xl flex-col gap-14 px-6 md:flex-row md:items-start md:gap-0 md:px-10 lg:px-12">
+        <div
+          data-reveal="left"
+          className="flex w-full shrink-0 items-center gap-2.5 md:w-[220px] lg:w-[260px]"
+        >
+          <Bacteria className="h-[18px] w-[18px] text-[#00c9a7]" strokeWidth={2} />
+          <h2 className="text-[13px] font-bold tracking-[0.12em] text-black uppercase">
+            About Peptides
+          </h2>
+        </div>
+
+        <div
+          data-reveal-stagger
+          data-stagger="0.14"
+          className="grid flex-1 grid-cols-1 gap-12 sm:grid-cols-3 sm:gap-8 lg:gap-12"
+        >
+          {features.map(({ icon: Icon, title, text }) => (
+            <div key={title} className="flex flex-col items-start">
+              <span className="mb-5 inline-flex h-14 w-14 items-center justify-center rounded-full border border-[#e2e5e9] bg-white">
+                <Icon className="h-6 w-6 text-[#00c9a7]" strokeWidth={1.6} />
+              </span>
+              <h3 className="text-[16px] font-bold tracking-tight text-black">{title}</h3>
+              <p className="mt-2 max-w-[260px] text-[14px] leading-[1.6] text-[#6b7280]">
+                {text}
+              </p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  )
+}
