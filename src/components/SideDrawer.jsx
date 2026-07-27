@@ -1,10 +1,22 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import { X } from 'lucide-react'
 import { lockBodyScroll, unlockBodyScroll } from '../hooks/lockBodyScroll'
 
+function syncDrawerToViewport(el) {
+  if (!el) return
+  const vv = window.visualViewport
+  const height = Math.round(vv?.height ?? window.innerHeight)
+  const top = Math.round(vv?.offsetTop ?? 0)
+  el.style.top = `${top}px`
+  el.style.height = `${height}px`
+  el.style.bottom = 'auto'
+}
+
 export default function SideDrawer({ open, onClose, title, children }) {
+  const asideRef = useRef(null)
+
   useEffect(() => {
     if (!open) return
 
@@ -21,6 +33,25 @@ export default function SideDrawer({ open, onClose, title, children }) {
     }
   }, [open, onClose])
 
+  useEffect(() => {
+    if (!open) return undefined
+
+    const el = asideRef.current
+    const update = () => syncDrawerToViewport(el)
+
+    update()
+    const vv = window.visualViewport
+    vv?.addEventListener('resize', update)
+    vv?.addEventListener('scroll', update)
+    window.addEventListener('resize', update)
+
+    return () => {
+      vv?.removeEventListener('resize', update)
+      vv?.removeEventListener('scroll', update)
+      window.removeEventListener('resize', update)
+    }
+  }, [open])
+
   return createPortal(
     <AnimatePresence>
       {open ? (
@@ -36,14 +67,17 @@ export default function SideDrawer({ open, onClose, title, children }) {
             onClick={onClose}
           />
           <motion.aside
+            ref={asideRef}
             role="dialog"
             aria-modal="true"
             aria-label={title}
-            className="fixed top-0 right-0 z-[10060] flex h-dvh w-[min(100%,40vw)] min-w-[300px] max-w-[520px] flex-col overflow-hidden bg-white shadow-2xl"
+            className="fixed top-0 right-0 z-[10060] flex w-[min(100%,40vw)] min-w-[min(100%,300px)] max-w-[520px] flex-col overflow-hidden bg-white shadow-2xl"
+            style={{ height: '100dvh' }}
             initial={{ x: '100%' }}
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'tween', duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
+            onAnimationComplete={() => syncDrawerToViewport(asideRef.current)}
           >
             <div className="flex shrink-0 items-center justify-between border-b border-black/8 px-5 py-4 md:px-6">
               <h2 className="font-display text-lg font-semibold tracking-tight text-ink">{title}</h2>
