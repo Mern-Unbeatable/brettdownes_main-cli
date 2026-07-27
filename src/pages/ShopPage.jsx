@@ -4,11 +4,13 @@ import { Component, Search, ShoppingCart, X } from 'lucide-react'
 import PageHeader from '../components/PageHeader'
 import PageTransition from '../components/PageTransition'
 import Footer from '../components/Footer'
+import PartnerSourcing from '../components/PartnerSourcing'
+import RuoNotice from '../components/RuoNotice'
 import { useCart } from '../context/CartContext'
 import { useGsapReveal } from '../hooks/useGsapReveal'
 import { formatPrice, lowestPrice, products } from '../data/site'
 
-const filters = ['All', 'Peptides', 'Blends', 'Capsules']
+const filters = ['All', 'Peptides', 'Blends']
 
 export default function ShopPage() {
   const { addItem } = useCart()
@@ -35,12 +37,16 @@ export default function ShopPage() {
     <PageTransition>
       <PageHeader
         title="Shop"
-        subtitle="Research-grade peptides with verified purity, potency, and batch documentation."
+        subtitle="Research-grade lyophilized peptides with verified purity and batch documentation. Research Use Only."
         image="/images/lab-line.png"
       />
 
       <main className="bg-white py-14 md:py-20">
         <div className="mx-auto max-w-10xl px-5 md:px-8">
+          <div data-reveal="up" className="mb-8">
+            <RuoNotice />
+          </div>
+
           <div data-reveal="up" className="mb-12">
             <label htmlFor="peptide-search" className="sr-only">
               Search peptides
@@ -185,6 +191,10 @@ export default function ShopPage() {
               ))}
             </div>
           )}
+
+          <div className="mt-14 md:mt-16">
+            <PartnerSourcing />
+          </div>
         </div>
       </main>
 

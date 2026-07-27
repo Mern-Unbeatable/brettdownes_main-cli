@@ -1,6 +1,7 @@
 export const navLinks = [
   { label: 'Home', to: '/' },
   { label: 'Shop', to: '/shop' },
+  { label: 'Compliance', to: '/compliance' },
   { label: 'Contact', to: '/contact' },
 ]
 
@@ -9,7 +10,7 @@ export const siteContact = {
   phoneDisplay: '503-877-5390',
   phoneTel: '+15038775390',
   whatsapp: '15038775390',
-  whatsappMessage: 'Hi Peptide Ops — I have a research inquiry.',
+  whatsappMessage: 'Hi Peptide Ops — I have a laboratory research inquiry.',
 }
 
 export const bulkRewards = [
@@ -17,6 +18,17 @@ export const bulkRewards = [
   { save: '20%', detail: 'On all orders over $300', accent: 'cyan-dim' },
   { save: '25%', detail: 'On full kits', accent: 'white' },
 ]
+
+/** Mandatory labeling language — 21 CFR § 312.160(a)(3) */
+export const RUO_CAUTION =
+  'CAUTION: Contains a new drug for investigational use only in laboratory research animals, or for tests in vitro. Not for use in humans.'
+
+export const RUO_SHORT = 'Research Use Only. Not for human consumption.'
+
+export const partnerSourcing = {
+  title: 'Looking for a compound not listed?',
+  text: 'We work with a large network of research partners and can often source additional compounds. Contact us directly with your research requirements.',
+}
 
 const IMG = {
   glp: '/images/product-glp1.png',
@@ -78,9 +90,9 @@ export const products = [
     image: IMG.bpc,
     purity: '≥ 99.5%',
     form: 'Lyophilized',
-    summary: 'Body protection compound peptide for regenerative and tissue research models.',
+    summary: 'Body protection compound peptide for regenerative and tissue-response laboratory models.',
     description:
-      'BPC-157 is a synthetic peptide fragment researched for recovery and tissue-response pathways. Peptide Ops supplies verified lots with clear labeling for laboratory workflows.',
+      'BPC-157 is a synthetic peptide fragment supplied for laboratory research on tissue-response pathways. Peptide Ops supplies verified lots with clear Research Use Only labeling for laboratory workflows.',
     highlights: [
       'High batch consistency',
       'Clear dose labeling',
@@ -100,7 +112,7 @@ export const products = [
     image: IMG.tb,
     purity: '≥ 99.5%',
     form: 'Lyophilized',
-    summary: 'Thymosin Beta-4 fragment for mobility and recovery pathway research.',
+    summary: 'Thymosin Beta-4 fragment for mobility and tissue-response pathway research.',
     description:
       'TB-500 is offered in multiple vial sizes for labs studying regenerative signaling. Each version shares the same verified compound profile with dose-specific packaging.',
     highlights: [
@@ -184,22 +196,22 @@ export const products = [
     id: 'nad-plus',
     slug: 'nad-plus',
     name: 'NAD+',
-    category: 'Capsules',
+    category: 'Peptides',
     image: IMG.tb,
     purity: '≥ 99%',
-    form: 'Capsule / Vial',
+    form: 'Lyophilized',
     summary: 'Nicotinamide adenine dinucleotide for cellular energy research protocols.',
     description:
-      'NAD+ is available in capsule and research vial formats so teams can standardize around the same compound with different delivery versions.',
+      'NAD+ is supplied in research vial formats so laboratories can standardize around a verified compound profile. Research Use Only.',
     highlights: [
-      'Capsule and vial options',
+      'Research vial options',
       'Documented purity',
       'Research use only',
     ],
     variants: [
       { id: 'nad-50', dose: '50mg', price: 95, sku: 'PO-NAD-50', image: IMG.tb },
       { id: 'nad-100', dose: '100mg', price: 145, sku: 'PO-NAD-100', image: IMG.mots },
-      { id: 'nad-cap', dose: '250mg caps', price: 165, sku: 'PO-NAD-CAP', image: IMG.bpc },
+      { id: 'nad-250', dose: '250mg', price: 165, sku: 'PO-NAD-250', image: IMG.bpc },
     ],
   },
 ]

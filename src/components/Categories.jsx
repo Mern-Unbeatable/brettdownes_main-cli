@@ -6,30 +6,31 @@ const categories = [
   {
     name: 'Peptides',
     description:
-      'Clinically formulated compounds that boost repair, recovery, and performance at the cellular level.',
+      'Research-grade lyophilized peptides with verified purity for laboratory and in vitro protocols.',
     image: '/images/category-peptides.png',
   },
   {
     name: 'Blends',
     description:
-      'Multi-peptide formulas designed for synergy — maximizing regeneration, strength, and vitality.',
+      'Multi-peptide research formulations prepared for laboratory synergy studies — powders only.',
     image: '/images/category-peptides.png',
   },
   {
     name: 'L-Carnitine',
     description:
-      'Supports fat metabolism, endurance, and energy production for a lean, efficient body.',
+      'Research-grade L-Carnitine for metabolic pathway and cellular energy laboratory studies.',
     image: '/images/category-peptides.png',
   },
   {
     name: 'Capsules',
-    description: 'Clean, precisely dosed formulas for daily support and consistent performance.',
+    description:
+      'Capsule formats are not available yet. We currently sell research powders only.',
     image: '/images/capsule-form.png',
   },
   {
     name: 'Bulk',
     description:
-      'Large-format research-grade peptides with verified purity and uncompromising quality.',
+      'Large-format research-grade peptides with verified purity for institutional laboratory use.',
     image: '/images/lab-line.png',
   },
 ]

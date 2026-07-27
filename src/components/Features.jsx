@@ -46,18 +46,18 @@ function TargetPlus({ className, strokeWidth = 1.6 }) {
 const features = [
   {
     icon: Dna,
-    title: 'Cellular Activation',
-    text: 'Peptides trigger repair processes at a molecular level.',
+    title: 'Molecular Research',
+    text: 'Peptides supplied for controlled laboratory and in vitro pathway studies.',
   },
   {
     icon: TargetPlus,
-    title: 'Targeted Delivery',
-    text: 'Each compound interacts with specific receptors for precision results.',
+    title: 'Verified Specs',
+    text: 'Identity, purity, and batch consistency documented for research protocols.',
   },
   {
     icon: Leaf,
-    title: 'Natural Response',
-    text: "Supports your body's innate ability to regenerate and balance.",
+    title: 'RUO Labeling',
+    text: 'Packaged and described strictly for Research Use Only — not for human use.',
   },
 ]
 

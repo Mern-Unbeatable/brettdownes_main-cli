@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom'
 import SideDrawer from './SideDrawer'
 import { navLinks } from '../data/site'
 
-export default function MenuDrawer({ open, onClose, active, onSelect }) {
+export default function MenuDrawer({ open, onClose, active }) {
   return (
     <SideDrawer open={open} onClose={onClose} title="Menu">
       <nav className="flex flex-1 flex-col gap-1">
@@ -12,10 +12,7 @@ export default function MenuDrawer({ open, onClose, active, onSelect }) {
             <Link
               key={link.label}
               to={link.to}
-              onClick={() => {
-                onSelect?.(link.label)
-                onClose()
-              }}
+              onClick={onClose}
               className={`rounded-2xl px-4 py-3.5 text-[15px] font-medium transition ${
                 isActive
                   ? 'bg-ink text-white'

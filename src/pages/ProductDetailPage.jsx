@@ -4,6 +4,7 @@ import { ArrowLeft, Check, Minus, Plus, ShoppingCart } from 'lucide-react'
 import PageHeader from '../components/PageHeader'
 import PageTransition from '../components/PageTransition'
 import Footer from '../components/Footer'
+import RuoNotice from '../components/RuoNotice'
 import { useCart } from '../context/CartContext'
 import { formatPrice, getProductBySlug, products } from '../data/site'
 
@@ -228,6 +229,10 @@ export default function ProductDetailPage() {
                   </li>
                 ))}
               </ul>
+
+              <div className="mt-8">
+                <RuoNotice compact />
+              </div>
             </div>
           </div>
 

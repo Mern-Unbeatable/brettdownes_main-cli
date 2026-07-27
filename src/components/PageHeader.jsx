@@ -10,11 +10,13 @@ import MenuDrawer from './MenuDrawer'
 import SideActionDock from './SideActionDock'
 import { useCart } from '../context/CartContext'
 import { navLinks } from '../data/site'
+import { activeFromPath } from '../utils/nav'
 
 gsap.registerPlugin(ScrollTrigger)
 
-function NavPill({ navRef, active, onSelect, className, showPill = true }) {
+function NavPill({ navRef, active, className, showPill = true }) {
   const itemRefs = useRef({})
+  const skipAnim = useRef(true)
   const [pill, setPill] = useState({ left: 0, width: 0, ready: false })
 
   const measurePill = () => {
@@ -35,6 +37,14 @@ function NavPill({ navRef, active, onSelect, className, showPill = true }) {
   }, [active])
 
   useEffect(() => {
+    if (!pill.ready) return undefined
+    const id = window.requestAnimationFrame(() => {
+      skipAnim.current = false
+    })
+    return () => window.cancelAnimationFrame(id)
+  }, [pill.ready])
+
+  useEffect(() => {
     window.addEventListener('resize', measurePill)
     return () => window.removeEventListener('resize', measurePill)
   }, [active])
@@ -49,7 +59,7 @@ function NavPill({ navRef, active, onSelect, className, showPill = true }) {
           animate={{ left: pill.left, width: pill.width }}
           transition={{
             type: 'tween',
-            duration: 0.45,
+            duration: skipAnim.current ? 0 : 0.35,
             ease: [0.22, 1, 0.36, 1],
           }}
         />
@@ -64,8 +74,7 @@ function NavPill({ navRef, active, onSelect, className, showPill = true }) {
             ref={(node) => {
               itemRefs.current[link.label] = node
             }}
-            onClick={() => onSelect(link.label)}
-            className={`relative z-10 inline-flex items-center rounded-full px-5 py-2 text-[14px] font-medium transition-colors duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+            className={`relative z-10 inline-flex items-center rounded-full px-3.5 py-2 text-[13px] font-medium xl:px-5 xl:text-[14px] ${
               isActive ? 'text-[#1a1a1a]' : 'text-white/90 hover:text-white'
             }`}
           >
@@ -77,24 +86,18 @@ function NavPill({ navRef, active, onSelect, className, showPill = true }) {
   )
 }
 
-function activeFromPath(pathname) {
-  if (pathname.startsWith('/shop')) return 'Shop'
-  if (pathname.startsWith('/contact')) return 'Contact'
-  return 'Home'
-}
-
 export default function PageHeader({ title, subtitle, image }) {
   const location = useLocation()
+  const active = activeFromPath(location.pathname)
   const { count, openCart, cartOpen } = useCart()
-  const [active, setActive] = useState(() => activeFromPath(location.pathname))
   const [menuOpen, setMenuOpen] = useState(false)
   const [isSticky, setIsSticky] = useState(false)
   const headerRef = useRef(null)
   const headerNavRef = useRef(null)
   const stickyNavRef = useRef(null)
 
-  useEffect(() => {
-    setActive(activeFromPath(location.pathname))
+  useLayoutEffect(() => {
+    setIsSticky(false)
   }, [location.pathname])
 
   useEffect(() => {
@@ -130,17 +133,16 @@ export default function PageHeader({ title, subtitle, image }) {
         ) : null}
 
         <div className="relative mx-auto flex min-h-[80px] w-full max-w-12xl items-center justify-between px-6 py-2 md:px-10 lg:px-12">
-          <Link to="/" className="flex shrink-0 items-center" onClick={() => setActive('Home')}>
+          <Link to="/" className="flex shrink-0 items-center">
             <Logo className="h-[80px] w-auto" />
           </Link>
 
           <NavPill
             navRef={headerNavRef}
             active={active}
-            onSelect={setActive}
             showPill={!isSticky}
-            className={`relative hidden items-center rounded-full border border-white/10 bg-black/70 px-1.5 py-1.5 shadow-lg shadow-black/30 backdrop-blur-xl transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] lg:flex ${
-              isSticky ? 'pointer-events-none -translate-y-2 opacity-0' : 'opacity-100'
+            className={`relative hidden items-center rounded-full border border-white/10 bg-black/70 px-1.5 py-1.5 shadow-lg shadow-black/30 backdrop-blur-xl transition-opacity duration-300 lg:flex ${
+              isSticky ? 'pointer-events-none opacity-0' : 'opacity-100'
             }`}
           />
 
@@ -205,21 +207,19 @@ export default function PageHeader({ title, subtitle, image }) {
         open={menuOpen}
         onClose={() => setMenuOpen(false)}
         active={active}
-        onSelect={setActive}
       />
 
       {createPortal(
         <div
-          className={`sticky-nav-pill fixed top-5 left-1/2 z-[9999] -translate-x-1/2 transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+          className={`sticky-nav-pill fixed top-5 left-1/2 z-[9999] -translate-x-1/2 transition-opacity duration-300 ${
             isSticky
-              ? 'pointer-events-auto translate-y-0 opacity-100'
-              : 'pointer-events-none -translate-y-3 opacity-0'
+              ? 'pointer-events-auto opacity-100'
+              : 'pointer-events-none opacity-0'
           }`}
         >
           <NavPill
             navRef={stickyNavRef}
             active={active}
-            onSelect={setActive}
             showPill={isSticky}
             className="hidden w-fit items-center rounded-full border border-white/10 bg-black px-1.5 py-1.5 shadow-xl shadow-black/40 backdrop-blur-xl lg:flex"
           />

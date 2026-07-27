@@ -18,7 +18,7 @@ export default function BestSellers() {
             </span>
           </div>
           <h2 className="font-display text-2xl font-bold tracking-tight text-ink sm:text-3xl md:text-[2rem]">
-            Precision formulas in high demand
+            Precision formulas for research
           </h2>
         </div>
 
@@ -78,7 +78,7 @@ export default function BestSellers() {
             to="/shop"
             className="ml-auto inline-flex items-center gap-2.5 rounded-xl bg-cyan px-6 py-3.5 text-sm font-semibold text-ink transition hover:bg-cyan-dim"
           >
-            Open store
+            Shop Now
             <Atom className="h-4 w-4" strokeWidth={2.2} />
           </Link>
         </div>

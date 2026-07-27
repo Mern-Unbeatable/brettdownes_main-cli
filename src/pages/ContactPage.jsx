@@ -17,20 +17,12 @@ export default function ContactPage() {
     <PageTransition>
       <PageHeader
         title="Contact"
-        subtitle="Reach Peptide Ops Logistics for orders, certificates, tracking, and research support."
+        subtitle="Reach Peptide Ops Logistics for institutional orders, certificates, tracking, and research compound sourcing. We do not advise on human use."
         image="/images/lab-vials.png"
       />
 
       <main className="bg-white py-14 md:py-20">
         <div className="mx-auto max-w-10xl px-5 md:px-8">
-          <div data-reveal="scale" className="mb-12 overflow-hidden rounded-[28px]">
-            <img
-              src="/images/lab-line.png"
-              alt="Peptide Ops logistics lab"
-              className="h-[220px] w-full object-cover object-center sm:h-[280px] md:h-[340px]"
-            />
-          </div>
-
           <div className="grid gap-10 md:grid-cols-2 md:gap-14">
             <div data-reveal="left">
               <div className="flex items-center gap-2">

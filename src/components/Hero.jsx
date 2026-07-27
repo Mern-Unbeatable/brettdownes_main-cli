@@ -118,7 +118,7 @@ export default function Hero() {
                   data-hero-line
                   className="mt-[0.06em] block whitespace-nowrap text-[30px] leading-[1.05] sm:text-[34px] md:text-[40px] lg:text-[44px] xl:text-[50px]"
                 >
-                  Powerful results.
+                  Powerful research.
                 </span>
               </h1>
 
@@ -127,7 +127,7 @@ export default function Hero() {
                 to="/shop"
                 className="mt-8 inline-flex items-center gap-2.5 rounded-[12px] bg-cyan px-[22px] py-[13px] text-[15px] font-semibold text-[#0a1218] transition hover:brightness-110"
               >
-                Explore more
+                Shop Now
                 <MoleculeIcon />
               </Link>
 
@@ -135,8 +135,8 @@ export default function Hero() {
                 data-hero-copy
                 className="mt-5 max-w-[340px] text-[13px] font-medium leading-[1.55] text-white sm:text-[14px]"
               >
-                Discover clinically-backed formulations designed to enhance recovery, optimize
-                performance, and unlock your full potential.
+                High-purity research peptides for laboratory and in vitro use. Verified identity,
+                batch documentation, and Research Use Only labeling.
               </p>
             </div>
           </div>
