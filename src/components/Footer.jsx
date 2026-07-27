@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 import Logo from './Logo'
-import { navLinks } from '../data/site'
+import { navLinks, siteContact } from '../data/site'
 
 export default function Footer() {
   return (
@@ -16,8 +16,16 @@ export default function Footer() {
             Precision. Purity. Performance. Research peptides verified for modern science.
           </p>
           <div className="mt-6 space-y-1 text-sm text-muted">
-            <p>+1 (800) 555-0199</p>
-            <p>support@peptideops.com</p>
+            <p>
+              <a href={`tel:${siteContact.phoneTel}`} className="transition hover:text-ink">
+                {siteContact.phoneDisplay}
+              </a>
+            </p>
+            <p>
+              <a href={`mailto:${siteContact.email}`} className="transition hover:text-ink">
+                {siteContact.email}
+              </a>
+            </p>
           </div>
         </div>
 

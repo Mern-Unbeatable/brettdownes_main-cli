@@ -2,12 +2,13 @@ import { useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import { X } from 'lucide-react'
+import { lockBodyScroll, unlockBodyScroll } from '../hooks/lockBodyScroll'
 
 export default function SideDrawer({ open, onClose, title, children }) {
   useEffect(() => {
     if (!open) return
 
-    document.body.classList.add('drawer-open')
+    lockBodyScroll()
 
     const onKey = (e) => {
       if (e.key === 'Escape') onClose()
@@ -15,7 +16,7 @@ export default function SideDrawer({ open, onClose, title, children }) {
     window.addEventListener('keydown', onKey)
 
     return () => {
-      document.body.classList.remove('drawer-open')
+      unlockBodyScroll()
       window.removeEventListener('keydown', onKey)
     }
   }, [open, onClose])

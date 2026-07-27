@@ -9,6 +9,7 @@ import ProductDetailPage from './pages/ProductDetailPage'
 import CheckoutPage from './pages/CheckoutPage'
 import WhatsAppFloat from './components/WhatsAppFloat'
 import CartDrawer from './components/CartDrawer'
+import PromoModal from './components/PromoModal'
 import { CartProvider } from './context/CartContext'
 
 gsap.registerPlugin(ScrollTrigger)
@@ -95,6 +96,7 @@ export default function App() {
           <Route path="/contact" element={<ContactPage />} />
         </Routes>
         <CartDrawer />
+        <PromoModal />
         <WhatsAppFloat />
       </CartProvider>
     </BrowserRouter>

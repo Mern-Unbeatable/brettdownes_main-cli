@@ -187,7 +187,7 @@ function CategoryItem({ cat, isActive, onOpen }) {
         onClick={onOpen}
         className="flex w-full cursor-pointer items-center gap-4 py-6 text-left md:gap-10 md:py-7"
       >
-        <span className="w-[140px] shrink-0 text-[28px] font-bold tracking-[-0.02em] text-black sm:w-[180px] sm:text-[30px] md:w-[220px] md:text-[34px]">
+        <span className="w-[170px] shrink-0 whitespace-nowrap text-[28px] font-bold tracking-[-0.02em] text-black sm:w-[200px] sm:text-[30px] md:w-[220px] md:text-[34px]">
           {cat.name}
         </span>
         <span className="hidden min-w-0 flex-1 text-[14px] leading-[1.55] font-normal text-[#666666] md:block md:text-[15px]">

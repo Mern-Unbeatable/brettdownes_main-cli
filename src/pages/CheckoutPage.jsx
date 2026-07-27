@@ -177,14 +177,14 @@ export default function CheckoutPage() {
                   </div>
 
                   {delivery === 'delivery' ? (
-                    <div className="mt-5 grid gap-4 sm:grid-cols-2">
+                    <div className="mt-5 grid gap-4 sm:grid-cols-3">
                       <Field
                         label="Street address"
                         name="address"
                         value={form.address}
                         onChange={onChange}
                         required
-                        className="sm:col-span-2"
+                        className="sm:col-span-3"
                       />
                       <Field label="City" name="city" value={form.city} onChange={onChange} required />
                       <Field label="State" name="state" value={form.state} onChange={onChange} required />
@@ -218,7 +218,6 @@ export default function CheckoutPage() {
                       onClick={() => setPayment('online')}
                       icon={CreditCard}
                       title="Pay online"
-                      text="Secure checkout with Stripe"
                     />
                   </div>
                   {payment === 'online' ? (
@@ -293,7 +292,7 @@ export default function CheckoutPage() {
                   disabled={!canSubmit}
                   className="mt-6 w-full rounded-xl bg-cyan py-3.5 text-sm font-semibold text-ink transition hover:bg-cyan-dim disabled:cursor-not-allowed disabled:opacity-40"
                 >
-                  {payment === 'online' ? 'Continue to Stripe' : 'Place order'}
+                  {payment === 'online' ? 'Continue to pay' : 'Place order'}
                 </button>
                 <p className="mt-3 text-center text-[11px] text-muted">
                   Research use only. By ordering you confirm eligible research use.
@@ -333,20 +332,20 @@ function OptionCard({ active, onClick, icon: Icon, title, text }) {
     <button
       type="button"
       onClick={onClick}
-      className={`flex items-start gap-3 rounded-2xl border px-4 py-4 text-left transition ${
+      className={`flex h-full min-h-[72px] items-center gap-3 rounded-2xl border px-4 py-4 text-left transition ${
         active
           ? 'border-cyan bg-white shadow-sm'
           : 'border-transparent bg-white/60 hover:border-black/10 hover:bg-white'
       }`}
     >
       <span
-        className={`mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${
+        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${
           active ? 'bg-cyan/15 text-cyan' : 'bg-fog text-muted'
         }`}
       >
         <Icon className="h-5 w-5" strokeWidth={1.8} />
       </span>
-      <span>
+      <span className="min-w-0">
         <span className="block text-sm font-semibold text-ink">{title}</span>
         {text ? <span className="mt-0.5 block text-xs text-muted">{text}</span> : null}
       </span>

@@ -4,6 +4,20 @@ export const navLinks = [
   { label: 'Contact', to: '/contact' },
 ]
 
+export const siteContact = {
+  email: 'Support@peptideopslogistics.com',
+  phoneDisplay: '503-877-5390',
+  phoneTel: '+15038775390',
+  whatsapp: '15038775390',
+  whatsappMessage: 'Hi Peptide Ops — I have a research inquiry.',
+}
+
+export const bulkRewards = [
+  { save: '10%', detail: 'On all orders over $200', accent: 'cyan' },
+  { save: '20%', detail: 'On all orders over $300', accent: 'cyan-dim' },
+  { save: '25%', detail: 'On full kits', accent: 'white' },
+]
+
 const IMG = {
   glp: '/images/product-glp1.png',
   mots: '/images/product-motsc.png',

@@ -1,8 +1,7 @@
-const WHATSAPP_NUMBER = '18005550199'
-const WHATSAPP_MESSAGE = 'Hi Peptide Ops — I have a research inquiry.'
+import { siteContact } from '../data/site'
 
 export default function WhatsAppFloat() {
-  const href = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(WHATSAPP_MESSAGE)}`
+  const href = `https://wa.me/${siteContact.whatsapp}?text=${encodeURIComponent(siteContact.whatsappMessage)}`
 
   return (
     <a

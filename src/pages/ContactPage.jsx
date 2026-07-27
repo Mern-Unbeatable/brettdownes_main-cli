@@ -3,6 +3,7 @@ import { Mail, MapPin, Phone, Send } from 'lucide-react'
 import PageHeader from '../components/PageHeader'
 import PageTransition from '../components/PageTransition'
 import Footer from '../components/Footer'
+import { siteContact } from '../data/site'
 
 export default function ContactPage() {
   const [sent, setSent] = useState(false)
@@ -69,8 +70,12 @@ export default function ContactPage() {
                     <Phone className="h-5 w-5" strokeWidth={1.8} />
                   </span>
                   <div>
-                    <p className="font-display text-sm font-semibold text-ink">Phone</p>
-                    <p className="mt-1 text-sm text-muted">+1 (800) 555-0199</p>
+                    <p className="font-display text-sm font-semibold text-ink">WhatsApp</p>
+                    <p className="mt-1 text-sm text-muted">
+                      <a href={`tel:${siteContact.phoneTel}`} className="transition hover:text-ink">
+                        {siteContact.phoneDisplay}
+                      </a>
+                    </p>
                   </div>
                 </li>
                 <li className="flex gap-4">
@@ -79,7 +84,11 @@ export default function ContactPage() {
                   </span>
                   <div>
                     <p className="font-display text-sm font-semibold text-ink">Email</p>
-                    <p className="mt-1 text-sm text-muted">support@peptideops.com</p>
+                    <p className="mt-1 text-sm text-muted">
+                      <a href={`mailto:${siteContact.email}`} className="transition hover:text-ink">
+                        {siteContact.email}
+                      </a>
+                    </p>
                   </div>
                 </li>
               </ul>
