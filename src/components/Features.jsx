@@ -81,14 +81,16 @@ export default function Features() {
           className="grid flex-1 grid-cols-1 gap-12 sm:grid-cols-3 sm:gap-8 lg:gap-12"
         >
           {features.map(({ icon: Icon, title, text }) => (
-            <div key={title} className="flex flex-col items-start">
-              <span className="mb-5 inline-flex h-14 w-14 items-center justify-center rounded-full border border-[#e2e5e9] bg-white">
+            <div key={title} className="flex flex-row items-start gap-4 sm:flex-col sm:gap-0">
+              <span className="inline-flex h-14 w-14 shrink-0 items-center justify-center rounded-full border border-[#e2e5e9] bg-white sm:mb-5">
                 <Icon className="h-6 w-6 text-[#00c9a7]" strokeWidth={1.6} />
               </span>
-              <h3 className="text-[16px] font-bold tracking-tight text-black">{title}</h3>
-              <p className="mt-2 max-w-[260px] text-[14px] leading-[1.6] text-[#6b7280]">
-                {text}
-              </p>
+              <div className="min-w-0">
+                <h3 className="text-[16px] font-bold tracking-tight text-black">{title}</h3>
+                <p className="mt-2 max-w-[260px] text-[14px] leading-[1.6] text-[#6b7280]">
+                  {text}
+                </p>
+              </div>
             </div>
           ))}
         </div>
