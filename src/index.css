@@ -115,6 +115,7 @@ body.drawer-open .sticky-nav-pill {
 
 /* Gatekeeper form: allow overflow scroll without a visible scrollbar */
 .gate-scroll {
+  overflow-x: hidden;
   scrollbar-width: none;
   -ms-overflow-style: none;
 }
@@ -123,4 +124,24 @@ body.drawer-open .sticky-nav-pill {
   display: none;
   width: 0;
   height: 0;
+}
+
+.gate-input {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  caret-color: #ffffff;
+}
+
+.gate-input::placeholder {
+  color: rgba(255, 255, 255, 0.4);
+  -webkit-text-fill-color: rgba(255, 255, 255, 0.4);
+}
+
+.gate-input:-webkit-autofill,
+.gate-input:-webkit-autofill:hover,
+.gate-input:-webkit-autofill:focus {
+  -webkit-text-fill-color: #ffffff !important;
+  caret-color: #ffffff;
+  transition: background-color 99999s ease-in-out 0s;
+  box-shadow: 0 0 0 1000px rgba(255, 255, 255, 0.06) inset;
 }

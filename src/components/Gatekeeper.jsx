@@ -65,48 +65,113 @@ export default function Gatekeeper({ onPass }) {
     return () => unlockBodyScroll()
   }, [])
 
-  useLayoutEffect(() => {
-    const root = rootRef.current
-    if (!root) return undefined
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return undefined
-
-    const ctx = gsap.context(() => {
-      gsap.fromTo(
-        root.querySelectorAll('[data-gate-enter]'),
-        { opacity: 0, y: 18 },
-        { opacity: 1, y: 0, duration: 0.7, stagger: 0.06, ease: 'power3.out', delay: 0.08 },
-      )
-      gsap.fromTo(
-        badgeRef.current,
-        { scale: 0.65, opacity: 0, xPercent: -50, yPercent: -50, x: 0, y: 0 },
-        {
-          scale: 1,
-          opacity: 1,
-          xPercent: -50,
-          yPercent: -50,
-          x: 0,
-          y: 0,
-          duration: 0.8,
-          ease: 'back.out(1.5)',
-          delay: 0.2,
-        },
-      )
-    }, root)
-
-    return () => ctx.revert()
-  }, [])
+  const isNarrow = () => window.matchMedia('(max-width: 1023px)').matches
 
   const layoutFor = (nextMode) => {
-    const stage = stageRef.current
-    if (!stage) return { artLeft: 0, formLeft: 50, seam: 50 }
-    // Verify: art 42% left | form 58% right — Register: form 58% left | art 42% right
-    if (nextMode === 'verify') {
-      return { artLeft: 0, formLeft: 42, artW: 42, formW: 58, seam: 42 }
+    const narrow = isNarrow()
+    if (narrow) {
+      // Mobile / tablet: logo on login only (hidden on register)
+      const sideBadge =
+        nextMode === 'verify'
+          ? { badgeLeft: '0%', badgeXPercent: 0, badgeX: 40, badgeVisible: true }
+          : { badgeLeft: '50%', badgeXPercent: -50, badgeX: 0, badgeVisible: false }
+
+      // Vertical swap — form height matches content; art gets the rest
+      if (nextMode === 'verify') {
+        return {
+          axis: 'y',
+          artTop: 0,
+          artH: 40,
+          formTop: 40,
+          formH: 60,
+          seam: 40,
+          badgeY: -20,
+          radius: '24px 24px 0 0',
+          ...sideBadge,
+        }
+      }
+      return {
+        axis: 'y',
+        artTop: 60,
+        artH: 40,
+        formTop: 0,
+        formH: 60,
+        seam: 60,
+        badgeY: 0,
+        radius: '0 0 24px 24px',
+        ...sideBadge,
+      }
     }
-    return { artLeft: 58, formLeft: 0, artW: 42, formW: 58, seam: 58 }
+
+    // Desktop: horizontal split
+    if (nextMode === 'verify') {
+      return {
+        axis: 'x',
+        artLeft: 0,
+        formLeft: 42,
+        artW: 42,
+        formW: 58,
+        seam: 42,
+        badgeY: 0,
+        radius: '48px',
+      }
+    }
+    return {
+      axis: 'x',
+      artLeft: 58,
+      formLeft: 0,
+      artW: 42,
+      formW: 58,
+      seam: 58,
+      badgeY: -100,
+      radius: '48px',
+    }
   }
 
-  const radius = '48px'
+  const panelProps = (L) => {
+    if (L.axis === 'y') {
+      return {
+        art: { top: `${L.artTop}%`, height: `${L.artH}%`, left: '0%', width: '100%' },
+        form: {
+          top: `${L.formTop}%`,
+          height: `${L.formH}%`,
+          left: '0%',
+          width: '100%',
+          borderRadius: L.radius,
+        },
+        seam: { top: `${L.seam}%`, left: '0%', width: '100%', height: '1px' },
+        badge: {
+          left: L.badgeLeft ?? '50%',
+          top: `${L.seam}%`,
+          xPercent: L.badgeXPercent ?? -50,
+          yPercent: -50,
+          x: L.badgeX ?? 0,
+          y: L.badgeY,
+          autoAlpha: L.badgeVisible === false ? 0 : 1,
+        },
+      }
+    }
+    return {
+      art: { left: `${L.artLeft}%`, width: `${L.artW}%`, top: '0%', height: '100%' },
+      form: {
+        left: `${L.formLeft}%`,
+        width: `${L.formW}%`,
+        top: '0%',
+        height: '100%',
+        borderRadius: L.radius,
+      },
+      seam: { left: `${L.seam}%`, top: '0%', width: '1px', height: '100%' },
+      badge: {
+        left: `${L.seam}%`,
+        top: '50%',
+        xPercent: -50,
+        yPercent: -50,
+        x: 0,
+        y: L.badgeY,
+        autoAlpha: 1,
+      },
+    }
+  }
 
   const applyLayout = (nextMode, animate, { onMid, onDone } = {}) => {
     const art = artRef.current
@@ -116,27 +181,15 @@ export default function Gatekeeper({ onPass }) {
     if (!art || !form || !badge || !seam) return
 
     const L = layoutFor(nextMode)
+    const P = panelProps(L)
     const content = form.querySelector('[data-gate-content]')
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
     if (!animate || reduce) {
-      gsap.set(art, { left: `${L.artLeft}%`, width: `${L.artW}%` })
-      gsap.set(form, {
-        left: `${L.formLeft}%`,
-        width: `${L.formW}%`,
-        borderRadius: radius,
-      })
-      gsap.set(seam, { left: `${L.seam}%` })
-      gsap.set(badge, {
-        left: `${L.seam}%`,
-        top: '50%',
-        xPercent: -50,
-        yPercent: -50,
-        x: 0,
-        y: nextMode === 'register' ? -100 : 0,
-        scale: 1,
-        rotationY: 0,
-      })
+      gsap.set(art, P.art)
+      gsap.set(form, P.form)
+      gsap.set(seam, P.seam)
+      gsap.set(badge, { ...P.badge, scale: 1, rotationY: 0 })
       if (content) gsap.set(content, { autoAlpha: 1, y: 0, clearProps: 'transform' })
       onMid?.()
       onDone?.()
@@ -153,7 +206,6 @@ export default function Gatekeeper({ onPass }) {
       },
     })
 
-    // Hide current form content first, then slide panels, then reveal new content
     if (content) {
       tl.to(
         content,
@@ -167,59 +219,82 @@ export default function Gatekeeper({ onPass }) {
       )
     }
 
-    tl.to(art, { left: `${L.artLeft}%`, width: `${L.artW}%`, duration: 0.7 }, 0.12)
-      .to(
-        form,
-        {
-          left: `${L.formLeft}%`,
-          width: `${L.formW}%`,
-          borderRadius: radius,
-          duration: 0.7,
-        },
-        0.12,
-      )
-      .to(seam, { left: `${L.seam}%`, duration: 0.7 }, 0.12)
-      .to(
-        badge,
-        {
-          left: `${L.seam}%`,
-          top: '50%',
-          xPercent: -50,
-          yPercent: -50,
-          x: 0,
-          y: toRegister ? -100 : 0,
-          scale: 1.06,
-          duration: 0.7,
-          ease: 'power3.inOut',
-        },
-        0.12,
-      )
-      .to(badge, { scale: 1, duration: 0.3, ease: 'back.out(1.5)' }, 0.55)
-      .add(() => {
-        onMid?.()
-      })
-      .add(() => {
-        const nextContent = form.querySelector('[data-gate-content]')
-        if (nextContent) {
-          // Registration enters with a 50px slide-up
-          const fromY = toRegister ? 50 : -30
-          gsap.fromTo(
-            nextContent,
-            { autoAlpha: 0, y: fromY },
-            {
-              autoAlpha: 1,
-              y: 0,
-              duration: 0.45,
-              ease: 'power2.out',
-              clearProps: 'transform',
-            },
-          )
-        }
-      })
+    const narrow = isNarrow()
+    const badgeTween = narrow
+      ? { ...P.badge, scale: toRegister ? 0.85 : 1.06, duration: 0.5, ease: 'power2.inOut' }
+      : { ...P.badge, scale: 1.06, duration: 0.7, ease: 'power3.inOut' }
+
+    tl.to(art, { ...P.art, duration: 0.7 }, 0.12)
+      .to(form, { ...P.form, duration: 0.7 }, 0.12)
+      .to(seam, { ...P.seam, duration: 0.7 }, 0.12)
+      .to(badge, badgeTween, 0.12)
+
+    if (!narrow || !toRegister) {
+      tl.to(badge, { scale: 1, duration: 0.3, ease: 'back.out(1.5)' }, 0.55)
+    }
+
+    tl.add(() => {
+      onMid?.()
+    }).add(() => {
+      const nextContent = form.querySelector('[data-gate-content]')
+      if (nextContent) {
+        const fromY = toRegister ? 50 : -30
+        gsap.fromTo(
+          nextContent,
+          { autoAlpha: 0, y: fromY },
+          {
+            autoAlpha: 1,
+            y: 0,
+            duration: 0.45,
+            ease: 'power2.out',
+            clearProps: 'transform',
+          },
+        )
+      }
+    })
   }
 
   useLayoutEffect(() => {
-    applyLayout('verify', false)
+    applyLayout(modeRef.current, false)
+
+    const root = rootRef.current
+    if (!root) return undefined
+
+    const onResize = () => {
+      if (animating.current) return
+      applyLayout(modeRef.current, false)
+    }
+    window.addEventListener('resize', onResize)
+
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      return () => window.removeEventListener('resize', onResize)
+    }
+
+    const badgePos = panelProps(layoutFor(modeRef.current)).badge
+    const ctx = gsap.context(() => {
+      gsap.fromTo(
+        root.querySelectorAll('[data-gate-enter]'),
+        { opacity: 0, y: 18 },
+        { opacity: 1, y: 0, duration: 0.7, stagger: 0.06, ease: 'power3.out', delay: 0.08 },
+      )
+      gsap.fromTo(
+        badgeRef.current,
+        { scale: 0.65, opacity: 0, ...badgePos },
+        {
+          scale: 1,
+          opacity: 1,
+          ...badgePos,
+          duration: 0.8,
+          ease: 'back.out(1.5)',
+          delay: 0.2,
+        },
+      )
+    }, root)
+
+    return () => {
+      window.removeEventListener('resize', onResize)
+      ctx.revert()
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -282,20 +357,22 @@ export default function Gatekeeper({ onPass }) {
   const formInner = (
     <div
       data-gate-content
-      className="mx-auto flex min-h-full w-full max-w-xl flex-col justify-center px-6 py-8 text-left sm:px-10 lg:px-12"
+      className={`mx-auto flex h-full w-full min-w-0 max-w-xl flex-col justify-start px-3 text-left sm:px-6 lg:justify-center lg:px-12 lg:py-8 ${
+        mode === 'register' ? 'pt-3 pb-4 sm:pt-4 sm:pb-5' : 'pt-4 pb-4 sm:pt-5 sm:pb-5'
+      }`}
     >
       {mode === 'verify' ? (
         <>
           <div
             data-gate-enter
-            className="mb-5 w-full rounded-2xl border border-white/20 bg-white/5 p-3.5 text-left sm:p-4"
+            className="mb-2 w-full rounded-xl border border-white/20 bg-white/5 p-2.5 text-left sm:mb-4 sm:rounded-2xl sm:p-4"
           >
-            <p className="font-display text-[11px] font-bold tracking-[0.22em] text-white uppercase">
+            <p className="font-display text-[8px] font-bold tracking-[0.18em] text-white uppercase sm:text-[11px]">
               Registration Notice
             </p>
-            <ul className="mt-2.5 space-y-2">
+            <ul className="mt-1.5 space-y-1 sm:mt-2.5 sm:space-y-2">
               {notices.map((item) => (
-                <li key={item.title} className="text-[13px] leading-relaxed text-white">
+                <li key={item.title} className="text-[10px] leading-snug text-white sm:text-[13px] sm:leading-relaxed">
                   <span className="font-semibold">{item.title}:</span> {item.text}
                 </li>
               ))}
@@ -304,17 +381,17 @@ export default function Gatekeeper({ onPass }) {
 
           <h1
             data-gate-enter
-            className="font-display text-[26px] font-bold tracking-tight text-white uppercase sm:text-[32px] lg:text-[36px]"
+            className="font-display text-[16px] font-bold tracking-tight text-white uppercase sm:text-[24px] lg:text-[36px]"
           >
             Portal Verification
           </h1>
-          <p data-gate-enter className="mt-1.5 max-w-md text-sm text-white">
+          <p data-gate-enter className="mt-0.5 max-w-md text-[10px] leading-snug text-white sm:mt-1.5 sm:text-[13px] lg:text-sm">
             Enter your approved research email to unlock the Peptide Ops catalog.
           </p>
 
-          <form data-gate-enter onSubmit={handleVerify} className="mt-5 w-full space-y-3">
+          <form data-gate-enter onSubmit={handleVerify} className="mt-2 w-full space-y-2 sm:mt-5 sm:space-y-3">
             <label className="block">
-              <span className="mb-1.5 block text-[10px] font-bold tracking-[0.2em] text-white uppercase">
+              <span className="mb-0.5 block text-[8px] font-bold tracking-[0.18em] text-white uppercase sm:mb-1.5 sm:text-[10px]">
                 Approved Email Address
               </span>
               <input
@@ -323,11 +400,11 @@ export default function Gatekeeper({ onPass }) {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="name@lab-institution.com"
-                className="w-full rounded-xl border border-white/20 bg-white/[0.06] px-4 py-3.5 text-sm text-white outline-none transition placeholder:text-white/40 focus:border-white/50 focus:bg-white/[0.08]"
+                className="gate-input w-full rounded-xl border border-white/20 bg-white/[0.06] px-3 py-2 text-[13px] outline-none transition placeholder:text-white/40 focus:border-white/50 focus:bg-white/[0.08] sm:px-4 sm:py-3.5 sm:text-sm"
               />
             </label>
             <label className="block">
-              <span className="mb-1.5 block text-[10px] font-bold tracking-[0.2em] text-white uppercase">
+              <span className="mb-0.5 block text-[8px] font-bold tracking-[0.18em] text-white uppercase sm:mb-1.5 sm:text-[10px]">
                 Password
               </span>
               <div className="relative">
@@ -337,7 +414,7 @@ export default function Gatekeeper({ onPass }) {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter your password"
-                  className="w-full rounded-xl border border-white/20 bg-white/[0.06] px-4 py-3.5 pr-12 text-sm text-white outline-none transition placeholder:text-white/40 focus:border-white/50 focus:bg-white/[0.08]"
+                  className="gate-input w-full rounded-xl border border-white/20 bg-white/[0.06] px-3 py-2 pr-11 text-[13px] outline-none transition placeholder:text-white/40 focus:border-white/50 focus:bg-white/[0.08] sm:px-4 sm:py-3.5 sm:pr-12 sm:text-sm"
                 />
                 <button
                   type="button"
@@ -353,11 +430,11 @@ export default function Gatekeeper({ onPass }) {
                 </button>
               </div>
             </label>
-            {error ? <p className="text-sm text-white">{error}</p> : null}
+            {error ? <p className="text-[12px] text-white sm:text-sm">{error}</p> : null}
             <button
               type="submit"
               disabled={busy}
-              className="flex w-full items-center justify-center gap-2 rounded-xl bg-cyan px-4 py-3.5 text-sm font-bold tracking-[0.08em] text-navy uppercase transition hover:brightness-110 disabled:opacity-60"
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-cyan px-4 py-2 text-[11px] font-bold tracking-[0.08em] text-navy uppercase transition hover:brightness-110 disabled:opacity-60 sm:py-3.5 sm:text-sm"
             >
               <Lock className="h-4 w-4" strokeWidth={2.2} />
               {busy ? 'Verifying…' : 'Verify & Enter'}
@@ -365,7 +442,7 @@ export default function Gatekeeper({ onPass }) {
             <button
               type="button"
               onClick={() => swapTo('register')}
-              className="w-full rounded-xl border border-white/35 bg-transparent px-4 py-3.5 text-sm font-semibold tracking-[0.06em] text-white uppercase transition hover:border-white hover:bg-white/10"
+              className="w-full rounded-xl border border-white/35 bg-transparent px-4 py-2 text-[11px] font-semibold tracking-[0.06em] text-white uppercase transition hover:border-white hover:bg-white/10 sm:py-3.5 sm:text-sm"
             >
               Register New Account
             </button>
@@ -375,30 +452,30 @@ export default function Gatekeeper({ onPass }) {
         <>
           <p
             data-gate-enter
-            className="font-display text-[11px] font-bold tracking-[0.22em] text-white uppercase"
+            className="font-display text-[8px] font-bold tracking-[0.18em] text-white uppercase sm:text-[11px]"
           >
             Secure Onboarding
           </p>
           <h1
             data-gate-enter
-            className="mt-2 font-display text-[28px] font-bold tracking-tight text-white uppercase sm:text-[34px] lg:text-[38px]"
+            className="mt-0.5 font-display text-[16px] font-bold tracking-tight text-white uppercase sm:mt-2 sm:text-[24px] lg:text-[38px]"
           >
             Account Registration
           </h1>
-          <p data-gate-enter className="mt-2 max-w-md text-sm text-white">
-            Submit your lab credentials for same-day verification review.
+          <p data-gate-enter className="mt-0.5 max-w-md text-[10px] leading-snug text-white sm:mt-2 sm:text-[13px] lg:text-sm">
+            Submit your credentials for same-day verification review.
           </p>
 
           {submitted ? (
             <div
               data-gate-enter
-              className="mt-8 w-full rounded-2xl border border-white/25 bg-white/5 p-5 text-left"
+              className="mt-4 w-full rounded-2xl border border-white/25 bg-white/5 p-3 text-left sm:mt-8 sm:p-5"
             >
-              <ShieldCheck className="h-8 w-8 text-white" />
-              <p className="mt-3 font-display text-lg font-bold text-white uppercase">
+              <ShieldCheck className="h-6 w-6 text-white sm:h-8 sm:w-8" />
+              <p className="mt-2 font-display text-sm font-bold text-white uppercase sm:mt-3 sm:text-lg">
                 Registration received
               </p>
-              <p className="mt-2 text-sm text-white">
+              <p className="mt-1.5 text-[11px] text-white sm:text-sm">
                 We will confirm your access shortly. You can return to verification once approved.
               </p>
               <button
@@ -407,15 +484,15 @@ export default function Gatekeeper({ onPass }) {
                   setSubmitted(false)
                   swapTo('verify')
                 }}
-                className="mt-5 text-sm font-semibold text-white underline underline-offset-2"
+                className="mt-3 text-[11px] font-semibold text-white underline underline-offset-2 sm:mt-5 sm:text-sm"
               >
                 Return to login
               </button>
             </div>
           ) : (
-            <form data-gate-enter onSubmit={handleRegister} className="mt-6 w-full space-y-3">
+            <form data-gate-enter onSubmit={handleRegister} className="mt-1.5 w-full space-y-1.5 sm:mt-6 sm:space-y-3">
               <label className="block">
-                <span className="mb-1.5 block text-[10px] font-bold tracking-[0.2em] text-white uppercase">
+                <span className="mb-0.5 block text-[8px] font-bold tracking-[0.18em] text-white uppercase sm:mb-1.5 sm:text-[10px]">
                   01 — Company / Institution Name
                 </span>
                 <input
@@ -423,11 +500,11 @@ export default function Gatekeeper({ onPass }) {
                   value={company}
                   onChange={(e) => setCompany(e.target.value)}
                   placeholder="Laboratory, LLC, or Individual Research Identity"
-                  className="w-full rounded-xl border border-white/20 bg-white/[0.06] px-4 py-3.5 text-sm text-white outline-none transition placeholder:text-white/40 focus:border-white/50"
+                  className="gate-input w-full rounded-xl border border-white/20 bg-white/[0.06] px-3 py-2 text-[13px] outline-none transition placeholder:text-white/40 focus:border-white/50 sm:px-4 sm:py-3.5 sm:text-sm"
                 />
               </label>
               <label className="block">
-                <span className="mb-1.5 block text-[10px] font-bold tracking-[0.2em] text-white uppercase">
+                <span className="mb-0.5 block text-[8px] font-bold tracking-[0.18em] text-white uppercase sm:mb-1.5 sm:text-[10px]">
                   02 — Institutional Email
                 </span>
                 <input
@@ -435,11 +512,11 @@ export default function Gatekeeper({ onPass }) {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="name@lab-institution.com"
-                  className="w-full rounded-xl border border-white/20 bg-white/[0.06] px-4 py-3.5 text-sm text-white outline-none transition placeholder:text-white/40 focus:border-white/50"
+                  className="gate-input w-full rounded-xl border border-white/20 bg-white/[0.06] px-3 py-2 text-[13px] outline-none transition placeholder:text-white/40 focus:border-white/50 sm:px-4 sm:py-3.5 sm:text-sm"
                 />
               </label>
               <label className="block">
-                <span className="mb-1.5 block text-[10px] font-bold tracking-[0.2em] text-white uppercase">
+                <span className="mb-0.5 block text-[8px] font-bold tracking-[0.18em] text-white uppercase sm:mb-1.5 sm:text-[10px]">
                   03 — Password
                 </span>
                 <div className="relative">
@@ -449,7 +526,7 @@ export default function Gatekeeper({ onPass }) {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Create a secure password"
-                    className="w-full rounded-xl border border-white/20 bg-white/[0.06] px-4 py-3.5 pr-12 text-sm text-white outline-none transition placeholder:text-white/40 focus:border-white/50"
+                    className="gate-input w-full rounded-xl border border-white/20 bg-white/[0.06] px-3 py-2 pr-11 text-[13px] outline-none transition placeholder:text-white/40 focus:border-white/50 sm:px-4 sm:py-3.5 sm:pr-12 sm:text-sm"
                   />
                   <button
                     type="button"
@@ -466,22 +543,22 @@ export default function Gatekeeper({ onPass }) {
                 </div>
               </label>
               <label className="block">
-                <span className="mb-1.5 block text-[10px] font-bold tracking-[0.2em] text-white uppercase">
+                <span className="mb-0.5 block text-[8px] font-bold tracking-[0.18em] text-white uppercase sm:mb-1.5 sm:text-[10px]">
                   04 — Intended Evaluation Framework
                 </span>
                 <textarea
-                  rows={3}
+                  rows={2}
                   value={framework}
                   onChange={(e) => setFramework(e.target.value)}
                   placeholder="Briefly describe your research protocol or intended use."
-                  className="w-full resize-none rounded-xl border border-white/20 bg-white/[0.06] px-4 py-3.5 text-sm text-white outline-none transition placeholder:text-white/40 focus:border-white/50"
+                  className="gate-input max-h-[52px] w-full resize-none rounded-xl border border-white/20 bg-white/[0.06] px-3 py-2 text-[13px] outline-none transition placeholder:text-white/40 focus:border-white/50 sm:max-h-none sm:px-4 sm:py-3.5 sm:text-sm"
                 />
               </label>
-              {error ? <p className="text-sm text-white">{error}</p> : null}
+              {error ? <p className="text-[12px] text-white sm:text-sm">{error}</p> : null}
               <button
                 type="submit"
                 disabled={busy}
-                className="flex w-full items-center justify-center gap-2 rounded-xl bg-cyan px-4 py-3.5 text-sm font-bold tracking-[0.08em] text-navy uppercase transition hover:brightness-110 disabled:opacity-60"
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-cyan px-4 py-2 text-[11px] font-bold tracking-[0.08em] text-navy uppercase transition hover:brightness-110 disabled:opacity-60 sm:py-3.5 sm:text-sm"
               >
                 <Sparkles className="h-4 w-4" strokeWidth={2.2} />
                 {busy ? 'Submitting…' : 'Submit Registration'}
@@ -489,7 +566,7 @@ export default function Gatekeeper({ onPass }) {
               <button
                 type="button"
                 onClick={() => swapTo('verify')}
-                className="w-full rounded-xl border border-white/35 bg-transparent px-4 py-3.5 text-sm font-semibold tracking-[0.06em] text-white uppercase transition hover:border-white hover:bg-white/10"
+                className="w-full rounded-xl border border-white/35 bg-transparent px-4 py-2 text-[11px] font-semibold tracking-[0.06em] text-white uppercase transition hover:border-white hover:bg-white/10 sm:py-3.5 sm:text-sm"
               >
                 Return to Login
               </button>
@@ -503,39 +580,60 @@ export default function Gatekeeper({ onPass }) {
   return createPortal(
     <div
       ref={rootRef}
-      className="fixed inset-0 z-[12000] overflow-hidden bg-white px-3 pt-3 pb-3 sm:px-4 sm:pt-4 sm:pb-4"
+      className="fixed inset-0 z-[12000] overflow-hidden overscroll-none bg-white px-2 pt-2 pb-2 sm:px-3 sm:pt-3 sm:pb-3 md:px-4 md:pt-4 md:pb-4"
       role="dialog"
       aria-modal="true"
       aria-labelledby="gatekeeper-title"
     >
-      <div className="relative isolate mx-auto flex h-full w-full max-w-12xl overflow-hidden rounded-[28px] bg-white sm:rounded-[36px] md:rounded-[44px]">
-        {/* Desktop split stage */}
-        <div ref={stageRef} className="relative hidden h-full w-full bg-white [perspective:1200px] lg:block">
+      <div className="relative isolate mx-auto flex h-full w-full max-w-12xl overflow-hidden rounded-[22px] bg-white sm:rounded-[28px] md:rounded-[36px] lg:rounded-[44px]">
+        <div ref={stageRef} className="relative h-full w-full overflow-hidden bg-white [perspective:1200px]">
           <div
             ref={artRef}
-            className="absolute top-0 bottom-0 z-0 overflow-hidden bg-white"
-            style={{ left: '0%', width: '42%' }}
+            className="absolute z-0 overflow-hidden bg-white"
+            style={{ left: '0%', width: '42%', top: '0%', height: '100%' }}
           >
-            <div className="relative flex h-full flex-col justify-between overflow-hidden px-8 py-12 xl:px-12">
-              <div data-gate-enter className="relative z-[1]">
-                <p className="font-display text-[11px] font-bold tracking-[0.28em] text-cyan-dim uppercase">
+            <div
+              className={`relative flex h-full flex-col overflow-hidden px-4 py-3 sm:px-6 sm:py-5 lg:px-8 lg:py-12 xl:px-12 ${
+                mode === 'register' ? 'justify-start gap-2 lg:justify-between' : 'justify-between'
+              }`}
+            >
+              <div
+                data-gate-enter
+                className={`relative z-[1] shrink-0 ${mode === 'register' ? 'pt-1' : ''}`}
+              >
+                <p className="font-display text-[9px] font-bold tracking-[0.22em] text-cyan-dim uppercase sm:text-[10px] lg:text-[11px]">
                   Peptide Ops
                 </p>
-                <h2 className="mt-3 max-w-sm font-display text-[36px] leading-[1.05] font-bold tracking-tight text-ink xl:text-[42px]">
+                <h2
+                  className={`mt-1 max-w-sm font-display leading-[1.05] font-bold tracking-tight text-ink sm:mt-2 lg:text-[36px] xl:text-[42px] ${
+                    mode === 'verify'
+                      ? 'text-[28px] sm:text-[34px]'
+                      : 'text-[18px] sm:text-[26px] lg:text-[36px]'
+                  }`}
+                >
                   {mode === 'verify' ? 'Welcome.' : 'Join the network.'}
                 </h2>
-                <p className="mt-3 max-w-sm text-sm leading-relaxed text-muted">
+                <p
+                  className={`mt-1 max-w-sm leading-snug text-muted sm:mt-2 lg:mt-3 lg:text-sm ${
+                    mode === 'verify' ? 'text-[10px] sm:text-[12px]' : 'text-[10px] sm:text-[12px]'
+                  }`}
+                >
                   {mode === 'verify'
                     ? 'Research-grade peptides with verified purity, batch documentation, and secure portal access.'
                     : 'Create a verified research account to request compounds and track approvals.'}
                 </p>
               </div>
 
-              <div data-gate-enter className="relative z-[1] mx-auto my-4 w-full max-w-[440px] flex-1">
-                <VaccineIllustration className="h-full w-full max-h-[min(54vh,480px)] float-soft" />
+              <div
+                data-gate-enter
+                className={`relative z-[1] mx-auto flex min-h-0 w-full flex-1 items-center justify-center lg:my-4 ${
+                  mode === 'register' ? 'max-w-[150px] sm:max-w-[240px] lg:max-w-[440px]' : 'max-w-[180px] sm:max-w-[280px] lg:max-w-[440px]'
+                }`}
+              >
+                <VaccineIllustration className="h-auto max-h-full w-full object-contain float-soft" />
               </div>
 
-              <div data-gate-enter className="relative z-[1] flex items-center gap-3 text-muted">
+              <div data-gate-enter className="relative z-[1] hidden items-center gap-3 text-muted lg:flex">
                 <span className="h-px flex-1 bg-black/10" />
                 <span className="text-[10px] font-bold tracking-[0.24em] uppercase">Secure Portal</span>
                 <span className="h-px flex-1 bg-black/10" />
@@ -545,63 +643,37 @@ export default function Gatekeeper({ onPass }) {
 
           <div
             ref={formRef}
-            className="absolute top-0 bottom-0 z-[1] overflow-hidden bg-[#141a22] shadow-[-12px_0_40px_rgba(0,0,0,0.12)]"
-            style={{ left: '42%', width: '58%', borderRadius: '48px' }}
+            className="absolute z-[1] overflow-hidden bg-[#141a22] shadow-[0_-8px_30px_rgba(0,0,0,0.1)] lg:shadow-[-12px_0_40px_rgba(0,0,0,0.12)]"
+            style={{ left: '42%', width: '58%', top: '0%', height: '100%', borderRadius: '48px' }}
           >
             <h2 id="gatekeeper-title" className="sr-only">
               Secure Portal Access
             </h2>
-            <div className="gate-scroll h-full overflow-y-auto overscroll-contain">
+            <div className="gate-scroll h-full overflow-x-hidden overflow-y-auto overscroll-contain">
               {formInner}
             </div>
           </div>
 
-          {/* Seam + logo cube */}
           <div
             ref={seamRef}
-            className="pointer-events-none absolute top-0 bottom-0 z-10 w-px -translate-x-1/2 bg-gradient-to-b from-transparent via-cyan/60 to-transparent"
-            style={{ left: '42%' }}
+            className="pointer-events-none absolute z-10 bg-gradient-to-r from-transparent via-cyan/50 to-transparent lg:bg-gradient-to-b lg:via-cyan/60"
+            style={{ left: '42%', top: '0%', width: '1px', height: '100%' }}
           />
           <div
             ref={badgeRef}
-            className="pointer-events-none absolute top-1/2 z-20"
-            style={{ left: '42%' }}
+            className="pointer-events-none absolute z-20"
+            style={{ left: '42%', top: '50%' }}
           >
-            <div className="flex h-[120px] w-[120px] items-center justify-center rounded-[30px] border border-white/15 bg-[#141A22] shadow-[0_0_0_8px_#fff,0_16px_48px_rgba(0,0,0,0.28)] rotate-45">
-              <div className="-rotate-45 overflow-hidden rounded-2xl">
+            <div className="flex h-[52px] w-[52px] items-center justify-center rounded-[12px] border border-white/15 bg-[#141A22] shadow-[0_0_0_3px_#fff,0_6px_16px_rgba(0,0,0,0.25)] rotate-45 sm:h-[72px] sm:w-[72px] sm:rounded-[18px] sm:shadow-[0_0_0_4px_#fff,0_10px_24px_rgba(0,0,0,0.28)] lg:h-[120px] lg:w-[120px] lg:rounded-[30px] lg:shadow-[0_0_0_8px_#fff,0_16px_48px_rgba(0,0,0,0.28)]">
+              <div className="-rotate-45 overflow-hidden rounded-md sm:rounded-lg lg:rounded-2xl">
                 <img
                   src="/images/logo.png"
                   alt="Peptide Ops"
-                  className="h-[72px] w-[72px] object-cover object-[50%_28%]"
+                  className="h-9 w-9 object-cover object-[50%_28%] sm:h-12 sm:w-12 lg:h-[72px] lg:w-[72px]"
                   draggable={false}
                 />
               </div>
             </div>
-          </div>
-        </div>
-
-        {/* Mobile */}
-        <div className="relative flex h-full w-full flex-col overflow-y-auto bg-white lg:hidden">
-          <div className="relative shrink-0 bg-white px-5 pt-8 pb-4">
-            <div className="mb-4 flex justify-center">
-              <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-2xl border border-white/15 bg-[#141A22] shadow-[0_0_24px_rgba(0,0,0,0.2)]">
-                <img
-                  src="/images/logo.png"
-                  alt="Peptide Ops"
-                  className="h-14 w-14 object-cover object-[50%_28%]"
-                  draggable={false}
-                />
-              </div>
-            </div>
-            <div className="mx-auto max-w-[260px]">
-              <VaccineIllustration className="w-full" />
-            </div>
-            <p className="mt-3 text-center font-display text-[11px] font-bold tracking-[0.28em] text-cyan-dim uppercase">
-              Peptide Ops
-            </p>
-          </div>
-          <div className="flex-1 rounded-t-[28px] bg-[#141a22] shadow-[0_-8px_30px_rgba(0,0,0,0.1)]">
-            {formInner}
           </div>
         </div>
       </div>
