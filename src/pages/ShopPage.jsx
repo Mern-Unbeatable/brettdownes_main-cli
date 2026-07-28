@@ -5,7 +5,6 @@ import PageHeader from '../components/PageHeader'
 import PageTransition from '../components/PageTransition'
 import Footer from '../components/Footer'
 import PartnerSourcing from '../components/PartnerSourcing'
-import RuoNotice from '../components/RuoNotice'
 import { useCart } from '../context/CartContext'
 import { useGsapReveal } from '../hooks/useGsapReveal'
 import { formatPrice, lowestPrice, products } from '../data/site'
@@ -37,16 +36,12 @@ export default function ShopPage() {
     <PageTransition>
       <PageHeader
         title="Shop"
-        subtitle="Research-grade lyophilized peptides with verified purity and batch documentation. Research Use Only."
+        subtitle="Research-grade lyophilized peptides with verified purity and batch documentation."
         image="/images/lab-line.png"
       />
 
       <main className="bg-white py-14 md:py-20">
         <div className="mx-auto max-w-10xl px-5 md:px-8">
-          <div data-reveal="up" className="mb-8">
-            <RuoNotice />
-          </div>
-
           <div data-reveal="up" className="mb-12">
             <label htmlFor="peptide-search" className="sr-only">
               Search peptides

@@ -1,24 +1,19 @@
 import { Link } from 'react-router-dom'
 import Logo from './Logo'
-import RuoNotice from './RuoNotice'
 import { navLinks, siteContact } from '../data/site'
 
 export default function Footer() {
   return (
     <footer className="border-t border-fog-deep bg-white pt-14 pb-8">
-      <div className="mx-auto max-w-10xl px-5 md:px-8">
-        <RuoNotice />
-      </div>
-
       <div
         data-reveal-stagger
         data-stagger="0.1"
-        className="mx-auto mt-10 grid max-w-10xl gap-10 px-5 sm:grid-cols-2 lg:grid-cols-4 md:px-8"
+        className="mx-auto grid max-w-10xl gap-10 px-5 sm:grid-cols-2 lg:grid-cols-4 md:px-8"
       >
         <div className="flex flex-col items-center text-center sm:col-span-2 lg:col-span-2 lg:items-start lg:text-left">
           <Logo className="h-[150px] w-auto max-w-full" />
           <p className="mt-4 max-w-xs text-sm leading-relaxed text-muted">
-            Precision. Purity. Documentation. Research peptides for laboratory and in vitro use only.
+            Precision. Purity. Documentation. Lyophilized research peptides for laboratory use only.
           </p>
           <div className="mt-6 space-y-1 text-sm text-muted">
             <p>
@@ -59,12 +54,7 @@ export default function Footer() {
       </div>
 
       <div className="mx-auto mt-12 flex max-w-10xl flex-col items-center justify-between gap-4 border-t border-fog-deep px-5 pt-6 text-xs text-muted sm:flex-row md:px-8">
-        <p>
-          © {new Date().getFullYear()} Peptide Ops. Research use only.{' '}
-          <Link to="/compliance" className="underline-offset-2 transition hover:text-ink hover:underline">
-            FDA compliance
-          </Link>
-        </p>
+        <p>© {new Date().getFullYear()} Peptide Ops. For Laboratory Research Use Only; Not for Human Consumption.</p>
         <div className="flex items-center gap-3">
           <img
             src="/images/visa.svg"

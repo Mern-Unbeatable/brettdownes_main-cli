@@ -57,7 +57,7 @@ const features = [
   {
     icon: Leaf,
     title: 'RUO Labeling',
-    text: 'Packaged and described strictly for Research Use Only — not for human use.',
+    text: 'Packaged and labeled for laboratory research use only — not for human consumption.',
   },
 ]
 

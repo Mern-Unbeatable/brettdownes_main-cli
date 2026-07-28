@@ -7,7 +7,6 @@ import ShopPage from './pages/ShopPage'
 import ContactPage from './pages/ContactPage'
 import ProductDetailPage from './pages/ProductDetailPage'
 import CheckoutPage from './pages/CheckoutPage'
-import CompliancePage from './pages/CompliancePage'
 import WhatsAppFloat from './components/WhatsAppFloat'
 import CartDrawer from './components/CartDrawer'
 import PromoModal from './components/PromoModal'
@@ -94,7 +93,6 @@ export default function App() {
           <Route path="/shop" element={<ShopPage />} />
           <Route path="/shop/:slug" element={<ProductDetailPage />} />
           <Route path="/checkout" element={<CheckoutPage />} />
-          <Route path="/compliance" element={<CompliancePage />} />
           <Route path="/contact" element={<ContactPage />} />
         </Routes>
         <CartDrawer />

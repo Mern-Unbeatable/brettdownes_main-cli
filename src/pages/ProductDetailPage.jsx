@@ -231,7 +231,7 @@ export default function ProductDetailPage() {
               </ul>
 
               <div className="mt-8">
-                <RuoNotice compact />
+                <RuoNotice />
               </div>
             </div>
           </div>

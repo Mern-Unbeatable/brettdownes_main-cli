@@ -12,7 +12,7 @@ const categories = [
   {
     name: 'Blends',
     description:
-      'Multi-peptide research formulations prepared for laboratory synergy studies — powders only.',
+      'Multi-peptide research formulations prepared for laboratory synergy studies.',
     image: '/images/category-peptides.png',
   },
   {
@@ -20,12 +20,6 @@ const categories = [
     description:
       'Research-grade L-Carnitine for metabolic pathway and cellular energy laboratory studies.',
     image: '/images/category-peptides.png',
-  },
-  {
-    name: 'Capsules',
-    description:
-      'Capsule formats are not available yet. We currently sell research powders only.',
-    image: '/images/capsule-form.png',
   },
   {
     name: 'Bulk',

@@ -1,7 +1,6 @@
 export const navLinks = [
   { label: 'Home', to: '/' },
   { label: 'Shop', to: '/shop' },
-  { label: 'Compliance', to: '/compliance' },
   { label: 'Contact', to: '/contact' },
 ]
 
@@ -19,11 +18,8 @@ export const bulkRewards = [
   { save: '25%', detail: 'On full kits', accent: 'white' },
 ]
 
-/** Mandatory labeling language — 21 CFR § 312.160(a)(3) */
 export const RUO_CAUTION =
-  'CAUTION: Contains a new drug for investigational use only in laboratory research animals, or for tests in vitro. Not for use in humans.'
-
-export const RUO_SHORT = 'Research Use Only. Not for human consumption.'
+  'For Laboratory Research Use Only; Not for Human Consumption.'
 
 export const partnerSourcing = {
   title: 'Looking for a compound not listed?',

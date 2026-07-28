@@ -135,8 +135,8 @@ export default function Hero() {
                 data-hero-copy
                 className="mt-5 max-w-[340px] text-[13px] font-medium leading-[1.55] text-white sm:text-[14px]"
               >
-                High-purity research peptides for laboratory and in vitro use. Verified identity,
-                batch documentation, and Research Use Only labeling.
+                High-purity lyophilized peptides for laboratory research. Verified identity, batch
+                documentation, and Research Use Only labeling.
               </p>
             </div>
           </div>

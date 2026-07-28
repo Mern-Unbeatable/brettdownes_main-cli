@@ -87,8 +87,8 @@ export default function CheckoutPage() {
             <CheckCircle2 className="mx-auto h-14 w-14 text-cyan" strokeWidth={1.6} />
             <h2 className="mt-5 font-display text-2xl font-bold text-ink">Order confirmed</h2>
             <p className="mt-3 text-sm leading-relaxed text-muted">
-              We will confirm by email. Manual payment instructions will be sent shortly. Research
-              use only.
+              We will confirm by email. Manual payment instructions will be sent shortly. For
+              Laboratory Research Use Only; Not for Human Consumption.
             </p>
             <div className="mt-8 flex flex-wrap justify-center gap-3">
               <Link
@@ -295,7 +295,7 @@ export default function CheckoutPage() {
                   {payment === 'online' ? 'Continue to pay' : 'Place order'}
                 </button>
                 <p className="mt-3 text-center text-[11px] text-muted">
-                  Research use only. By ordering you confirm eligible research use.
+                  For Laboratory Research Use Only; Not for Human Consumption.
                 </p>
               </aside>
             </form>

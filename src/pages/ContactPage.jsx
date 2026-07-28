@@ -17,7 +17,7 @@ export default function ContactPage() {
     <PageTransition>
       <PageHeader
         title="Contact"
-        subtitle="Reach Peptide Ops Logistics for institutional orders, certificates, tracking, and research compound sourcing. We do not advise on human use."
+        subtitle="Reach Peptide Ops Logistics for institutional orders, certificates, tracking, and research compound sourcing."
         image="/images/lab-vials.png"
       />
 
