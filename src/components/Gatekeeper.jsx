@@ -6,6 +6,8 @@ import VaccineIllustration from './VaccineIllustration'
 import { lockBodyScroll, unlockBodyScroll } from '../hooks/lockBodyScroll'
 
 const STORAGE_KEY = 'peptideops_gate_ok'
+const GATE_EMAIL = 'admin@peptideops.com'
+const GATE_PASSWORD = 'PeptideOps1'
 
 export function isGatePassed() {
   try {
@@ -49,8 +51,8 @@ export default function Gatekeeper({ onPass }) {
   const modeRef = useRef('verify')
 
   const [mode, setMode] = useState('verify')
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
+  const [email, setEmail] = useState(GATE_EMAIL)
+  const [password, setPassword] = useState(GATE_PASSWORD)
   const [showPassword, setShowPassword] = useState(false)
   const [company, setCompany] = useState('')
   const [framework, setFramework] = useState('')
@@ -307,6 +309,13 @@ export default function Gatekeeper({ onPass }) {
     applyLayout(next, true, {
       onMid: () => {
         modeRef.current = next
+        if (next === 'register') {
+          setEmail('')
+          setPassword('')
+        } else {
+          setEmail(GATE_EMAIL)
+          setPassword(GATE_PASSWORD)
+        }
         setMode(next)
       },
     })
@@ -322,6 +331,13 @@ export default function Gatekeeper({ onPass }) {
     }
     if (!password.trim()) {
       setError('Enter your password to continue.')
+      return
+    }
+    if (
+      value.toLowerCase() !== GATE_EMAIL.toLowerCase() ||
+      password !== GATE_PASSWORD
+    ) {
+      setError('Invalid email or password.')
       return
     }
     setBusy(true)
