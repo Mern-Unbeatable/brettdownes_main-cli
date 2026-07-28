@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route, useLocation, useNavigationType } from 'react-router-dom'
-import { useEffect, useLayoutEffect } from 'react'
+import { useEffect, useLayoutEffect, useState } from 'react'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import gsap from 'gsap'
 import HomePage from './pages/HomePage'
@@ -10,6 +10,7 @@ import CheckoutPage from './pages/CheckoutPage'
 import WhatsAppFloat from './components/WhatsAppFloat'
 import CartDrawer from './components/CartDrawer'
 import PromoModal from './components/PromoModal'
+import Gatekeeper, { isGatePassed } from './components/Gatekeeper'
 import { CartProvider } from './context/CartContext'
 
 gsap.registerPlugin(ScrollTrigger)
@@ -84,6 +85,8 @@ function RouteEffects() {
 }
 
 export default function App() {
+  const [gateOpen, setGateOpen] = useState(() => !isGatePassed())
+
   return (
     <BrowserRouter>
       <CartProvider>
@@ -96,8 +99,9 @@ export default function App() {
           <Route path="/contact" element={<ContactPage />} />
         </Routes>
         <CartDrawer />
-        <PromoModal />
+        {!gateOpen ? <PromoModal /> : null}
         <WhatsAppFloat />
+        {gateOpen ? <Gatekeeper onPass={() => setGateOpen(false)} /> : null}
       </CartProvider>
     </BrowserRouter>
   )

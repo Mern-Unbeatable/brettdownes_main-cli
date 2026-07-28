@@ -112,3 +112,15 @@ body.drawer-open .sticky-nav-pill {
 .float-soft {
   animation: float-soft 5s ease-in-out infinite;
 }
+
+/* Gatekeeper form: allow overflow scroll without a visible scrollbar */
+.gate-scroll {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.gate-scroll::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
