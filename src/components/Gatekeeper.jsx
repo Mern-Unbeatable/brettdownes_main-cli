@@ -491,25 +491,22 @@ html[data-gate-locked="1"] #gatekeeper-root {
   const welcomeInner = (
     <div
       data-gate-welcome
-      className="flex h-full flex-col items-center justify-center px-6 py-8 text-center sm:px-8 lg:px-10 lg:py-12"
+      className="flex h-full flex-col items-center justify-center px-6 py-3 text-center sm:px-8 sm:py-4 lg:px-10 lg:py-12"
     >
       <div data-gate-enter className="flex flex-col items-center">
         <img
           src="/images/logo.png"
           alt="Peptide Ops"
-          className="h-20 w-20 object-contain sm:h-28 sm:w-28 lg:h-36 lg:w-36"
+          className="h-36 w-36 object-contain object-bottom sm:h-44 sm:w-44 lg:h-56 lg:w-56 lg:object-center"
           draggable={false}
         />
-        <p className="mt-4 font-display text-[10px] font-bold tracking-[0.22em] text-cyan uppercase sm:mt-5 sm:text-[11px]">
-          Peptide Ops
-        </p>
         <h2
           id="gatekeeper-title"
-          className="mt-2 max-w-xs font-display text-[28px] leading-[1.05] font-bold tracking-tight text-white sm:mt-3 sm:text-[34px] lg:text-[42px]"
+          className="mt-2 max-w-xs font-display text-[28px] leading-[1.05] font-bold tracking-tight text-white sm:text-[34px] lg:text-[42px]"
         >
           {mode === 'verify' ? 'Welcome' : 'Join the network'}
         </h2>
-        <p className="mt-2 max-w-xs text-[12px] leading-relaxed text-white/65 sm:mt-3 sm:text-[13px] lg:text-sm">
+        <p className="mt-1.5 max-w-xs text-[12px] leading-relaxed text-white/65 sm:mt-2 sm:text-[13px] lg:mt-3 lg:text-sm">
           {mode === 'verify'
             ? 'Research-grade peptides with verified purity, select-batch quality testing, and secure portal access.'
             : 'Create a verified research account to request compounds and track approvals.'}
