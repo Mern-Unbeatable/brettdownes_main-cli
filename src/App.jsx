@@ -45,6 +45,13 @@ function RouteEffects() {
 
   // Run before paint so the new page never shows mid-scroll
   useLayoutEffect(() => {
+    // Keep gate scroll-lock intact while portal verification is required
+    if (document.documentElement.dataset.gateLocked === '1') {
+      if (hash) return
+      scrollToTopInstant()
+      return
+    }
+
     document.body.classList.remove('drawer-open')
     document.body.style.paddingRight = ''
     document.body.style.overflow = ''
@@ -86,22 +93,58 @@ function RouteEffects() {
 
 export default function App() {
   const [gateOpen, setGateOpen] = useState(() => !isGatePassed())
+  const [gateMountKey, setGateMountKey] = useState(0)
+
+  // If someone removes/hides the gate via DevTools, remount it until verified
+  useEffect(() => {
+    if (!gateOpen) return undefined
+
+    const tick = () => {
+      if (isGatePassed()) {
+        setGateOpen(false)
+        return
+      }
+      setGateOpen(true)
+      if (!document.getElementById('gatekeeper-root')) {
+        setGateMountKey((k) => k + 1)
+      }
+    }
+
+    const id = window.setInterval(tick, 400)
+    return () => window.clearInterval(id)
+  }, [gateOpen])
+
+  const handleGatePass = () => {
+    if (!isGatePassed()) return
+    setGateOpen(false)
+  }
 
   return (
     <BrowserRouter>
       <CartProvider>
         <RouteEffects />
-        <Routes>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/shop" element={<ShopPage />} />
-          <Route path="/shop/:slug" element={<ProductDetailPage />} />
-          <Route path="/checkout" element={<CheckoutPage />} />
-          <Route path="/contact" element={<ContactPage />} />
-        </Routes>
-        <CartDrawer />
-        {!gateOpen ? <PromoModal /> : null}
-        <WhatsAppFloat />
-        {gateOpen ? <Gatekeeper onPass={() => setGateOpen(false)} /> : null}
+        <div
+          id="app-shell"
+          {...(gateOpen ? { inert: true } : {})}
+          aria-hidden={gateOpen || undefined}
+          className={gateOpen ? 'pointer-events-none select-none' : undefined}
+        >
+          <Routes>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/shop" element={<ShopPage />} />
+            <Route path="/shop/:slug" element={<ProductDetailPage />} />
+            <Route path="/checkout" element={<CheckoutPage />} />
+            <Route path="/contact" element={<ContactPage />} />
+          </Routes>
+        </div>
+        {!gateOpen ? (
+          <>
+            <CartDrawer />
+            <PromoModal />
+            <WhatsAppFloat />
+          </>
+        ) : null}
+        {gateOpen ? <Gatekeeper key={gateMountKey} onPass={handleGatePass} /> : null}
       </CartProvider>
     </BrowserRouter>
   )
