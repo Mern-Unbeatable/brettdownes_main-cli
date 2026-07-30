@@ -6,26 +6,8 @@ const categories = [
   {
     name: 'Peptides',
     description:
-      'Research-grade lyophilized peptides with verified purity for laboratory and in vitro protocols.',
+      'Research-grade lyophilized peptides with verified purity for research and in vitro protocols.',
     image: '/images/category-peptides.png',
-  },
-  {
-    name: 'Blends',
-    description:
-      'Multi-peptide research formulations prepared for laboratory synergy studies.',
-    image: '/images/category-peptides.png',
-  },
-  {
-    name: 'L-Carnitine',
-    description:
-      'Research-grade L-Carnitine for metabolic pathway and cellular energy laboratory studies.',
-    image: '/images/category-peptides.png',
-  },
-  {
-    name: 'Bulk',
-    description:
-      'Large-format research-grade peptides with verified purity for institutional laboratory use.',
-    image: '/images/lab-line.png',
   },
 ]
 

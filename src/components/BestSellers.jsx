@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { Atom, Component, ShoppingCart } from 'lucide-react'
+import { Component, ShoppingCart } from 'lucide-react'
 import { useCart } from '../context/CartContext'
 import { formatPrice, lowestPrice, products } from '../data/site'
 
@@ -22,7 +22,7 @@ export default function BestSellers() {
           </h2>
         </div>
 
-        <div data-reveal-stagger data-stagger="0.12" className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4 lg:gap-6">
+        <div data-reveal-stagger data-stagger="0.12" className="grid grid-cols-2 gap-4 sm:gap-6 lg:grid-cols-4">
           {featured.map((product) => (
             <article key={product.id} className="group text-center">
               <div className="relative overflow-hidden rounded-2xl bg-[#f2f2f2]">
@@ -79,7 +79,7 @@ export default function BestSellers() {
             className="ml-auto inline-flex items-center gap-2.5 rounded-xl bg-cyan px-6 py-3.5 text-sm font-semibold text-ink transition hover:bg-cyan-dim"
           >
             Shop Now
-            <Atom className="h-4 w-4" strokeWidth={2.2} />
+            <ShoppingCart className="h-4 w-4" strokeWidth={2.2} />
           </Link>
         </div>
       </div>

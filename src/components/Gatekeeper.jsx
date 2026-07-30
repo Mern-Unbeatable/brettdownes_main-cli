@@ -28,7 +28,7 @@ function markGatePassed() {
 const notices = [
   {
     title: 'Required Protocol Step',
-    text: 'Registration is mandatory for FDA compliance and verified lab access.',
+    text: 'Registration is mandatory for FDA compliance and verified account access.',
   },
   {
     title: 'Same-Day Approvals',
@@ -415,7 +415,7 @@ export default function Gatekeeper({ onPass }) {
                 autoComplete="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="name@lab-institution.com"
+                placeholder="name@institution.com"
                 className="gate-input w-full rounded-xl border border-white/20 bg-white/[0.06] px-3 py-2 text-[13px] outline-none transition placeholder:text-white/40 focus:border-white/50 focus:bg-white/[0.08] sm:px-4 sm:py-3.5 sm:text-sm"
               />
             </label>
@@ -474,7 +474,7 @@ export default function Gatekeeper({ onPass }) {
           </p>
           <h1
             data-gate-enter
-            className="mt-0.5 font-display text-[16px] font-bold tracking-tight text-white uppercase sm:mt-2 sm:text-[24px] lg:text-[38px]"
+            className="mt-0.5 font-display text-[16px] font-bold tracking-tight text-white uppercase whitespace-nowrap sm:mt-2 sm:text-[22px] lg:text-[28px] xl:text-[32px]"
           >
             Account Registration
           </h1>
@@ -509,31 +509,31 @@ export default function Gatekeeper({ onPass }) {
             <form data-gate-enter onSubmit={handleRegister} className="mt-1.5 w-full space-y-1.5 sm:mt-6 sm:space-y-3">
               <label className="block">
                 <span className="mb-0.5 block text-[8px] font-bold tracking-[0.18em] text-white uppercase sm:mb-1.5 sm:text-[10px]">
-                  01 — Company / Institution Name
+                  Company / Institution Name
                 </span>
                 <input
                   type="text"
                   value={company}
                   onChange={(e) => setCompany(e.target.value)}
-                  placeholder="Laboratory, LLC, or Individual Research Identity"
+                  placeholder="Company, LLC, or Individual Research Identity"
                   className="gate-input w-full rounded-xl border border-white/20 bg-white/[0.06] px-3 py-2 text-[13px] outline-none transition placeholder:text-white/40 focus:border-white/50 sm:px-4 sm:py-3.5 sm:text-sm"
                 />
               </label>
               <label className="block">
                 <span className="mb-0.5 block text-[8px] font-bold tracking-[0.18em] text-white uppercase sm:mb-1.5 sm:text-[10px]">
-                  02 — Institutional Email
+                  Institutional Email
                 </span>
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="name@lab-institution.com"
+                  placeholder="name@institution.com"
                   className="gate-input w-full rounded-xl border border-white/20 bg-white/[0.06] px-3 py-2 text-[13px] outline-none transition placeholder:text-white/40 focus:border-white/50 sm:px-4 sm:py-3.5 sm:text-sm"
                 />
               </label>
               <label className="block">
                 <span className="mb-0.5 block text-[8px] font-bold tracking-[0.18em] text-white uppercase sm:mb-1.5 sm:text-[10px]">
-                  03 — Password
+                  Password
                 </span>
                 <div className="relative">
                   <input
@@ -560,7 +560,7 @@ export default function Gatekeeper({ onPass }) {
               </label>
               <label className="block">
                 <span className="mb-0.5 block text-[8px] font-bold tracking-[0.18em] text-white uppercase sm:mb-1.5 sm:text-[10px]">
-                  04 — Intended Evaluation Framework
+                  Intended Evaluation Framework
                 </span>
                 <textarea
                   rows={2}
@@ -635,7 +635,7 @@ export default function Gatekeeper({ onPass }) {
                   }`}
                 >
                   {mode === 'verify'
-                    ? 'Research-grade peptides with verified purity, batch documentation, and secure portal access.'
+                    ? 'Research-grade peptides with verified purity, select-batch quality testing, and secure portal access.'
                     : 'Create a verified research account to request compounds and track approvals.'}
                 </p>
               </div>

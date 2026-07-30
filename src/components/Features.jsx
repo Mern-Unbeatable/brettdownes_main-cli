@@ -47,17 +47,17 @@ const features = [
   {
     icon: Dna,
     title: 'Molecular Research',
-    text: 'Peptides supplied for controlled laboratory and in vitro pathway studies.',
+    text: 'Peptides supplied for controlled research and in vitro pathway studies.',
   },
   {
     icon: TargetPlus,
     title: 'Verified Specs',
-    text: 'Identity, purity, and batch consistency documented for research protocols.',
+    text: 'Identity and purity specs documented for research protocols.',
   },
   {
     icon: Leaf,
     title: 'RUO Labeling',
-    text: 'Packaged and labeled for laboratory research use only — not for human consumption.',
+    text: 'Packaged and labeled for research use only — not for human consumption.',
   },
 ]
 

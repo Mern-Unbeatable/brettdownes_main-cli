@@ -5,6 +5,7 @@ import PageHeader from '../components/PageHeader'
 import PageTransition from '../components/PageTransition'
 import Footer from '../components/Footer'
 import PartnerSourcing from '../components/PartnerSourcing'
+import VolumePricing from '../components/VolumePricing'
 import { useCart } from '../context/CartContext'
 import { useGsapReveal } from '../hooks/useGsapReveal'
 import { formatPrice, lowestPrice, products } from '../data/site'
@@ -36,13 +37,35 @@ export default function ShopPage() {
     <PageTransition>
       <PageHeader
         title="Shop"
-        subtitle="Research-grade lyophilized peptides with verified purity and batch documentation."
-        image="/images/lab-line.png"
+        subtitle="Research-grade lyophilized peptides with verified purity and quality testing on select batches."
+        image="/images/shop-hero-peptides.png"
       />
 
       <main className="bg-white py-14 md:py-20">
         <div className="mx-auto max-w-10xl px-5 md:px-8">
           <div data-reveal="up" className="mb-12">
+            <p className="mb-6 flex items-center justify-center gap-2.5 text-center text-sm text-ink sm:text-[15px]">
+              <span
+                className="inline-flex h-[18px] w-[26px] shrink-0 overflow-hidden rounded-[2px] shadow-[0_0_0_1px_rgba(0,0,0,0.08)]"
+                aria-hidden
+              >
+                <svg viewBox="0 0 26 18" className="h-full w-full" xmlns="http://www.w3.org/2000/svg">
+                  <rect width="26" height="18" fill="#B22234" />
+                  <path
+                    d="M0 2h26M0 5h26M0 8h26M0 11h26M0 14h26"
+                    stroke="#fff"
+                    strokeWidth="1.4"
+                  />
+                  <rect width="11" height="9.5" fill="#3C3B6E" />
+                </svg>
+              </span>
+              <span>
+                All in-stock orders ship within{' '}
+                <span className="font-semibold">24 hours</span>
+                <span className="text-muted"> · US</span>
+              </span>
+            </p>
+
             <label htmlFor="peptide-search" className="sr-only">
               Search peptides
             </label>
@@ -132,7 +155,7 @@ export default function ShopPage() {
               data-reveal-managed
               data-reveal-stagger
               data-stagger="0.08"
-              className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4 lg:gap-6"
+              className="grid grid-cols-2 gap-4 sm:gap-6 lg:grid-cols-4"
             >
               {list.map((product) => (
                 <article key={product.id} className="group text-center">
@@ -187,7 +210,8 @@ export default function ShopPage() {
             </div>
           )}
 
-          <div className="mt-14 md:mt-16">
+          <div className="mt-14 flex flex-col gap-6 md:mt-16 md:gap-8">
+            <VolumePricing />
             <PartnerSourcing />
           </div>
         </div>

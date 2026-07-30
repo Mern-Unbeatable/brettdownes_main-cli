@@ -88,7 +88,7 @@ export default function CheckoutPage() {
             <h2 className="mt-5 font-display text-2xl font-bold text-ink">Order confirmed</h2>
             <p className="mt-3 text-sm leading-relaxed text-muted">
               We will confirm by email. Manual payment instructions will be sent shortly. For
-              Laboratory Research Use Only; Not for Human Consumption.
+              Research Use Only; Not for Human Consumption.
             </p>
             <div className="mt-8 flex flex-wrap justify-center gap-3">
               <Link
@@ -295,7 +295,7 @@ export default function CheckoutPage() {
                   {payment === 'online' ? 'Continue to pay' : 'Place order'}
                 </button>
                 <p className="mt-3 text-center text-[11px] text-muted">
-                  For Laboratory Research Use Only; Not for Human Consumption.
+                  For Research Use Only; Not for Human Consumption.
                 </p>
               </aside>
             </form>

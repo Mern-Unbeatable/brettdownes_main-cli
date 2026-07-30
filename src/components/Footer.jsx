@@ -13,7 +13,7 @@ export default function Footer() {
         <div className="flex flex-col items-center text-center sm:col-span-2 lg:col-span-2 lg:items-start lg:text-left">
           <Logo className="h-[150px] w-auto max-w-full" />
           <p className="mt-4 max-w-xs text-sm leading-relaxed text-muted">
-            Precision. Purity. Documentation. Lyophilized research peptides for laboratory use only.
+            Precision. Purity. Documentation. Lyophilized research peptides for research use only.
           </p>
           <div className="mt-6 space-y-1 text-sm text-muted">
             <p>
@@ -54,7 +54,7 @@ export default function Footer() {
       </div>
 
       <div className="mx-auto mt-12 flex max-w-10xl flex-col items-center justify-between gap-4 border-t border-fog-deep px-5 pt-6 text-xs text-muted sm:flex-row md:px-8">
-        <p>© {new Date().getFullYear()} Peptide Ops. For Laboratory Research Use Only; Not for Human Consumption.</p>
+        <p>© {new Date().getFullYear()} Peptide Ops. For Research Use Only; Not for Human Consumption.</p>
         <div className="flex items-center gap-3">
           <img
             src="/images/visa.svg"

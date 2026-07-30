@@ -18,12 +18,18 @@ function fromVars(type) {
       return { opacity: 0, x: 48, y: 0, scale: 1 }
     case 'scale':
       return { opacity: 0, x: 0, y: 24, scale: 0.94 }
+    case 'pop':
+      return { opacity: 0, x: 0, y: 40, scale: 0.82 }
     case 'fade':
       return { opacity: 0, x: 0, y: 0, scale: 1 }
     case 'up':
     default:
       return { opacity: 0, x: 0, y: 48, scale: 1 }
   }
+}
+
+function easeFor(type) {
+  return type === 'pop' ? 'back.out(1.85)' : EASE
 }
 
 function collect(scope, selector) {
@@ -35,7 +41,9 @@ function collect(scope, selector) {
 function animateReveal(el, { immediate }) {
   const type = el.getAttribute('data-reveal') || 'up'
   const delay = Number(el.getAttribute('data-reveal-delay') || 0)
-  const duration = Number(el.getAttribute('data-reveal-duration') || 0.9)
+  const duration = Number(
+    el.getAttribute('data-reveal-duration') || (type === 'pop' ? 0.75 : 0.9),
+  )
   const start = el.getAttribute('data-reveal-start') || 'top 88%'
 
   gsap.fromTo(el, fromVars(type), {
@@ -45,7 +53,7 @@ function animateReveal(el, { immediate }) {
     scale: 1,
     duration,
     delay,
-    ease: EASE,
+    ease: easeFor(type),
     ...(immediate
       ? {}
       : {

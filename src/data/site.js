@@ -9,7 +9,7 @@ export const siteContact = {
   phoneDisplay: '503-877-5390',
   phoneTel: '+15038775390',
   whatsapp: '15038775390',
-  whatsappMessage: 'Hi Peptide Ops — I have a laboratory research inquiry.',
+  whatsappMessage: 'Hi Peptide Ops — I have a research inquiry.',
 }
 
 export const bulkRewards = [
@@ -19,11 +19,19 @@ export const bulkRewards = [
 ]
 
 export const RUO_CAUTION =
-  'For Laboratory Research Use Only; Not for Human Consumption.'
+  'For Research Use Only; Not for Human Consumption.'
 
 export const partnerSourcing = {
   title: 'Looking for a compound not listed?',
   text: 'We work with a large network of research partners and can often source additional compounds. Contact us directly with your research requirements.',
+}
+
+export const volumePricing = {
+  eyebrow: 'Volume peptide pricing',
+  titleLine1: 'Need a lot?',
+  titleLine2: "We've got you covered.",
+  text: 'We work with wholesalers and distributors who need reliable research-grade supply at scale. Tiered pricing on larger orders helps partners stay competitive while keeping healthy margins.',
+  channels: ['Wholesale', 'Distributors'],
 }
 
 const IMG = {
@@ -44,7 +52,7 @@ export const products = [
     form: 'Lyophilized',
     summary: 'Research-grade GLP-1 analog for metabolic pathway and receptor studies.',
     description:
-      'GLP-1 is supplied as a high-purity lyophilized peptide for controlled laboratory research. Each batch is verified for identity, purity, and consistency so studies start from a reliable baseline.',
+      'GLP-1 is supplied as a high-purity lyophilized peptide for controlled research. Select batches are verified for identity, purity, and consistency so studies start from a reliable baseline.',
     highlights: [
       'Triple-stage purity verification',
       'Batch Certificate of Analysis available',
@@ -68,7 +76,7 @@ export const products = [
     description:
       'MOTS-C is a mitochondrial open reading frame peptide used in research focused on metabolic signaling and cellular energy pathways. Packaged for precise reconstitution and repeatable dosing protocols.',
     highlights: [
-      'ISO-aligned lab testing',
+      'ISO-aligned testing',
       'Stable lyophilized format',
       'Multiple vial strengths',
     ],
@@ -86,9 +94,9 @@ export const products = [
     image: IMG.bpc,
     purity: '≥ 99.5%',
     form: 'Lyophilized',
-    summary: 'Body protection compound peptide for regenerative and tissue-response laboratory models.',
+    summary: 'Body protection compound peptide for regenerative and tissue-response research models.',
     description:
-      'BPC-157 is a synthetic peptide fragment supplied for laboratory research on tissue-response pathways. Peptide Ops supplies verified lots with clear Research Use Only labeling for laboratory workflows.',
+      'BPC-157 is a synthetic peptide fragment supplied for research on tissue-response pathways. Peptide Ops supplies verified lots with clear Research Use Only labeling for research workflows.',
     highlights: [
       'High batch consistency',
       'Clear dose labeling',
@@ -110,7 +118,7 @@ export const products = [
     form: 'Lyophilized',
     summary: 'Thymosin Beta-4 fragment for mobility and tissue-response pathway research.',
     description:
-      'TB-500 is offered in multiple vial sizes for labs studying regenerative signaling. Each version shares the same verified compound profile with dose-specific packaging.',
+      'TB-500 is offered in multiple vial sizes for research on regenerative signaling. Each version shares the same verified compound profile with dose-specific packaging.',
     highlights: [
       'Same compound, multiple doses',
       'Purity ≥ 99.5%',
@@ -154,11 +162,11 @@ export const products = [
     form: 'Lyophilized',
     summary: 'GHRH analog peptide for growth-hormone axis research applications.',
     description:
-      'CJC-1295 is supplied in verified lyophilized vials. Select from no-DAC research formats across common laboratory dose sizes.',
+      'CJC-1295 is supplied in verified lyophilized vials. Select from no-DAC research formats across common dose sizes.',
     highlights: [
       'Consistent peptide profile',
       'Dose variants in stock',
-      'COA per batch',
+      'COA on select batches',
     ],
     variants: [
       { id: 'cjc-2', dose: '2mg', price: 120, sku: 'PO-CJC-2', image: IMG.mots },
@@ -180,7 +188,7 @@ export const products = [
     highlights: [
       'High selectivity research profile',
       'Multiple dose versions',
-      'Lab-ready packaging',
+      'Research-ready packaging',
     ],
     variants: [
       { id: 'ipa-2', dose: '2mg', price: 70, sku: 'PO-IPA-2', image: IMG.bpc },
@@ -198,7 +206,7 @@ export const products = [
     form: 'Lyophilized',
     summary: 'Nicotinamide adenine dinucleotide for cellular energy research protocols.',
     description:
-      'NAD+ is supplied in research vial formats so laboratories can standardize around a verified compound profile. Research Use Only.',
+      'NAD+ is supplied in research vial formats so teams can standardize around a verified compound profile. Research Use Only.',
     highlights: [
       'Research vial options',
       'Documented purity',

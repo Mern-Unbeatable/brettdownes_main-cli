@@ -14,7 +14,7 @@ import { activeFromPath } from '../utils/nav'
 
 gsap.registerPlugin(ScrollTrigger)
 
-function NavPill({ navRef, active, className, showPill = true }) {
+function NavPill({ navRef, active, className, showPill = true, light = false }) {
   const itemRefs = useRef({})
   const skipAnim = useRef(true)
   const [pill, setPill] = useState({ left: 0, width: 0, ready: false })
@@ -54,7 +54,9 @@ function NavPill({ navRef, active, className, showPill = true }) {
       {showPill && pill.ready ? (
         <motion.span
           aria-hidden
-          className="absolute top-1.5 bottom-1.5 rounded-full bg-white shadow-sm"
+          className={`absolute top-1.5 bottom-1.5 rounded-full shadow-sm ${
+            light ? 'bg-ink' : 'bg-white'
+          }`}
           initial={false}
           animate={{ left: pill.left, width: pill.width }}
           transition={{
@@ -75,7 +77,13 @@ function NavPill({ navRef, active, className, showPill = true }) {
               itemRefs.current[link.label] = node
             }}
             className={`relative z-10 inline-flex items-center rounded-full px-3.5 py-2 text-[13px] font-medium xl:px-5 xl:text-[14px] ${
-              isActive ? 'text-[#1a1a1a]' : 'text-white/90 hover:text-white'
+              light
+                ? isActive
+                  ? 'text-white'
+                  : 'text-ink/70 hover:text-ink'
+                : isActive
+                  ? 'text-[#1a1a1a]'
+                  : 'text-white/90 hover:text-white'
             }`}
           >
             {link.label}
@@ -95,6 +103,7 @@ export default function PageHeader({ title, subtitle, image }) {
   const headerRef = useRef(null)
   const headerNavRef = useRef(null)
   const stickyNavRef = useRef(null)
+  const light = !title && !subtitle
 
   useLayoutEffect(() => {
     setIsSticky(false)
@@ -118,14 +127,19 @@ export default function PageHeader({ title, subtitle, image }) {
 
   return (
     <>
-      <header ref={headerRef} className="relative z-50 overflow-hidden border-b border-white/10 bg-[#0a0b0d]">
+      <header
+        ref={headerRef}
+        className={`relative z-50 overflow-hidden border-b ${
+          light ? 'border-black/8 bg-white' : 'border-white/10 bg-[#0a0b0d]'
+        }`}
+      >
         {image ? (
           <>
             <img
               src={image}
               alt=""
               aria-hidden
-              className="pointer-events-none absolute inset-0 h-full w-full object-cover object-center"
+              className="pointer-events-none absolute inset-0 h-full w-full object-cover object-[center_42%]"
             />
             <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-black/80 via-black/55 to-black/35" />
             <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/50 to-transparent" />
@@ -141,9 +155,12 @@ export default function PageHeader({ title, subtitle, image }) {
             navRef={headerNavRef}
             active={active}
             showPill={!isSticky}
-            className={`relative hidden items-center rounded-full border border-white/10 bg-black/70 px-1.5 py-1.5 shadow-lg shadow-black/30 backdrop-blur-xl transition-opacity duration-300 lg:flex ${
-              isSticky ? 'pointer-events-none opacity-0' : 'opacity-100'
-            }`}
+            light={light}
+            className={`relative hidden items-center rounded-full px-1.5 py-1.5 transition-opacity duration-300 lg:flex ${
+              light
+                ? 'border border-black/8 bg-fog shadow-sm'
+                : 'border border-white/10 bg-black/70 shadow-lg shadow-black/30 backdrop-blur-xl'
+            } ${isSticky ? 'pointer-events-none opacity-0' : 'opacity-100'}`}
           />
 
           <div className="flex items-center gap-2.5">
@@ -154,7 +171,11 @@ export default function PageHeader({ title, subtitle, image }) {
                 setMenuOpen(false)
                 openCart()
               }}
-              className="relative inline-flex h-11 w-11 items-center justify-center rounded-[12px] bg-white text-[#111] shadow-sm transition hover:bg-white/90"
+              className={`relative inline-flex h-11 w-11 items-center justify-center rounded-[12px] shadow-sm transition ${
+                light
+                  ? 'bg-ink text-white hover:bg-ink/90'
+                  : 'bg-white text-[#111] hover:bg-white/90'
+              }`}
             >
               <ShoppingBag className="h-[18px] w-[18px]" strokeWidth={1.7} />
               {count > 0 ? (
@@ -167,7 +188,11 @@ export default function PageHeader({ title, subtitle, image }) {
               type="button"
               aria-label="Menu"
               onClick={() => setMenuOpen(true)}
-              className="inline-flex h-11 w-11 items-center justify-center rounded-[12px] bg-white text-[#111] shadow-sm transition hover:bg-white/90 lg:hidden"
+              className={`inline-flex h-11 w-11 items-center justify-center rounded-[12px] shadow-sm transition lg:hidden ${
+                light
+                  ? 'bg-ink text-white hover:bg-ink/90'
+                  : 'bg-white text-[#111] hover:bg-white/90'
+              }`}
             >
               <Menu className="h-[18px] w-[18px]" strokeWidth={1.7} />
             </button>

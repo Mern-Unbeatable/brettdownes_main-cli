@@ -1,19 +1,8 @@
 import { useLayoutEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import gsap from 'gsap'
-import { FileCheck2 } from 'lucide-react'
+import { FileCheck2, ShoppingCart } from 'lucide-react'
 import Navbar from './Navbar'
-
-function MoleculeIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden>
-      <circle cx="4" cy="9" r="2.2" fill="currentColor" />
-      <circle cx="14" cy="4.5" r="2.2" fill="currentColor" />
-      <circle cx="14" cy="13.5" r="2.2" fill="currentColor" />
-      <path d="M5.8 8.2L12.2 5.2M5.8 9.8L12.2 12.8" stroke="currentColor" strokeWidth="1.4" />
-    </svg>
-  )
-}
 
 function PurityIcon() {
   return (
@@ -128,15 +117,15 @@ export default function Hero() {
                 className="mt-8 inline-flex items-center gap-2.5 rounded-[12px] bg-cyan px-[22px] py-[13px] text-[15px] font-semibold text-[#0a1218] transition hover:brightness-110"
               >
                 Shop Now
-                <MoleculeIcon />
+                <ShoppingCart className="h-[18px] w-[18px]" strokeWidth={2.2} />
               </Link>
 
               <p
                 data-hero-copy
                 className="mt-5 max-w-[340px] text-[13px] font-medium leading-[1.55] text-white sm:text-[14px]"
               >
-                High-purity lyophilized peptides for laboratory research. Verified identity, batch
-                documentation, and Research Use Only labeling.
+                High-purity lyophilized peptides for research. Verified identity, quality
+                testing on select batches, and Research Use Only labeling.
               </p>
             </div>
           </div>
@@ -160,7 +149,7 @@ export default function Hero() {
                 <FileCheck2 className="h-[16px] w-[16px] sm:h-[18px] sm:w-[18px]" strokeWidth={1.8} />
               </span>
               <p className="text-[13px] font-medium text-[#111] sm:text-[15px]">
-                Tested in ISO - certified labs
+                Tested in ISO-certified facilities
               </p>
             </div>
           </div>
