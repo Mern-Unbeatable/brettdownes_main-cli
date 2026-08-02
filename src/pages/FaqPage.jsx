@@ -209,27 +209,52 @@ export default function FaqPage() {
     const chips = chipsRef.current
     if (!chips) return undefined
 
+    let timer = 0
     const observer = new IntersectionObserver(
       ([entry]) => {
-        setDockVisible(!entry.isIntersecting)
+        window.clearTimeout(timer)
+        timer = window.setTimeout(() => {
+          setDockVisible(!entry.isIntersecting)
+        }, 120)
       },
       { threshold: 0, rootMargin: '-8px 0px 0px 0px' },
     )
 
     observer.observe(chips)
-    return () => observer.disconnect()
+    return () => {
+      window.clearTimeout(timer)
+      observer.disconnect()
+    }
   }, [])
 
-  const scrollToCategory = (id) => {
+  const scrollToCategory = (id, { delay = 0 } = {}) => {
     setActiveCategory(id)
     scrollingToRef.current = id
-    const el = document.getElementById(id)
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+
+    const run = () => {
+      const el = document.getElementById(id)
+      if (!el) {
+        scrollingToRef.current = null
+        return
+      }
+
+      const offset = 112
+      const top = el.getBoundingClientRect().top + window.scrollY - offset
+      window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' })
+
+      const clear = () => {
+        if (scrollingToRef.current === id) scrollingToRef.current = null
+        window.removeEventListener('scrollend', clear)
+      }
+      window.addEventListener('scrollend', clear, { once: true })
+      window.setTimeout(clear, 1400)
     }
-    window.setTimeout(() => {
-      scrollingToRef.current = null
-    }, 700)
+
+    if (delay > 0) {
+      window.setTimeout(run, delay)
+    } else {
+      run()
+    }
   }
 
   return (
@@ -241,7 +266,7 @@ export default function FaqPage() {
 
       <main className="bg-white py-12 md:py-20">
         <div className="mx-auto max-w-10xl px-5 md:px-8">
-          <div className="mb-10 md:mb-14" data-reveal="up">
+          <div className="mb-10 md:mb-14" data-reveal="up" data-reveal-start="top 100%">
             <div className="flex items-center gap-2">
               <span className="h-1.5 w-1.5 rounded-full bg-cyan" />
               <span className="text-[11px] font-bold tracking-[0.28em] text-ink uppercase">
@@ -262,6 +287,7 @@ export default function FaqPage() {
             ref={chipsRef}
             data-reveal="up"
             data-reveal-delay="0.06"
+            data-reveal-start="top 100%"
             className="mb-8 lg:hidden"
           >
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
@@ -289,7 +315,7 @@ export default function FaqPage() {
 
           <div className="grid gap-10 lg:grid-cols-[260px_minmax(0,1fr)] lg:gap-14 xl:grid-cols-[280px_minmax(0,1fr)]">
             {/* Desktop sticky category nav */}
-            <aside data-reveal="left" className="hidden lg:block">
+            <aside data-reveal="left" data-reveal-start="top 100%" className="hidden lg:block">
               <nav
                 aria-label="FAQ categories"
                 className="sticky top-28 space-y-1 rounded-3xl border border-black/8 bg-fog/60 p-3"
@@ -331,6 +357,7 @@ export default function FaqPage() {
                     id={cat.id}
                     data-reveal="up"
                     data-reveal-delay={String(Math.min(catIndex * 0.04, 0.16))}
+                    data-reveal-start="top 100%"
                     className="scroll-mt-28"
                   >
                     <div className="mb-3 flex items-center gap-3 sm:mb-4">
@@ -381,6 +408,7 @@ export default function FaqPage() {
 
               <div
                 data-reveal="up"
+                data-reveal-start="top 100%"
                 className="relative overflow-hidden rounded-3xl bg-navy px-6 py-10 md:px-10 md:py-12"
               >
                 <div
