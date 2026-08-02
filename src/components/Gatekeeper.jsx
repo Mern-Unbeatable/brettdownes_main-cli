@@ -497,7 +497,7 @@ html[data-gate-locked="1"] #gatekeeper-root {
         <img
           src="/images/logo.png"
           alt="Peptide Ops"
-          className="h-36 w-36 object-contain object-bottom sm:h-44 sm:w-44 lg:h-56 lg:w-56 lg:object-center"
+          className="h-36 w-36 object-contain sm:h-44 sm:w-44 lg:h-56 lg:w-56"
           draggable={false}
         />
         <h2

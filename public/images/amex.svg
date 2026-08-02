@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 780 500" role="img" aria-label="American Express">
+  <rect width="780" height="500" rx="40" fill="#016FD0"/>
+  <g fill="#fff">
+    <!-- A -->
+    <path d="M35 380L110 120h52l75 260h-52l-14-50H101l-14 50H35zm78-108h42l-21-74-21 74z"/>
+    <!-- M -->
+    <path d="M240 380V120h48l55 135 55-135h48v260h-46V245l-38 120h-38l-38-120v135h-46z"/>
+    <!-- E -->
+    <path d="M470 380V120h128v50H528v48h60v48h-60v48h78v46H470z"/>
+    <!-- X -->
+    <polygon points="600,120 655,120 750,380 695,380"/>
+    <polygon points="695,120 750,120 655,380 600,380"/>
+  </g>
+</svg>

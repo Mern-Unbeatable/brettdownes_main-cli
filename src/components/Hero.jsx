@@ -99,15 +99,9 @@ export default function Hero() {
               <h1 className="font-display font-extrabold tracking-[-0.04em] text-white uppercase">
                 <span
                   data-hero-line
-                  className="block whitespace-nowrap text-[30px] leading-[1.05] sm:text-[34px] md:text-[40px] lg:text-[44px] xl:text-[50px]"
+                  className="block text-[30px] leading-[1.05] sm:text-[34px] md:text-[40px] lg:text-[44px] xl:text-[50px]"
                 >
-                  Precision peptides.
-                </span>
-                <span
-                  data-hero-line
-                  className="mt-[0.06em] block whitespace-nowrap text-[30px] leading-[1.05] sm:text-[34px] md:text-[40px] lg:text-[44px] xl:text-[50px]"
-                >
-                  Powerful research.
+                  Command your research.
                 </span>
               </h1>
 
@@ -124,8 +118,9 @@ export default function Hero() {
                 data-hero-copy
                 className="mt-5 max-w-[340px] text-[13px] font-medium leading-[1.55] text-white sm:text-[14px]"
               >
-                High-purity lyophilized peptides for research. Verified identity, quality
-                testing on select batches, and Research Use Only labeling.
+                Batch-verified purity.
+                <br />
+                Uncompromising laboratory standards.
               </p>
             </div>
           </div>

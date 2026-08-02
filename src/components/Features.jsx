@@ -1,4 +1,4 @@
-import { Dna, Leaf } from 'lucide-react'
+import { Dna, Leaf, Search } from 'lucide-react'
 
 /** Lucide-style bacteria icon (not in this lucide version) */
 function Bacteria({ className, strokeWidth = 2 }) {
@@ -24,25 +24,6 @@ function Bacteria({ className, strokeWidth = 2 }) {
   )
 }
 
-/** Plus-style target — center + four arms */
-function TargetPlus({ className, strokeWidth = 1.6 }) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={strokeWidth}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-      aria-hidden
-    >
-      <circle cx="12" cy="12" r="2.25" />
-      <path d="M12 4.5v4M12 15.5v4M4.5 12h4M15.5 12h4" />
-    </svg>
-  )
-}
-
 const features = [
   {
     icon: Dna,
@@ -50,7 +31,7 @@ const features = [
     text: 'Peptides supplied for controlled research and in vitro pathway studies.',
   },
   {
-    icon: TargetPlus,
+    icon: Search,
     title: 'Verified Specs',
     text: 'Identity and purity specs documented for research protocols.',
   },

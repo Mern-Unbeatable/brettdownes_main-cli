@@ -37,7 +37,7 @@ export default function ShopPage() {
     <PageTransition>
       <PageHeader
         title="Shop"
-        subtitle="Research-grade lyophilized peptides with verified purity and quality testing on select batches."
+        subtitle="Research-grade lyophilized peptides with verified purity and certificates of analysis."
         image="/images/shop-hero-peptides.png"
       />
 
@@ -62,8 +62,7 @@ export default function ShopPage() {
               <span>
                 All in-stock orders ship within{' '}
                 <span className="font-semibold">24 hours</span>
-                <span className="text-muted"> · US</span>
-              </span>
+                        </span>
             </p>
 
             <label htmlFor="peptide-search" className="sr-only">
