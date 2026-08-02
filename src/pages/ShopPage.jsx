@@ -38,7 +38,7 @@ export default function ShopPage() {
       <PageHeader
         title="Shop"
         subtitle="Research-grade lyophilized peptides with verified purity and certificates of analysis."
-        image="/images/shop-hero-peptides.png"
+        image="/images/shop-hero-peptides.webp"
       />
 
       <main className="bg-white py-14 md:py-20">

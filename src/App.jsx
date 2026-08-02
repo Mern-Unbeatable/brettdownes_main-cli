@@ -5,6 +5,7 @@ import gsap from 'gsap'
 import HomePage from './pages/HomePage'
 import ShopPage from './pages/ShopPage'
 import ContactPage from './pages/ContactPage'
+import FaqPage from './pages/FaqPage'
 import ProductDetailPage from './pages/ProductDetailPage'
 import CheckoutPage from './pages/CheckoutPage'
 import WhatsAppFloat from './components/WhatsAppFloat'
@@ -134,6 +135,7 @@ export default function App() {
             <Route path="/shop" element={<ShopPage />} />
             <Route path="/shop/:slug" element={<ProductDetailPage />} />
             <Route path="/checkout" element={<CheckoutPage />} />
+            <Route path="/faq" element={<FaqPage />} />
             <Route path="/contact" element={<ContactPage />} />
           </Routes>
         </div>

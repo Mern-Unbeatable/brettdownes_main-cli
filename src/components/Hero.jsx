@@ -81,7 +81,7 @@ export default function Hero() {
       <div className="relative isolate mx-auto w-full max-w-12xl min-h-[calc(100vh-24px)] overflow-hidden rounded-[28px] bg-[#0a0b0d] sm:min-h-[calc(100vh-32px)] sm:rounded-[36px] md:rounded-[44px]">
         <img
           data-hero-bg
-          src="/images/hero.png"
+          src="/images/hero.webp"
           alt="Peptide Ops research vial"
           className="absolute inset-0 h-full w-full object-cover object-center will-change-transform"
           draggable={false}

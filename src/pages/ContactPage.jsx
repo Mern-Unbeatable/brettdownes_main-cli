@@ -18,7 +18,7 @@ export default function ContactPage() {
       <PageHeader
         title="Contact"
         subtitle="Reach Peptide Ops Logistics for institutional orders, certificates, tracking, and research compound sourcing."
-        image="/images/contact-hero-peptides.png"
+        image="/images/contact-hero-peptides.webp"
       />
 
       <main className="bg-white py-14 md:py-20">
