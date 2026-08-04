@@ -140,7 +140,13 @@ html {
 
 @media (min-width: 768px) {
   html {
-    --gate-frame-h: min(920px, calc(100svh - 4rem));
+    --gate-frame-h: min(920px, calc(100svh - 3rem));
+  }
+}
+
+@media (min-width: 1024px) {
+  html {
+    --gate-frame-h: min(820px, calc(100svh - 5rem));
   }
 }
 

@@ -88,6 +88,18 @@ export default function Footer() {
           />
         </div>
       </div>
+
+      <div className="mx-auto mt-8 max-w-10xl space-y-3 border-t border-fog-deep px-5 pt-6 text-center md:px-8">
+        <p className="text-xs text-muted sm:text-sm">
+          © 2026 Peptide Ops Logistics. All Rights Reserved.
+        </p>
+        <p className="mx-auto max-w-3xl text-[11px] leading-relaxed text-muted/90 sm:text-xs">
+          Disclaimer: Products sold on this site are intended exclusively for laboratory,
+          scientific, or research purposes and are not for human consumption, veterinary use, or
+          therapeutic applications. Statements made on this website have not been evaluated by the
+          Food and Drug Administration.
+        </p>
+      </div>
     </footer>
   )
 }
