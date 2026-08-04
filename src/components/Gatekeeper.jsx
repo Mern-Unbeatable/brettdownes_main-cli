@@ -935,9 +935,9 @@ html[data-gate-locked="1"] #gatekeeper-root {
                   setSubmitted(false)
                   swapTo('verify')
                 }}
-                className="mt-3 text-[11px] font-semibold text-cyan underline underline-offset-2 sm:mt-5 sm:text-sm"
+                className="mt-3 w-full rounded-xl border border-white/35 bg-transparent px-4 py-2 text-[11px] font-semibold tracking-[0.06em] text-white uppercase transition hover:border-white hover:bg-white/10 sm:mt-5 sm:py-3.5 sm:text-sm"
               >
-                Return to login
+                Return to Login
               </button>
             </div>
           ) : (
