@@ -96,9 +96,9 @@ export default function Gatekeeper({ onPass }) {
     }
 
     if (narrow) {
-      // Form tall enough for 3 CTAs, but not so tall it leaves a large empty bottom
+      // Extra form height so equal top/bottom padding never clips the last CTA
       const h = avail
-      const artH = Math.round(h * 0.31)
+      const artH = Math.round(h * 0.27)
       frameHRef.current = h
       frameWRef.current = w
       panelPxRef.current = { artH, formH: h - artH, total: h }
@@ -435,20 +435,20 @@ html[data-gate-locked="1"] #gatekeeper-root {
         return {
           axis: 'y',
           artTop: 0,
-          artH: 31,
-          formTop: 31,
-          formH: 69,
-          seam: 31,
+          artH: 27,
+          formTop: 27,
+          formH: 73,
+          seam: 27,
           radius: '24px 24px 0 0',
         }
       }
       return {
         axis: 'y',
-        artTop: 69,
-        artH: 31,
+        artTop: 73,
+        artH: 27,
         formTop: 0,
-        formH: 69,
-        seam: 69,
+        formH: 73,
+        seam: 73,
         radius: '0 0 24px 24px',
       }
     }
@@ -761,7 +761,7 @@ html[data-gate-locked="1"] #gatekeeper-root {
   const welcomeInner = (
     <div
       data-gate-welcome
-      className="flex h-full flex-col items-center justify-end px-5 pb-1.5 pt-1 text-center lg:justify-center lg:px-10 lg:py-12 lg:pb-12"
+      className="flex h-full flex-col items-center justify-center px-5 py-2 text-center lg:px-10 lg:py-12"
     >
       <div data-gate-enter className="flex flex-col items-center">
         <img
@@ -791,13 +791,7 @@ html[data-gate-locked="1"] #gatekeeper-root {
   const formInner = (
     <div
       data-gate-content
-      className={`mx-auto flex h-full w-full min-w-0 max-w-xl flex-col px-4 text-left sm:px-6 lg:px-10 lg:py-8 ${
-        mode === 'reset'
-          ? 'justify-center pt-2 pb-3 sm:pt-4 sm:pb-5'
-          : mode === 'register'
-            ? 'justify-start pt-2.5 pb-3 sm:pt-4 sm:pb-5 lg:justify-center'
-            : 'justify-end pt-2 pb-3 sm:pt-3 sm:pb-4 lg:justify-center lg:pt-5 lg:pb-5'
-      }`}
+      className="mx-auto box-border flex h-full w-full min-w-0 max-w-xl flex-col justify-center px-4 py-4 text-left sm:px-6 sm:py-5 lg:px-10 lg:py-8"
     >
       {mode === 'verify' ? (
         <>
