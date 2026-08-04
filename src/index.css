@@ -114,17 +114,34 @@ body.drawer-open .sticky-nav-pill {
   animation: float-soft 5s ease-in-out infinite;
 }
 
-/* Gatekeeper form: allow overflow scroll without a visible scrollbar */
-.gate-scroll {
-  overflow-x: hidden;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
+/* Gatekeeper: locked frame + top pad so keypad/switch never reflows the modal */
+html {
+  --gate-kb-pad: 0px;
+  --gate-top-pad: 0.75rem;
+  --gate-frame-h: min(920px, calc(100svh - 1.5rem));
 }
 
-.gate-scroll::-webkit-scrollbar {
-  display: none;
-  width: 0;
-  height: 0;
+#gatekeeper-root {
+  isolation: isolate;
+}
+
+#gatekeeper-root .gate-page {
+  min-height: calc(100svh + var(--gate-kb-pad, 0px));
+  padding-top: var(--gate-top-pad, 0.75rem);
+  padding-bottom: max(0.75rem, var(--gate-kb-pad, 0px));
+  align-items: flex-start;
+}
+
+@media (min-width: 640px) {
+  html {
+    --gate-frame-h: min(920px, calc(100svh - 2.5rem));
+  }
+}
+
+@media (min-width: 768px) {
+  html {
+    --gate-frame-h: min(920px, calc(100svh - 4rem));
+  }
 }
 
 .gate-input {

@@ -1,8 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import gsap from 'gsap'
-import { Eye, EyeOff, Lock, ShieldCheck, Sparkles } from 'lucide-react'
-import { lockBodyScroll, unlockBodyScroll } from '../hooks/lockBodyScroll'
+import { Eye, EyeOff, KeyRound, Lock, ShieldCheck, Sparkles } from 'lucide-react'
 
 const STORAGE_KEY = 'peptideops_gate_ok'
 const GATE_EMAIL = 'admin@peptideops.com'
@@ -48,6 +47,10 @@ export default function Gatekeeper({ onPass }) {
   const seamRef = useRef(null)
   const animating = useRef(false)
   const modeRef = useRef('verify')
+  const frameHRef = useRef(0)
+  const frameWRef = useRef(0)
+  const panelPxRef = useRef(null)
+  const topPadLockedRef = useRef(false)
 
   const [visible, setVisible] = useState(false)
   const [mode, setMode] = useState('verify')
@@ -62,15 +65,71 @@ export default function Gatekeeper({ onPass }) {
 
   modeRef.current = mode
 
+  const pagePadY = () => {
+    const w = window.innerWidth
+    if (w >= 768) return 64
+    if (w >= 640) return 40
+    return 24
+  }
+
+  /**
+   * Lock modal pixel height once (and on real width/rotate only).
+   * Never resize for keyboard open/close — that causes the shake.
+   */
+  const applyFrameSize = ({ force = false } = {}) => {
+    const modal = modalRef.current
+    if (!modal) return
+
+    const w = window.innerWidth
+    const narrow = w <= 1023
+    const avail = Math.min(920, Math.max(420, window.innerHeight - pagePadY()))
+    const widthChanged = Math.abs(w - frameWRef.current) > 50
+
+    // Keep the locked size stable through keypad / focus / layout thrash
+    if (!force && frameHRef.current && !widthChanged) {
+      const h = frameHRef.current
+      modal.style.setProperty('height', `${h}px`, 'important')
+      modal.style.setProperty('min-height', `${h}px`, 'important')
+      modal.style.setProperty('max-height', `${h}px`, 'important')
+      document.documentElement.style.setProperty('--gate-frame-h', `${h}px`)
+      return
+    }
+
+    if (narrow) {
+      // Form needs room for Verify + Forgot Password + Register (no clipping)
+      const h = avail
+      const artH = Math.round(h * 0.28)
+      frameHRef.current = h
+      frameWRef.current = w
+      panelPxRef.current = { artH, formH: h - artH, total: h }
+    } else {
+      frameHRef.current = avail
+      frameWRef.current = w
+      panelPxRef.current = null
+    }
+
+    const h = frameHRef.current
+    modal.style.setProperty('height', `${h}px`, 'important')
+    modal.style.setProperty('min-height', `${h}px`, 'important')
+    modal.style.setProperty('max-height', `${h}px`, 'important')
+    document.documentElement.style.setProperty('--gate-frame-h', `${h}px`)
+
+    if (force || widthChanged || !topPadLockedRef.current) {
+      const topPad = Math.max(pagePadY() / 2, Math.round((window.innerHeight - h) / 2))
+      document.documentElement.style.setProperty('--gate-top-pad', `${Math.max(8, topPad)}px`)
+      topPadLockedRef.current = true
+    }
+  }
+
   useEffect(() => {
     const t = window.setTimeout(() => setVisible(true), APPEAR_DELAY_MS)
     return () => window.clearTimeout(t)
   }, [])
 
-  // Lock immediately on mount — do not wait for the delayed modal reveal
+  // Freeze the site behind; allow document scroll so the full modal moves (no inner scroll)
   useEffect(() => {
     document.documentElement.dataset.gateLocked = '1'
-    lockBodyScroll()
+    window.scrollTo(0, 0)
 
     const STYLE_ID = 'peptideops-gate-lock-css'
     const ensureLockCss = () => {
@@ -81,22 +140,60 @@ export default function Gatekeeper({ onPass }) {
         document.head.appendChild(style)
       }
       style.textContent = `
-html[data-gate-locked="1"] #app-shell {
-  pointer-events: none !important;
-  user-select: none !important;
+html[data-gate-locked="1"] {
+  overflow-x: hidden !important;
+  overflow-y: hidden !important;
+  height: auto !important;
+  -webkit-overflow-scrolling: touch;
 }
-html[data-gate-locked="1"] #gatekeeper-root {
-  display: flex !important;
-  visibility: visible !important;
-  opacity: 1 !important;
-  pointer-events: auto !important;
-  z-index: 2147483647 !important;
+html[data-gate-locked="1"][data-gate-kb="1"] {
+  overflow-y: auto !important;
+  overscroll-behavior-y: contain;
+}
+html[data-gate-locked="1"][data-gate-kb="1"] #gatekeeper-root {
+  /* Page (external) scroll moves the whole modal — no inner form scrollbar */
+  touch-action: pan-y;
+}
+html[data-gate-locked="1"] body {
+  overflow: visible !important;
+  height: auto !important;
+  min-height: 100% !important;
+  padding-right: 0 !important;
+  background: #141A22 !important;
+}
+html[data-gate-locked="1"] #app-shell {
   position: fixed !important;
   inset: 0 !important;
   width: 100% !important;
   height: 100% !important;
+  overflow: hidden !important;
+  pointer-events: none !important;
+  user-select: none !important;
+}
+html[data-gate-locked="1"] .side-action-dock,
+html[data-gate-locked="1"] .faq-category-dock,
+html[data-gate-locked="1"] .whatsapp-float,
+html[data-gate-locked="1"] .sticky-nav-pill {
+  opacity: 0 !important;
+  pointer-events: none !important;
+  visibility: hidden !important;
+}
+html[data-gate-locked="1"] #gatekeeper-root {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  z-index: 2147483647 !important;
+  position: relative !important;
+  inset: auto !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100% !important;
+  height: auto !important;
+  min-height: max(100svh, calc(var(--gate-frame-h, 100svh) + var(--gate-kb-pad, 0px))) !important;
   max-width: none !important;
   max-height: none !important;
+  overflow: visible !important;
   transform: none !important;
   clip: auto !important;
   clip-path: none !important;
@@ -109,6 +206,11 @@ html[data-gate-locked="1"] #gatekeeper-root {
       if (!shell) return
       shell.setAttribute('inert', '')
       shell.setAttribute('aria-hidden', 'true')
+      shell.style.setProperty('position', 'fixed', 'important')
+      shell.style.setProperty('inset', '0', 'important')
+      shell.style.setProperty('width', '100%', 'important')
+      shell.style.setProperty('height', '100%', 'important')
+      shell.style.setProperty('overflow', 'hidden', 'important')
       shell.style.setProperty('pointer-events', 'none', 'important')
       shell.style.setProperty('user-select', 'none', 'important')
     }
@@ -116,26 +218,37 @@ html[data-gate-locked="1"] #gatekeeper-root {
     const enforceRoot = () => {
       const root = rootRef.current
       if (!root) return
-      root.style.setProperty('display', 'flex', 'important')
+      root.style.setProperty('display', 'block', 'important')
       root.style.setProperty('visibility', 'visible', 'important')
       root.style.setProperty('opacity', '1', 'important')
       root.style.setProperty('pointer-events', 'auto', 'important')
       root.style.setProperty('z-index', '2147483647', 'important')
-      root.style.setProperty('position', 'fixed', 'important')
-      root.style.setProperty('inset', '0', 'important')
+      root.style.setProperty('position', 'relative', 'important')
+      root.style.setProperty('inset', 'auto', 'important')
+      root.style.setProperty('top', '0', 'important')
+      root.style.setProperty('left', '0', 'important')
       root.style.setProperty('width', '100%', 'important')
-      root.style.setProperty('height', '100%', 'important')
+      root.style.setProperty('height', 'auto', 'important')
+      root.style.setProperty(
+        'min-height',
+        `max(100svh, calc(var(--gate-frame-h, 100svh) + var(--gate-kb-pad, 0px)))`,
+        'important',
+      )
+      root.style.setProperty('overflow', 'visible', 'important')
       root.style.removeProperty('transform')
       root.style.removeProperty('clip')
       root.style.removeProperty('clip-path')
+      root.style.removeProperty('max-height')
     }
 
     const enforce = () => {
       document.documentElement.dataset.gateLocked = '1'
+      // Body must stay scrollable — never apply drawer-open lock here
+      document.body.classList.remove('drawer-open')
+      document.body.style.paddingRight = ''
       ensureLockCss()
       enforceShell()
       enforceRoot()
-      lockBodyScroll()
     }
 
     const blockOutside = (e) => {
@@ -159,8 +272,43 @@ html[data-gate-locked="1"] #gatekeeper-root {
       e.preventDefault()
     }
 
+    // Keypad only toggles page scroll room — never resize/remeasure the modal (prevents shake)
+    const setKeyboardPad = (on) => {
+      if (!on) {
+        delete document.documentElement.dataset.gateKb
+        document.documentElement.style.setProperty('--gate-kb-pad', '0px')
+        return
+      }
+      document.documentElement.dataset.gateKb = '1'
+      // Enough room to scroll the full modal above the keypad
+      document.documentElement.style.setProperty('--gate-kb-pad', '40vh')
+    }
+    const onFocusIn = (e) => {
+      const t = e.target
+      if (!(t instanceof HTMLElement)) return
+      if (!t.matches('input, textarea, select')) return
+      if (!rootRef.current?.contains(t)) return
+      if (window.matchMedia('(max-width: 1023px)').matches) setKeyboardPad(true)
+    }
+    const onFocusOut = () => {
+      // Mobile often blurs with null relatedTarget while the keypad opens — wait, then re-check
+      window.setTimeout(() => {
+        const active = document.activeElement
+        if (
+          active instanceof HTMLElement &&
+          rootRef.current?.contains(active) &&
+          active.matches('input, textarea, select')
+        ) {
+          return
+        }
+        setKeyboardPad(false)
+      }, 80)
+    }
+
+    applyFrameSize({ force: true })
     ensureLockCss()
     enforce()
+    setKeyboardPad(false)
 
     const interval = window.setInterval(enforce, 250)
 
@@ -168,20 +316,32 @@ html[data-gate-locked="1"] #gatekeeper-root {
     events.forEach((type) => document.addEventListener(type, blockOutside, true))
     window.addEventListener('popstate', blockNav)
     window.addEventListener('keydown', blockKeys, true)
+    document.addEventListener('focusin', onFocusIn, true)
+    document.addEventListener('focusout', onFocusOut, true)
 
     return () => {
       delete document.documentElement.dataset.gateLocked
-      unlockBodyScroll()
+      delete document.documentElement.dataset.gateKb
+      document.documentElement.style.removeProperty('--gate-kb-pad')
+      document.documentElement.style.removeProperty('--gate-frame-h')
+      document.documentElement.style.removeProperty('--gate-top-pad')
       window.clearInterval(interval)
       events.forEach((type) => document.removeEventListener(type, blockOutside, true))
       window.removeEventListener('popstate', blockNav)
       window.removeEventListener('keydown', blockKeys, true)
+      document.removeEventListener('focusin', onFocusIn, true)
+      document.removeEventListener('focusout', onFocusOut, true)
       document.getElementById(STYLE_ID)?.remove()
 
       const shell = document.getElementById('app-shell')
       if (shell) {
         shell.removeAttribute('inert')
         shell.removeAttribute('aria-hidden')
+        shell.style.removeProperty('position')
+        shell.style.removeProperty('inset')
+        shell.style.removeProperty('width')
+        shell.style.removeProperty('height')
+        shell.style.removeProperty('overflow')
         shell.style.removeProperty('pointer-events')
         shell.style.removeProperty('user-select')
       }
@@ -201,7 +361,13 @@ html[data-gate-locked="1"] #gatekeeper-root {
       )
 
     const firstInput = root.querySelector('input, button, textarea')
-    if (firstInput instanceof HTMLElement) firstInput.focus({ preventScroll: true })
+    // Avoid auto-opening the mobile keyboard (causes extra page scroll)
+    if (
+      firstInput instanceof HTMLElement &&
+      window.matchMedia('(min-width: 1024px)').matches
+    ) {
+      firstInput.focus({ preventScroll: true })
+    }
 
     const onKeyDown = (e) => {
       if (e.key === 'Escape') {
@@ -235,30 +401,59 @@ html[data-gate-locked="1"] #gatekeeper-root {
 
   const layoutFor = (nextMode) => {
     const narrow = isNarrow()
-    if (narrow) {
-      if (nextMode === 'verify') {
+    const px = narrow ? panelPxRef.current : null
+    // Reset keeps the login panel layout; only register flips panels
+    const loginSide = nextMode !== 'register'
+
+    if (narrow && px) {
+      if (loginSide) {
         return {
           axis: 'y',
+          unit: 'px',
           artTop: 0,
-          artH: 32,
-          formTop: 32,
-          formH: 68,
-          seam: 32,
+          artH: px.artH,
+          formTop: px.artH,
+          formH: px.formH,
+          seam: px.artH,
           radius: '24px 24px 0 0',
         }
       }
       return {
         axis: 'y',
-        artTop: 68,
-        artH: 32,
+        unit: 'px',
+        artTop: px.formH,
+        artH: px.artH,
         formTop: 0,
-        formH: 68,
-        seam: 68,
+        formH: px.formH,
+        seam: px.formH,
         radius: '0 0 24px 24px',
       }
     }
 
-    if (nextMode === 'verify') {
+    if (narrow) {
+      if (loginSide) {
+        return {
+          axis: 'y',
+          artTop: 0,
+          artH: 28,
+          formTop: 28,
+          formH: 72,
+          seam: 28,
+          radius: '24px 24px 0 0',
+        }
+      }
+      return {
+        axis: 'y',
+        artTop: 72,
+        artH: 28,
+        formTop: 0,
+        formH: 72,
+        seam: 72,
+        radius: '0 0 24px 24px',
+      }
+    }
+
+    if (loginSide) {
       return {
         axis: 'x',
         artLeft: 0,
@@ -282,16 +477,17 @@ html[data-gate-locked="1"] #gatekeeper-root {
 
   const panelProps = (L) => {
     if (L.axis === 'y') {
+      const u = L.unit === 'px' ? 'px' : '%'
       return {
-        art: { top: `${L.artTop}%`, height: `${L.artH}%`, left: '0%', width: '100%' },
+        art: { top: `${L.artTop}${u}`, height: `${L.artH}${u}`, left: '0%', width: '100%' },
         form: {
-          top: `${L.formTop}%`,
-          height: `${L.formH}%`,
+          top: `${L.formTop}${u}`,
+          height: `${L.formH}${u}`,
           left: '0%',
           width: '100%',
           borderRadius: L.radius,
         },
-        seam: { top: `${L.seam}%`, left: '0%', width: '100%', height: '1px' },
+        seam: { top: `${L.seam}${u}`, left: '0%', width: '100%', height: '1px' },
       }
     }
     return {
@@ -316,6 +512,7 @@ html[data-gate-locked="1"] #gatekeeper-root {
     const L = layoutFor(nextMode)
     const P = panelProps(L)
     const content = form.querySelector('[data-gate-content]')
+    const welcome = art.querySelector('[data-gate-welcome]')
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
     if (!animate || reduce) {
@@ -323,6 +520,7 @@ html[data-gate-locked="1"] #gatekeeper-root {
       gsap.set(form, P.form)
       gsap.set(seam, P.seam)
       if (content) gsap.set(content, { autoAlpha: 1, y: 0, clearProps: 'transform' })
+      if (welcome) gsap.set(welcome, { autoAlpha: 1, y: 0, clearProps: 'transform' })
       onMid?.()
       onDone?.()
       return
@@ -330,6 +528,10 @@ html[data-gate-locked="1"] #gatekeeper-root {
 
     animating.current = true
     const toRegister = nextMode === 'register'
+    const fromRegister = modeRef.current === 'register'
+    const panelsMove = fromRegister !== toRegister
+    const toReset = nextMode === 'reset'
+    const fromReset = modeRef.current === 'reset'
     const tl = gsap.timeline({
       defaults: { ease: 'power3.inOut' },
       onComplete: () => {
@@ -338,36 +540,66 @@ html[data-gate-locked="1"] #gatekeeper-root {
       },
     })
 
+    // Fade out current form + welcome (verify ↔ reset keeps panels still but still animates)
     if (content) {
       tl.to(
         content,
         {
           autoAlpha: 0,
-          y: toRegister ? -20 : 20,
-          duration: 0.22,
+          y: toRegister ? -20 : toReset || fromReset ? 16 : 20,
+          duration: 0.28,
+          ease: 'power2.in',
+        },
+        0,
+      )
+    }
+    if (welcome) {
+      tl.to(
+        welcome,
+        {
+          autoAlpha: 0,
+          y: toRegister ? -12 : 12,
+          duration: 0.28,
           ease: 'power2.in',
         },
         0,
       )
     }
 
-    tl.to(art, { ...P.art, duration: 0.7 }, 0.12)
-      .to(form, { ...P.form, duration: 0.7 }, 0.12)
-      .to(seam, { ...P.seam, duration: 0.7 }, 0.12)
+    if (panelsMove) {
+      tl.to(art, { ...P.art, duration: 0.7 }, 0.12)
+        .to(form, { ...P.form, duration: 0.7 }, 0.12)
+        .to(seam, { ...P.seam, duration: 0.7 }, 0.12)
+    }
 
     tl.add(() => {
       onMid?.()
-    }).add(() => {
+    }, panelsMove ? undefined : 0.3).add(() => {
       const nextContent = form.querySelector('[data-gate-content]')
+      const nextWelcome = art.querySelector('[data-gate-welcome]')
+      const fromY = toRegister ? 40 : toReset ? 28 : fromReset ? -24 : -30
+
       if (nextContent) {
-        const fromY = toRegister ? 50 : -30
         gsap.fromTo(
           nextContent,
           { autoAlpha: 0, y: fromY },
           {
             autoAlpha: 1,
             y: 0,
-            duration: 0.45,
+            duration: 0.5,
+            ease: 'power2.out',
+            clearProps: 'transform',
+          },
+        )
+      }
+      if (nextWelcome) {
+        gsap.fromTo(
+          nextWelcome,
+          { autoAlpha: 0, y: toRegister ? 20 : -16 },
+          {
+            autoAlpha: 1,
+            y: 0,
+            duration: 0.5,
             ease: 'power2.out',
             clearProps: 'transform',
           },
@@ -379,6 +611,7 @@ html[data-gate-locked="1"] #gatekeeper-root {
   useLayoutEffect(() => {
     if (!visible) return undefined
 
+    applyFrameSize({ force: true })
     applyLayout(modeRef.current, false)
 
     const root = rootRef.current
@@ -387,6 +620,10 @@ html[data-gate-locked="1"] #gatekeeper-root {
 
     const onResize = () => {
       if (animating.current) return
+      // Ignore keypad-driven height changes — only real width / rotate
+      const w = window.innerWidth
+      if (Math.abs(w - frameWRef.current) < 50) return
+      applyFrameSize({ force: true })
       applyLayout(modeRef.current, false)
     }
     window.addEventListener('resize', onResize)
@@ -424,12 +661,14 @@ html[data-gate-locked="1"] #gatekeeper-root {
     setSubmitted(false)
     setShowPassword(false)
 
+    // Keep locked frame height — only slide panels (no remeasure / no shake)
     applyLayout(next, true, {
       onMid: () => {
         modeRef.current = next
-        if (next === 'register') {
-          setEmail('')
+        if (formRef.current) formRef.current.scrollTop = 0
+        if (next === 'register' || next === 'reset') {
           setPassword('')
+          if (next === 'register') setEmail('')
         } else {
           setEmail(GATE_EMAIL)
           setPassword(GATE_PASSWORD)
@@ -466,6 +705,21 @@ html[data-gate-locked="1"] #gatekeeper-root {
     }, 480)
   }
 
+  const handleReset = (e) => {
+    e.preventDefault()
+    setError('')
+    const value = email.trim()
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+      setError('Enter the approved email linked to your account.')
+      return
+    }
+    setBusy(true)
+    window.setTimeout(() => {
+      setBusy(false)
+      setSubmitted(true)
+    }, 560)
+  }
+
   const handleRegister = (e) => {
     e.preventDefault()
     setError('')
@@ -488,28 +742,42 @@ html[data-gate-locked="1"] #gatekeeper-root {
     }, 560)
   }
 
+  const welcomeCopy =
+    mode === 'register'
+      ? {
+          title: 'Join the network',
+          text: 'Create a verified research account to request compounds and track approvals.',
+        }
+      : mode === 'reset'
+        ? {
+            title: 'Reset access',
+            text: 'We will email a secure reset link to your approved research address.',
+          }
+        : {
+            title: 'Welcome',
+            text: 'Research-grade peptides with verified purity, select-batch quality testing, and secure portal access.',
+          }
+
   const welcomeInner = (
     <div
       data-gate-welcome
-      className="flex h-full flex-col items-center justify-center px-6 py-3 text-center sm:px-8 sm:py-4 lg:px-10 lg:py-12"
+      className="flex h-full flex-col items-center justify-end px-5 pb-1.5 pt-1 text-center lg:justify-center lg:px-10 lg:py-12 lg:pb-12"
     >
       <div data-gate-enter className="flex flex-col items-center">
         <img
           src="/images/logo.png"
           alt="Peptide Ops"
-          className="h-36 w-36 object-contain sm:h-44 sm:w-44 lg:h-56 lg:w-56"
+          className="h-32 w-32 object-contain sm:h-40 sm:w-40 lg:h-56 lg:w-56"
           draggable={false}
         />
         <h2
           id="gatekeeper-title"
-          className="mt-2 max-w-xs font-display text-[28px] leading-[1.05] font-bold tracking-tight text-white sm:text-[34px] lg:text-[42px]"
+          className="mt-1 max-w-xs font-display text-[24px] leading-[1.05] font-bold tracking-tight text-white sm:mt-2 sm:text-[34px] lg:text-[42px]"
         >
-          {mode === 'verify' ? 'Welcome' : 'Join the network'}
+          {welcomeCopy.title}
         </h2>
-        <p className="mt-1.5 max-w-xs text-[12px] leading-relaxed text-white/65 sm:mt-2 sm:text-[13px] lg:mt-3 lg:text-sm">
-          {mode === 'verify'
-            ? 'Research-grade peptides with verified purity, select-batch quality testing, and secure portal access.'
-            : 'Create a verified research account to request compounds and track approvals.'}
+        <p className="mt-0.5 max-w-[16rem] text-[11px] leading-snug text-white/65 sm:mt-2 sm:max-w-xs sm:text-[13px] sm:leading-relaxed lg:mt-3 lg:text-sm">
+          {welcomeCopy.text}
         </p>
       </div>
       <div data-gate-enter className="mt-8 hidden w-full items-center gap-3 text-white/40 lg:flex">
@@ -523,20 +791,24 @@ html[data-gate-locked="1"] #gatekeeper-root {
   const formInner = (
     <div
       data-gate-content
-      className={`mx-auto flex h-full w-full min-w-0 max-w-xl flex-col justify-start px-4 text-left sm:px-6 lg:justify-center lg:px-10 lg:py-8 ${
-        mode === 'register' ? 'pt-3 pb-4 sm:pt-4 sm:pb-5' : 'pt-4 pb-4 sm:pt-5 sm:pb-5'
+      className={`mx-auto flex h-full w-full min-w-0 max-w-xl flex-col px-4 text-left sm:px-6 lg:px-10 lg:py-8 ${
+        mode === 'reset'
+          ? 'justify-center pt-2 pb-3 sm:pt-4 sm:pb-5'
+          : mode === 'register'
+            ? 'justify-start pt-2.5 pb-3 sm:pt-4 sm:pb-5 lg:justify-center'
+            : 'justify-start pt-2.5 pb-3 sm:pt-5 sm:pb-5 lg:justify-center'
       }`}
     >
       {mode === 'verify' ? (
         <>
           <div
             data-gate-enter
-            className="mb-2 w-full rounded-xl border border-white/15 bg-white/10 p-2.5 text-left backdrop-blur-sm sm:mb-4 sm:rounded-2xl sm:p-4"
+            className="mb-1.5 w-full rounded-xl border border-white/15 bg-white/10 p-2 text-left backdrop-blur-sm sm:mb-4 sm:rounded-2xl sm:p-4"
           >
             <p className="font-display text-[8px] font-bold tracking-[0.18em] text-white uppercase sm:text-[11px]">
               Registration Notice
             </p>
-            <ul className="mt-1.5 space-y-1 sm:mt-2.5 sm:space-y-2">
+            <ul className="mt-1 space-y-0.5 sm:mt-2.5 sm:space-y-2">
               {notices.map((item) => (
                 <li key={item.title} className="text-[10px] leading-snug text-white sm:text-[13px] sm:leading-relaxed">
                   <span className="font-semibold">{item.title}:</span> {item.text}
@@ -547,7 +819,7 @@ html[data-gate-locked="1"] #gatekeeper-root {
 
           <h1
             data-gate-enter
-            className="font-display text-[16px] font-bold tracking-tight text-white uppercase sm:text-[24px] lg:text-[32px]"
+            className="font-display text-[15px] font-bold tracking-tight text-white uppercase sm:text-[24px] lg:text-[32px]"
           >
             Portal Verification
           </h1>
@@ -555,7 +827,7 @@ html[data-gate-locked="1"] #gatekeeper-root {
             Enter your approved research email to unlock the Peptide Ops catalog.
           </p>
 
-          <form data-gate-enter onSubmit={handleVerify} className="mt-2 w-full space-y-2 sm:mt-5 sm:space-y-3">
+          <form data-gate-enter onSubmit={handleVerify} className="mt-1.5 w-full space-y-1.5 sm:mt-5 sm:space-y-3">
             <label className="block">
               <span className="mb-0.5 block text-[8px] font-bold tracking-[0.18em] text-white uppercase sm:mb-1.5 sm:text-[10px]">
                 Approved Email Address
@@ -607,12 +879,102 @@ html[data-gate-locked="1"] #gatekeeper-root {
             </button>
             <button
               type="button"
+              onClick={() => swapTo('reset')}
+              className="w-full rounded-xl border border-white/35 bg-transparent px-4 py-2 text-[11px] font-semibold tracking-[0.06em] text-white uppercase transition hover:border-white hover:bg-white/10 sm:py-3.5 sm:text-sm"
+            >
+              Forgot Password?
+            </button>
+            <button
+              type="button"
               onClick={() => swapTo('register')}
               className="w-full rounded-xl border border-white/35 bg-transparent px-4 py-2 text-[11px] font-semibold tracking-[0.06em] text-white uppercase transition hover:border-white hover:bg-white/10 sm:py-3.5 sm:text-sm"
             >
               Register New Account
             </button>
           </form>
+        </>
+      ) : mode === 'reset' ? (
+        <>
+          <div
+            data-gate-enter
+            className="mb-1.5 w-full rounded-xl border border-white/15 bg-white/10 p-2 text-left backdrop-blur-sm sm:mb-4 sm:rounded-2xl sm:p-4"
+          >
+            <p className="font-display text-[8px] font-bold tracking-[0.18em] text-white uppercase sm:text-[11px]">
+              Password Recovery
+            </p>
+            <p className="mt-1 text-[10px] leading-snug text-white sm:mt-2 sm:text-[13px] sm:leading-relaxed">
+              Enter your approved research email. If an account exists, a secure reset link will be sent within a few
+              minutes.
+            </p>
+          </div>
+
+          <h1
+            data-gate-enter
+            className="font-display text-[15px] font-bold tracking-tight text-white uppercase sm:text-[24px] lg:text-[32px]"
+          >
+            Reset Password
+          </h1>
+          <p data-gate-enter className="mt-0.5 max-w-md text-[10px] leading-snug text-white/80 sm:mt-1.5 sm:text-[13px] lg:text-sm">
+            Restore portal access without leaving the verification flow.
+          </p>
+
+          {submitted ? (
+            <div
+              data-gate-enter
+              className="mt-4 w-full rounded-2xl border border-white/25 bg-white/5 p-3 text-left sm:mt-8 sm:p-5"
+            >
+              <ShieldCheck className="h-6 w-6 text-cyan sm:h-8 sm:w-8" />
+              <p className="mt-2 font-display text-sm font-bold text-white uppercase sm:mt-3 sm:text-lg">
+                Reset link sent
+              </p>
+              <p className="mt-1.5 text-[11px] text-white/85 sm:text-sm">
+                Check <span className="font-semibold text-white">{email.trim() || 'your inbox'}</span> for a secure
+                password reset link. It expires in 30 minutes.
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  setSubmitted(false)
+                  swapTo('verify')
+                }}
+                className="mt-3 text-[11px] font-semibold text-cyan underline underline-offset-2 sm:mt-5 sm:text-sm"
+              >
+                Return to login
+              </button>
+            </div>
+          ) : (
+            <form data-gate-enter onSubmit={handleReset} className="mt-1.5 w-full space-y-1.5 sm:mt-5 sm:space-y-3">
+              <label className="block">
+                <span className="mb-0.5 block text-[8px] font-bold tracking-[0.18em] text-white uppercase sm:mb-1.5 sm:text-[10px]">
+                  Approved Email Address
+                </span>
+                <input
+                  type="email"
+                  autoComplete="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="name@institution.com"
+                  className="gate-input w-full rounded-xl border border-white/20 bg-white/[0.06] px-3 py-2 text-[13px] outline-none transition placeholder:text-white/40 focus:border-white/50 focus:bg-white/[0.08] sm:px-4 sm:py-3.5 sm:text-sm"
+                />
+              </label>
+              {error ? <p className="text-[12px] text-white sm:text-sm">{error}</p> : null}
+              <button
+                type="submit"
+                disabled={busy}
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-cyan px-4 py-2 text-[11px] font-bold tracking-[0.08em] text-navy uppercase transition hover:brightness-110 disabled:opacity-60 sm:py-3.5 sm:text-sm"
+              >
+                <KeyRound className="h-4 w-4" strokeWidth={2.2} />
+                {busy ? 'Sending…' : 'Send Reset Link'}
+              </button>
+              <button
+                type="button"
+                onClick={() => swapTo('verify')}
+                className="w-full rounded-xl border border-white/35 bg-transparent px-4 py-2 text-[11px] font-semibold tracking-[0.06em] text-white uppercase transition hover:border-white hover:bg-white/10 sm:py-3.5 sm:text-sm"
+              >
+                Return to Login
+              </button>
+            </form>
+          )}
         </>
       ) : (
         <>
@@ -666,7 +1028,7 @@ html[data-gate-locked="1"] #gatekeeper-root {
                   value={company}
                   onChange={(e) => setCompany(e.target.value)}
                   placeholder="Company, LLC, or Individual Research Identity"
-                  className="gate-input w-full rounded-xl border border-white/20 bg-white/[0.06] px-3 py-2 text-[13px] outline-none transition placeholder:text-white/40 focus:border-white/50 sm:px-4 sm:py-3.5 sm:text-sm"
+                  className="gate-input w-full rounded-xl border border-white/20 bg-white/[0.06] px-3 py-1.5 text-[13px] outline-none transition placeholder:text-white/40 focus:border-white/50 sm:px-4 sm:py-3.5 sm:text-sm"
                 />
               </label>
               <label className="block">
@@ -678,7 +1040,7 @@ html[data-gate-locked="1"] #gatekeeper-root {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="name@institution.com"
-                  className="gate-input w-full rounded-xl border border-white/20 bg-white/[0.06] px-3 py-2 text-[13px] outline-none transition placeholder:text-white/40 focus:border-white/50 sm:px-4 sm:py-3.5 sm:text-sm"
+                  className="gate-input w-full rounded-xl border border-white/20 bg-white/[0.06] px-3 py-1.5 text-[13px] outline-none transition placeholder:text-white/40 focus:border-white/50 sm:px-4 sm:py-3.5 sm:text-sm"
                 />
               </label>
               <label className="block">
@@ -692,7 +1054,7 @@ html[data-gate-locked="1"] #gatekeeper-root {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Create a secure password"
-                    className="gate-input w-full rounded-xl border border-white/20 bg-white/[0.06] px-3 py-2 pr-11 text-[13px] outline-none transition placeholder:text-white/40 focus:border-white/50 sm:px-4 sm:py-3.5 sm:pr-12 sm:text-sm"
+                    className="gate-input w-full rounded-xl border border-white/20 bg-white/[0.06] px-3 py-1.5 pr-11 text-[13px] outline-none transition placeholder:text-white/40 focus:border-white/50 sm:px-4 sm:py-3.5 sm:pr-12 sm:text-sm"
                   />
                   <button
                     type="button"
@@ -717,7 +1079,7 @@ html[data-gate-locked="1"] #gatekeeper-root {
                   value={framework}
                   onChange={(e) => setFramework(e.target.value)}
                   placeholder="Briefly describe your research protocol or intended use."
-                  className="gate-input max-h-[52px] w-full resize-none rounded-xl border border-white/20 bg-white/[0.06] px-3 py-2 text-[13px] outline-none transition placeholder:text-white/40 focus:border-white/50 sm:max-h-none sm:px-4 sm:py-3.5 sm:text-sm"
+                  className="gate-input max-h-[48px] w-full resize-none rounded-xl border border-white/20 bg-white/[0.06] px-3 py-1.5 text-[13px] outline-none transition placeholder:text-white/40 focus:border-white/50 sm:max-h-none sm:px-4 sm:py-3.5 sm:text-sm"
                 />
               </label>
               {error ? <p className="text-[12px] text-white sm:text-sm">{error}</p> : null}
@@ -747,7 +1109,7 @@ html[data-gate-locked="1"] #gatekeeper-root {
     <div
       id="gatekeeper-root"
       ref={rootRef}
-      className={`fixed inset-0 z-[12000] flex items-center justify-center overflow-hidden overscroll-none p-3 sm:p-5 md:p-8 ${
+      className={`relative z-[12000] w-full min-h-[max(100svh,calc(var(--gate-frame-h,100svh)+var(--gate-kb-pad,0px)))] ${
         visible
           ? 'bg-[#141A22]/55 backdrop-blur-md'
           : 'bg-[#141A22]/35 backdrop-blur-[2px]'
@@ -756,42 +1118,42 @@ html[data-gate-locked="1"] #gatekeeper-root {
       aria-modal="true"
       aria-labelledby="gatekeeper-title"
       onMouseDown={(e) => {
-        // Clicks on the glass backdrop must never dismiss or fall through
         if (e.target === e.currentTarget) e.preventDefault()
       }}
       onClick={(e) => e.stopPropagation()}
     >
-      <div
-        ref={modalRef}
-        className={`relative isolate flex h-[min(920px,100%)] w-full max-w-5xl overflow-hidden rounded-[22px] border border-white/20 bg-white/10 shadow-[0_24px_80px_rgba(0,0,0,0.35)] backdrop-blur-2xl sm:rounded-[28px] lg:rounded-[32px] ${
-          visible ? '' : 'pointer-events-none opacity-0'
-        }`}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="relative h-full w-full overflow-hidden">
-          <div
-            ref={artRef}
-            className="absolute z-0 overflow-hidden bg-white/[0.04]"
-            style={{ left: '0%', width: '40%', top: '0%', height: '100%' }}
-          >
-            {welcomeInner}
-          </div>
+      <div className="gate-page box-border flex w-full justify-center px-3 sm:px-5 md:px-8">
+        <div
+          ref={modalRef}
+          className={`relative isolate flex w-full max-w-5xl shrink-0 overflow-hidden rounded-[22px] border border-white/20 bg-white/10 shadow-[0_24px_80px_rgba(0,0,0,0.35)] backdrop-blur-2xl sm:rounded-[28px] lg:rounded-[32px] ${
+            visible ? '' : 'pointer-events-none opacity-0'
+          }`}
+          style={{ height: 'var(--gate-frame-h, min(920px, calc(100svh - 1.5rem)))' }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="relative h-full w-full overflow-hidden">
+            <div
+              ref={artRef}
+              className="absolute z-0 overflow-hidden bg-white/[0.04]"
+              style={{ left: '0%', width: '40%', top: '0%', height: '100%' }}
+            >
+              {welcomeInner}
+            </div>
 
-          <div
-            ref={formRef}
-            className="absolute z-[1] overflow-hidden border-white/10 bg-[#141A22]/70 backdrop-blur-xl"
-            style={{ left: '40%', width: '60%', top: '0%', height: '100%', borderRadius: '0 28px 28px 0' }}
-          >
-            <div className="gate-scroll h-full overflow-x-hidden overflow-y-auto overscroll-contain">
+            <div
+              ref={formRef}
+              className="absolute z-[1] overflow-hidden border-white/10 bg-[#141A22]/70 backdrop-blur-xl"
+              style={{ left: '40%', width: '60%', top: '0%', height: '100%', borderRadius: '0 28px 28px 0' }}
+            >
               {formInner}
             </div>
-          </div>
 
-          <div
-            ref={seamRef}
-            className="pointer-events-none absolute z-10 bg-gradient-to-r from-transparent via-cyan/35 to-transparent lg:bg-gradient-to-b lg:via-cyan/45"
-            style={{ left: '40%', top: '0%', width: '1px', height: '100%' }}
-          />
+            <div
+              ref={seamRef}
+              className="pointer-events-none absolute z-10 bg-gradient-to-r from-transparent via-cyan/35 to-transparent lg:bg-gradient-to-b lg:via-cyan/45"
+              style={{ left: '40%', top: '0%', width: '1px', height: '100%' }}
+            />
+          </div>
         </div>
       </div>
     </div>,

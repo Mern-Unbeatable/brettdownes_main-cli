@@ -74,17 +74,17 @@ export default function Footer() {
           <img
             src="/images/visa.svg"
             alt="Visa"
-            className="h-10 w-auto rounded border border-fog-deep bg-white object-contain px-2.5 py-1.5"
+            className="h-10 w-16 object-contain"
           />
           <img
             src="/images/mastercard.svg"
             alt="Mastercard"
-            className="h-10 w-auto rounded border border-fog-deep bg-white object-contain px-2.5 py-1.5"
+            className="h-10 w-16 object-contain"
           />
           <img
             src="/images/amex.svg"
             alt="American Express"
-            className="h-10 w-auto rounded border border-fog-deep bg-white object-contain px-2.5 py-1.5"
+            className="h-10 w-16 object-contain"
           />
         </div>
       </div>
