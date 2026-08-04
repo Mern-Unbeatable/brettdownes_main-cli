@@ -96,9 +96,10 @@ export default function Gatekeeper({ onPass }) {
     }
 
     if (narrow) {
-      // Extra form height so equal top/bottom padding never clips the last CTA
       const h = avail
-      const artH = Math.round(h * 0.27)
+      // Phone: more welcome room. Tablet: a bit more art so Welcome isn't flush on the form.
+      const artRatio = w < 640 ? 0.34 : 0.30
+      const artH = Math.round(h * artRatio)
       frameHRef.current = h
       frameWRef.current = w
       panelPxRef.current = { artH, formH: h - artH, total: h }
@@ -431,24 +432,27 @@ html[data-gate-locked="1"] #gatekeeper-root {
     }
 
     if (narrow) {
+      const phone = window.innerWidth < 640
+      const artH = phone ? 34 : 30
+      const formH = 100 - artH
       if (loginSide) {
         return {
           axis: 'y',
           artTop: 0,
-          artH: 27,
-          formTop: 27,
-          formH: 73,
-          seam: 27,
+          artH,
+          formTop: artH,
+          formH,
+          seam: artH,
           radius: '24px 24px 0 0',
         }
       }
       return {
         axis: 'y',
-        artTop: 73,
-        artH: 27,
+        artTop: formH,
+        artH,
         formTop: 0,
-        formH: 73,
-        seam: 73,
+        formH,
+        seam: formH,
         radius: '0 0 24px 24px',
       }
     }
@@ -761,22 +765,22 @@ html[data-gate-locked="1"] #gatekeeper-root {
   const welcomeInner = (
     <div
       data-gate-welcome
-      className="flex h-full flex-col items-center justify-center px-5 py-2 text-center lg:px-10 lg:py-12"
+      className="flex h-full flex-col items-center justify-end px-5 pt-1 pb-4 text-center sm:justify-center sm:px-8 sm:pt-3 sm:pb-5 lg:px-10 lg:py-12"
     >
       <div data-gate-enter className="flex flex-col items-center">
         <img
           src="/images/logo.png"
           alt="Peptide Ops"
-          className="h-32 w-32 object-contain sm:h-40 sm:w-40 lg:h-56 lg:w-56"
+          className="h-28 w-28 object-contain sm:h-40 sm:w-40 lg:h-56 lg:w-56"
           draggable={false}
         />
         <h2
           id="gatekeeper-title"
-          className="mt-1 max-w-xs font-display text-[24px] leading-[1.05] font-bold tracking-tight text-white sm:mt-2 sm:text-[34px] lg:text-[42px]"
+          className="mt-1 max-w-xs font-display text-[22px] leading-[1.05] font-bold tracking-tight text-white sm:mt-2 sm:text-[34px] lg:text-[42px]"
         >
           {welcomeCopy.title}
         </h2>
-        <p className="mt-0.5 max-w-[16rem] text-[11px] leading-snug text-white/65 sm:mt-2 sm:max-w-xs sm:text-[13px] sm:leading-relaxed lg:mt-3 lg:text-sm">
+        <p className="mt-1 mb-0.5 max-w-[16rem] text-[11px] leading-snug text-white/65 sm:mt-2 sm:mb-0 sm:max-w-xs sm:text-[13px] sm:leading-relaxed lg:mt-3 lg:text-sm">
           {welcomeCopy.text}
         </p>
       </div>
@@ -791,7 +795,7 @@ html[data-gate-locked="1"] #gatekeeper-root {
   const formInner = (
     <div
       data-gate-content
-      className="mx-auto box-border flex h-full w-full min-w-0 max-w-xl flex-col justify-center px-4 py-4 text-left sm:px-6 sm:py-5 lg:px-10 lg:py-8"
+      className="mx-auto box-border flex h-full w-full min-w-0 max-w-xl flex-col justify-center px-4 pt-5 pb-4 text-left sm:px-6 sm:pt-6 sm:pb-5 lg:px-10 lg:py-8"
     >
       {mode === 'verify' ? (
         <>
