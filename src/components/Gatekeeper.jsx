@@ -96,9 +96,9 @@ export default function Gatekeeper({ onPass }) {
     }
 
     if (narrow) {
-      // Form needs room for Verify + Forgot Password + Register (no clipping)
+      // Form tall enough for 3 CTAs, but not so tall it leaves a large empty bottom
       const h = avail
-      const artH = Math.round(h * 0.28)
+      const artH = Math.round(h * 0.31)
       frameHRef.current = h
       frameWRef.current = w
       panelPxRef.current = { artH, formH: h - artH, total: h }
@@ -435,20 +435,20 @@ html[data-gate-locked="1"] #gatekeeper-root {
         return {
           axis: 'y',
           artTop: 0,
-          artH: 28,
-          formTop: 28,
-          formH: 72,
-          seam: 28,
+          artH: 31,
+          formTop: 31,
+          formH: 69,
+          seam: 31,
           radius: '24px 24px 0 0',
         }
       }
       return {
         axis: 'y',
-        artTop: 72,
-        artH: 28,
+        artTop: 69,
+        artH: 31,
         formTop: 0,
-        formH: 72,
-        seam: 72,
+        formH: 69,
+        seam: 69,
         radius: '0 0 24px 24px',
       }
     }
@@ -796,7 +796,7 @@ html[data-gate-locked="1"] #gatekeeper-root {
           ? 'justify-center pt-2 pb-3 sm:pt-4 sm:pb-5'
           : mode === 'register'
             ? 'justify-start pt-2.5 pb-3 sm:pt-4 sm:pb-5 lg:justify-center'
-            : 'justify-start pt-2.5 pb-3 sm:pt-5 sm:pb-5 lg:justify-center'
+            : 'justify-end pt-2 pb-3 sm:pt-3 sm:pb-4 lg:justify-center lg:pt-5 lg:pb-5'
       }`}
     >
       {mode === 'verify' ? (
