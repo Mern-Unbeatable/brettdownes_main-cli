@@ -100,8 +100,8 @@ export default function Gatekeeper({ onPass }) {
 
     if (narrow) {
       const h = avail
-      // Phone ~38% welcome / 62% form. Tablet ~30% / 70% — logo + Welcome stay visible.
-      const artRatio = w < 640 ? 0.38 : 0.3
+      // Phone ~42% welcome / 58% form. Tablet ~30% / 70% — logo + Welcome stay visible.
+      const artRatio = w < 640 ? 0.42 : 0.3
       const artH = Math.round(h * artRatio)
       frameHRef.current = h
       frameWRef.current = w
@@ -439,7 +439,7 @@ html[data-gate-locked="1"] #gatekeeper-root {
 
     if (narrow) {
       const phone = window.innerWidth < 640
-      const artH = phone ? 38 : 30
+      const artH = phone ? 42 : 30
       const formH = 100 - artH
       if (loginSide) {
         return {
@@ -821,16 +821,16 @@ html[data-gate-locked="1"] #gatekeeper-root {
         <img
           src="/images/logo.png"
           alt="Peptide Ops"
-          className="h-20 w-20 object-contain sm:h-24 sm:w-24 lg:h-52 lg:w-52 xl:h-56 xl:w-56"
+          className="h-32 w-32 object-contain sm:h-28 sm:w-28 lg:h-52 lg:w-52 xl:h-56 xl:w-56"
           draggable={false}
         />
         <h2
           id="gatekeeper-title"
-          className="mt-1 max-w-xs font-display text-[18px] leading-[1.05] font-bold tracking-tight text-white sm:text-[20px] lg:mt-3 lg:text-[40px] xl:text-[42px]"
+          className="mt-1.5 max-w-xs font-display text-[26px] leading-[1.05] font-bold tracking-tight text-white sm:mt-1 sm:text-[20px] lg:mt-3 lg:text-[40px] xl:text-[42px]"
         >
           {welcomeCopy.title}
         </h2>
-        <p className="mt-1 max-w-[15rem] text-[10px] leading-snug text-white/65 sm:max-w-xs sm:text-[11px] lg:mt-3 lg:max-w-xs lg:text-sm lg:leading-relaxed">
+        <p className="mt-1.5 max-w-[17rem] text-[12px] leading-snug text-white/65 sm:mt-1 sm:max-w-xs sm:text-[11px] lg:mt-3 lg:max-w-xs lg:text-sm lg:leading-relaxed">
           {welcomeCopy.text}
         </p>
       </div>
