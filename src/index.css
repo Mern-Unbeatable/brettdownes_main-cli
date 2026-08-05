@@ -118,7 +118,7 @@ body.drawer-open .sticky-nav-pill {
 html {
   --gate-kb-pad: 0px;
   --gate-top-pad: 0.75rem;
-  --gate-frame-h: min(920px, calc(100svh - 1.5rem));
+  --gate-frame-h: min(640px, calc(100svh - 2rem));
 }
 
 #gatekeeper-root {
@@ -134,19 +134,19 @@ html {
 
 @media (min-width: 640px) {
   html {
-    --gate-frame-h: min(920px, calc(100svh - 2.5rem));
+    --gate-frame-h: min(640px, calc(100svh - 3rem));
   }
 }
 
 @media (min-width: 768px) {
   html {
-    --gate-frame-h: min(920px, calc(100svh - 3rem));
+    --gate-frame-h: min(620px, calc(100svh - 4rem));
   }
 }
 
 @media (min-width: 1024px) {
   html {
-    --gate-frame-h: min(820px, calc(100svh - 5rem));
+    --gate-frame-h: min(600px, calc(100svh - 6rem));
   }
 }
 
