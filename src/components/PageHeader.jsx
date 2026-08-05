@@ -131,7 +131,7 @@ export default function PageHeader({ title, subtitle, image }) {
         ref={headerRef}
         className={`relative z-50 overflow-hidden border-b ${
           light ? 'border-black/8 bg-white' : 'border-white/10 bg-[#0a0b0d]'
-        }`}
+        } ${image ? 'flex min-h-[340px] flex-col md:min-h-[420px]' : ''}`}
       >
         {image ? (
           <>
@@ -201,7 +201,7 @@ export default function PageHeader({ title, subtitle, image }) {
 
         {(title || subtitle) && (
           <div
-            className={`relative mx-auto max-w-12xl px-6 pt-4 md:px-10 lg:px-12 ${
+            className={`relative mt-auto mx-auto w-full max-w-12xl px-6 pt-4 md:px-10 lg:px-12 ${
               image ? 'pb-16 pt-8 md:pb-24 md:pt-12' : 'pb-10 md:pb-14'
             }`}
           >

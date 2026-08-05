@@ -260,6 +260,7 @@ export default function FaqPage() {
   return (
     <PageTransition>
       <PageHeader
+        title=" "
         image="/images/faq-hero-peptides.webp"
       />
 
