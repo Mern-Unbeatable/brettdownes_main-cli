@@ -181,28 +181,43 @@ export default function FaqPage() {
     }
   }, [])
 
+  // Stable scroll-spy: pick the last section whose top has crossed the sticky offset.
+  // Avoids IntersectionObserver ratio thrash that flips the highlight while scrolling.
   useEffect(() => {
-    const sections = faqCategories
-      .map((c) => document.getElementById(c.id))
-      .filter(Boolean)
+    const OFFSET = 120
+    let ticking = false
+    let lastId = ''
 
-    if (!sections.length) return undefined
+    const updateActive = () => {
+      ticking = false
+      if (scrollingToRef.current) return
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (scrollingToRef.current) return
-        const visible = entries
-          .filter((e) => e.isIntersecting)
-          .sort((a, b) => b.intersectionRatio - a.intersectionRatio)
-        if (visible[0]?.target?.id) {
-          setActiveCategory(visible[0].target.id)
+      let current = faqCategories[0]?.id
+      for (const cat of faqCategories) {
+        const el = document.getElementById(cat.id)
+        if (!el) continue
+        if (el.getBoundingClientRect().top - OFFSET <= 2) {
+          current = cat.id
+        } else {
+          break
         }
-      },
-      { rootMargin: '-20% 0px -55% 0px', threshold: [0.15, 0.35, 0.6] },
-    )
+      }
 
-    sections.forEach((el) => observer.observe(el))
-    return () => observer.disconnect()
+      if (current && current !== lastId) {
+        lastId = current
+        setActiveCategory(current)
+      }
+    }
+
+    const onScroll = () => {
+      if (ticking) return
+      ticking = true
+      window.requestAnimationFrame(updateActive)
+    }
+
+    window.addEventListener('scroll', onScroll, { passive: true })
+    updateActive()
+    return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
   useEffect(() => {
@@ -247,7 +262,7 @@ export default function FaqPage() {
         window.removeEventListener('scrollend', clear)
       }
       window.addEventListener('scrollend', clear, { once: true })
-      window.setTimeout(clear, 1400)
+      window.setTimeout(clear, 1200)
     }
 
     if (delay > 0) {
@@ -299,7 +314,7 @@ export default function FaqPage() {
                     key={cat.id}
                     type="button"
                     onClick={() => scrollToCategory(cat.id)}
-                    className={`inline-flex min-w-0 items-center justify-center gap-1.5 rounded-xl px-2.5 py-2.5 text-center text-[12px] font-semibold leading-snug transition sm:gap-2 sm:px-3 sm:text-[13px] ${
+                    className={`inline-flex min-w-0 items-center justify-center gap-1.5 rounded-xl px-2.5 py-2.5 text-center text-[12px] font-semibold leading-snug transition-colors duration-200 sm:gap-2 sm:px-3 sm:text-[13px] ${
                       active
                         ? 'bg-navy text-white'
                         : 'bg-fog text-ink hover:bg-fog-deep'
@@ -328,14 +343,14 @@ export default function FaqPage() {
                       key={cat.id}
                       type="button"
                       onClick={() => scrollToCategory(cat.id)}
-                      className={`flex w-full items-center gap-3 rounded-2xl px-3.5 py-3 text-left text-sm font-medium transition ${
-                        active
-                          ? 'bg-navy text-white shadow-sm'
-                          : 'text-ink/75 hover:bg-white hover:text-ink'
-                      }`}
+                      className={`flex w-full items-center gap-3 rounded-2xl px-3.5 py-3 text-left text-sm font-medium transition-colors duration-200 ${
+                          active
+                            ? 'bg-navy text-white shadow-sm'
+                            : 'text-ink/75 hover:bg-white hover:text-ink'
+                        }`}
                     >
                       <span
-                        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${
+                        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl transition-colors duration-200 ${
                           active ? 'bg-cyan text-navy' : 'bg-white text-cyan-dim'
                         }`}
                       >
@@ -349,15 +364,12 @@ export default function FaqPage() {
             </aside>
 
             <div className="min-w-0 space-y-8 md:space-y-10">
-              {faqCategories.map((cat, catIndex) => {
+              {faqCategories.map((cat) => {
                 const Icon = categoryIcons[cat.id]
                 return (
                   <section
                     key={cat.id}
                     id={cat.id}
-                    data-reveal="up"
-                    data-reveal-delay={String(Math.min(catIndex * 0.04, 0.16))}
-                    data-reveal-start="top 100%"
                     className="scroll-mt-28"
                   >
                     <div className="mb-3 flex items-center gap-3 sm:mb-4">

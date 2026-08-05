@@ -50,14 +50,14 @@ export default function FaqCategoryDock({
                   onClose()
                   onSelect(cat.id, { delay: 340 })
                 }}
-                className={`flex w-full items-center gap-3 rounded-2xl px-3.5 py-3.5 text-left text-[15px] font-medium transition ${
+                className={`flex w-full items-center gap-3 rounded-2xl px-3.5 py-3.5 text-left text-[15px] font-medium transition-colors duration-200 ${
                   active
                     ? 'bg-ink text-white'
                     : 'text-ink hover:bg-fog'
                 }`}
               >
                 <span
-                  className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${
+                  className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl transition-colors duration-200 ${
                     active ? 'bg-cyan text-navy' : 'bg-fog text-cyan-dim'
                   }`}
                 >
