@@ -78,15 +78,18 @@ export default function Gatekeeper({ onPass }) {
   /**
    * Lock modal pixel height once (and on real width/rotate only).
    * Never resize for keyboard open/close — that causes the shake.
+   * Short viewports: shrink art share + allow page scroll so form fields aren't clipped.
    */
   const applyFrameSize = ({ force = false } = {}) => {
     const modal = modalRef.current
     if (!modal) return
 
     const w = window.innerWidth
+    const vh = window.innerHeight
     const narrow = w <= 1023
-    // Compact frame — fits viewport with margin, not a near-fullscreen slab
-    const avail = Math.min(640, Math.max(360, window.innerHeight - pagePadY()))
+    const pad = pagePadY()
+    // Prefer fitting the viewport; drop the old 360px floor that forced overflow on short screens
+    const avail = Math.min(640, Math.max(280, vh - pad))
     const widthChanged = Math.abs(w - frameWRef.current) > 50
 
     // Keep the locked size stable through keypad / focus / layout thrash
@@ -96,20 +99,25 @@ export default function Gatekeeper({ onPass }) {
       modal.style.setProperty('min-height', `${h}px`, 'important')
       modal.style.setProperty('max-height', `${h}px`, 'important')
       document.documentElement.style.setProperty('--gate-frame-h', `${h}px`)
+      syncPageScrollRoom(h)
       return
     }
 
     if (narrow) {
-      const h = Math.min(avail, Math.round(window.innerHeight * 0.78))
-      // Phone ~40% welcome / 60% form. Tablet ~28% / 72% — logo + Welcome stay visible.
-      const artRatio = w < 640 ? 0.4 : 0.28
+      // Use more of the viewport on short phones so register fields fit
+      const heightCap = vh < 700 ? 0.92 : 0.78
+      const h = Math.min(avail, Math.round(vh * heightCap))
+      // Short height → smaller welcome strip so the form keeps usable space
+      let artRatio = w < 640 ? 0.4 : 0.28
+      if (vh < 720) artRatio = w < 640 ? 0.26 : 0.22
+      if (vh < 580) artRatio = w < 640 ? 0.2 : 0.18
       const artH = Math.round(h * artRatio)
       frameHRef.current = h
       frameWRef.current = w
       panelPxRef.current = { artH, formH: h - artH, total: h }
     } else {
       // Laptop+: compact card that sits in the viewport with breathing room
-      frameHRef.current = Math.min(avail, Math.round(window.innerHeight * 0.7))
+      frameHRef.current = Math.min(avail, Math.round(vh * 0.7))
       frameWRef.current = w
       panelPxRef.current = null
     }
@@ -119,11 +127,24 @@ export default function Gatekeeper({ onPass }) {
     modal.style.setProperty('min-height', `${h}px`, 'important')
     modal.style.setProperty('max-height', `${h}px`, 'important')
     document.documentElement.style.setProperty('--gate-frame-h', `${h}px`)
+    syncPageScrollRoom(h)
 
     if (force || widthChanged || !topPadLockedRef.current) {
-      const topPad = Math.max(pagePadY() / 2, Math.round((window.innerHeight - h) / 2))
+      // On short screens keep a small top pad so the card can scroll into view
+      const centered = Math.round((vh - h) / 2)
+      const topPad = vh < 700 ? Math.max(8, Math.min(pad / 2, 16)) : Math.max(pad / 2, centered)
       document.documentElement.style.setProperty('--gate-top-pad', `${Math.max(8, topPad)}px`)
       topPadLockedRef.current = true
+    }
+  }
+
+  /** Enable document scroll when the locked card cannot fit the viewport. */
+  const syncPageScrollRoom = (frameH) => {
+    const needsScroll = frameH + pagePadY() + 24 > window.innerHeight
+    if (needsScroll) {
+      document.documentElement.dataset.gateOverflow = '1'
+    } else if (!document.documentElement.dataset.gateKb) {
+      delete document.documentElement.dataset.gateOverflow
     }
   }
 
@@ -152,12 +173,14 @@ html[data-gate-locked="1"] {
   height: auto !important;
   -webkit-overflow-scrolling: touch;
 }
-html[data-gate-locked="1"][data-gate-kb="1"] {
+/* Short viewport or keyboard: page scroll moves the whole modal */
+html[data-gate-locked="1"][data-gate-kb="1"],
+html[data-gate-locked="1"][data-gate-overflow="1"] {
   overflow-y: auto !important;
   overscroll-behavior-y: contain;
 }
-html[data-gate-locked="1"][data-gate-kb="1"] #gatekeeper-root {
-  /* Page (external) scroll moves the whole modal — no inner form scrollbar */
+html[data-gate-locked="1"][data-gate-kb="1"] #gatekeeper-root,
+html[data-gate-locked="1"][data-gate-overflow="1"] #gatekeeper-root {
   touch-action: pan-y;
 }
 html[data-gate-locked="1"] body {
@@ -330,6 +353,7 @@ html[data-gate-locked="1"] #gatekeeper-root {
     return () => {
       delete document.documentElement.dataset.gateLocked
       delete document.documentElement.dataset.gateKb
+      delete document.documentElement.dataset.gateOverflow
       document.documentElement.style.removeProperty('--gate-kb-pad')
       document.documentElement.style.removeProperty('--gate-frame-h')
       document.documentElement.style.removeProperty('--gate-top-pad')
@@ -846,7 +870,7 @@ html[data-gate-locked="1"] #gatekeeper-root {
   const formInner = (
     <div
       data-gate-content
-      className={`mx-auto box-border flex h-full w-full min-w-0 max-w-xl flex-col justify-center overflow-hidden px-4 text-left sm:px-5 lg:max-w-none lg:px-8 xl:px-10 ${
+      className={`mx-auto box-border flex h-full w-full min-w-0 max-w-xl flex-col justify-center overflow-x-hidden overflow-y-auto overscroll-contain px-4 text-left sm:px-5 lg:max-w-none lg:px-8 xl:px-10 ${
         mode === 'register'
           ? 'pt-2.5 pb-2.5 sm:pt-3 sm:pb-3 lg:py-5'
           : 'pt-2 pb-2 sm:pt-2.5 sm:pb-2.5 lg:py-5'
@@ -891,10 +915,10 @@ html[data-gate-locked="1"] #gatekeeper-root {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="name@institution.com"
-                className="gate-input w-full rounded-xl border border-white/20 bg-white/[0.06] px-3 py-1.5 text-[12px] outline-none transition placeholder:text-white/40 focus:border-white/50 focus:bg-white/[0.08] sm:py-2 sm:text-[13px] lg:px-3.5 lg:py-2 lg:text-[13px]"
+                className="gate-input w-full rounded-lg border border-white/20 bg-white/[0.06] px-3 py-1.5 text-[12px] outline-none transition placeholder:text-white/40 focus:border-white/50 focus:bg-white/[0.08] sm:py-2 sm:text-[13px] lg:px-3.5 lg:py-2 lg:text-[13px]"
               />
             </label>
-            <label className="block">
+            <label className="mb-3 block sm:mb-3.5 lg:mb-4">
               <span className="mb-0.5 block text-[8px] font-bold tracking-[0.18em] text-white uppercase lg:mb-1 lg:text-[10px]">
                 Password
               </span>
@@ -905,7 +929,7 @@ html[data-gate-locked="1"] #gatekeeper-root {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter your password"
-                  className="gate-input w-full rounded-xl border border-white/20 bg-white/[0.06] px-3 py-1.5 pr-11 text-[12px] outline-none transition placeholder:text-white/40 focus:border-white/50 focus:bg-white/[0.08] sm:py-2 sm:text-[13px] lg:px-3.5 lg:py-2 lg:pr-11 lg:text-[13px]"
+                  className="gate-input w-full rounded-lg border border-white/20 bg-white/[0.06] px-3 py-1.5 pr-11 text-[12px] outline-none transition placeholder:text-white/40 focus:border-white/50 focus:bg-white/[0.08] sm:py-2 sm:text-[13px] lg:px-3.5 lg:py-2 lg:pr-11 lg:text-[13px]"
                 />
                 <button
                   type="button"
@@ -920,6 +944,13 @@ html[data-gate-locked="1"] #gatekeeper-root {
                   )}
                 </button>
               </div>
+              <button
+                type="button"
+                onClick={() => swapTo('reset')}
+                className="mt-2 w-full py-0.5 text-center text-[11px] font-semibold tracking-[0.04em] text-white/75 underline underline-offset-2 transition hover:text-white lg:mt-2.5 lg:text-[13px]"
+              >
+                Forgot Password?
+              </button>
             </label>
             {error ? <p className="text-[12px] text-white lg:text-sm">{error}</p> : null}
             <button
@@ -932,15 +963,8 @@ html[data-gate-locked="1"] #gatekeeper-root {
             </button>
             <button
               type="button"
-              onClick={() => swapTo('reset')}
-              className="w-full rounded-xl border border-white/35 bg-transparent px-4 py-1.5 text-[11px] font-semibold tracking-[0.06em] text-white uppercase transition hover:border-white hover:bg-white/10 sm:py-2 lg:py-2 lg:text-[13px]"
-            >
-              Forgot Password?
-            </button>
-            <button
-              type="button"
               onClick={() => swapTo('register')}
-              className="w-full rounded-xl border border-white/35 bg-transparent px-4 py-1.5 text-[11px] font-semibold tracking-[0.06em] text-white uppercase transition hover:border-white hover:bg-white/10 sm:py-2 lg:py-2 lg:text-[13px]"
+              className="mt-3 w-full rounded-xl border border-white/35 bg-transparent px-4 py-1.5 text-[11px] font-semibold tracking-[0.06em] text-white uppercase transition hover:border-white hover:bg-white/10 sm:mt-4 sm:py-2 lg:mt-4 lg:py-2 lg:text-[13px]"
             >
               Register New Account
             </button>
@@ -1007,7 +1031,7 @@ html[data-gate-locked="1"] #gatekeeper-root {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="name@institution.com"
-                  className="gate-input w-full rounded-xl border border-white/20 bg-white/[0.06] px-3 py-2 text-[13px] outline-none transition placeholder:text-white/40 focus:border-white/50 focus:bg-white/[0.08] lg:px-3.5 lg:py-2 lg:text-[13px]"
+                  className="gate-input w-full rounded-lg border border-white/20 bg-white/[0.06] px-3 py-2 text-[13px] outline-none transition placeholder:text-white/40 focus:border-white/50 focus:bg-white/[0.08] lg:px-3.5 lg:py-2 lg:text-[13px]"
                 />
               </label>
               {error ? <p className="text-[12px] text-white lg:text-sm">{error}</p> : null}
@@ -1081,7 +1105,7 @@ html[data-gate-locked="1"] #gatekeeper-root {
                   value={company}
                   onChange={(e) => setCompany(e.target.value)}
                   placeholder="Company, LLC, or Individual Research Identity"
-                  className="gate-input w-full rounded-xl border border-white/20 bg-white/[0.06] px-2.5 py-1 text-[11px] outline-none transition placeholder:text-white/40 focus:border-white/50 sm:px-3 sm:py-1.5 sm:text-[12px] lg:px-3.5 lg:py-2 lg:text-[13px]"
+                  className="gate-input w-full rounded-lg border border-white/20 bg-white/[0.06] px-2.5 py-1 text-[11px] outline-none transition placeholder:text-white/40 focus:border-white/50 sm:px-3 sm:py-1.5 sm:text-[12px] lg:px-3.5 lg:py-2 lg:text-[13px]"
                 />
               </label>
               <label className="block">
@@ -1093,7 +1117,7 @@ html[data-gate-locked="1"] #gatekeeper-root {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="name@institution.com"
-                  className="gate-input w-full rounded-xl border border-white/20 bg-white/[0.06] px-2.5 py-1 text-[11px] outline-none transition placeholder:text-white/40 focus:border-white/50 sm:px-3 sm:py-1.5 sm:text-[12px] lg:px-3.5 lg:py-2 lg:text-[13px]"
+                  className="gate-input w-full rounded-lg border border-white/20 bg-white/[0.06] px-2.5 py-1 text-[11px] outline-none transition placeholder:text-white/40 focus:border-white/50 sm:px-3 sm:py-1.5 sm:text-[12px] lg:px-3.5 lg:py-2 lg:text-[13px]"
                 />
               </label>
               <label className="block">
@@ -1107,7 +1131,7 @@ html[data-gate-locked="1"] #gatekeeper-root {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Create a secure password"
-                    className="gate-input w-full rounded-xl border border-white/20 bg-white/[0.06] px-2.5 py-1 pr-10 text-[11px] outline-none transition placeholder:text-white/40 focus:border-white/50 sm:px-3 sm:py-1.5 sm:pr-11 sm:text-[12px] lg:px-3.5 lg:py-2 lg:pr-11 lg:text-[13px]"
+                    className="gate-input w-full rounded-lg border border-white/20 bg-white/[0.06] px-2.5 py-1 pr-10 text-[11px] outline-none transition placeholder:text-white/40 focus:border-white/50 sm:px-3 sm:py-1.5 sm:pr-11 sm:text-[12px] lg:px-3.5 lg:py-2 lg:pr-11 lg:text-[13px]"
                   />
                   <button
                     type="button"
@@ -1128,11 +1152,11 @@ html[data-gate-locked="1"] #gatekeeper-root {
                   Intended Evaluation Framework
                 </span>
                 <textarea
-                  rows={3}
+                  rows={2}
                   value={framework}
                   onChange={(e) => setFramework(e.target.value)}
                   placeholder="Briefly describe your research protocol or intended use."
-                  className="gate-input min-h-[72px] max-h-[88px] w-full resize-none rounded-xl border border-white/20 bg-white/[0.06] px-2.5 py-2 text-[11px] outline-none transition placeholder:text-white/40 focus:border-white/50 sm:min-h-[64px] sm:max-h-[72px] sm:px-3 sm:py-1.5 sm:text-[12px] lg:min-h-[52px] lg:max-h-[56px] lg:px-3.5 lg:py-2 lg:text-[13px]"
+                  className="gate-input min-h-[56px] max-h-[72px] w-full resize-none rounded-lg border border-white/20 bg-white/[0.06] px-2.5 py-1.5 text-[11px] outline-none transition placeholder:text-white/40 focus:border-white/50 sm:min-h-[56px] sm:max-h-[64px] sm:px-3 sm:py-1.5 sm:text-[12px] lg:min-h-[52px] lg:max-h-[56px] lg:px-3.5 lg:py-2 lg:text-[13px]"
                 />
               </label>
               {error ? <p className="text-[11px] text-white sm:text-[12px] lg:text-sm">{error}</p> : null}
@@ -1195,7 +1219,7 @@ html[data-gate-locked="1"] #gatekeeper-root {
 
             <div
               ref={formRef}
-              className="absolute z-[1] overflow-hidden border-white/10 bg-[#141A22]/70 backdrop-blur-xl"
+              className="absolute z-[1] overflow-x-hidden overflow-y-auto overscroll-contain border-white/10 bg-[#141A22]/70 backdrop-blur-xl"
               style={{ left: '40%', width: '60%', top: '0%', height: '100%', borderRadius: '0 28px 28px 0' }}
             >
               {formInner}
