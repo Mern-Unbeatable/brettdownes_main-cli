@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { createPortal, flushSync } from 'react-dom'
 import gsap from 'gsap'
 import { Eye, EyeOff, KeyRound, Lock, ShieldCheck, Sparkles } from 'lucide-react'
+import { useToast } from './Toaster'
 
 const STORAGE_KEY = 'peptideops_gate_ok'
 const GATE_EMAIL = 'admin@peptideops.com'
@@ -53,6 +54,7 @@ export default function Gatekeeper({ onPass }) {
   const frameWRef = useRef(0)
   const panelPxRef = useRef(null)
   const topPadLockedRef = useRef(false)
+  const toast = useToast()
 
   const [visible, setVisible] = useState(false)
   const [mode, setMode] = useState('verify')
@@ -61,7 +63,6 @@ export default function Gatekeeper({ onPass }) {
   const [showPassword, setShowPassword] = useState(false)
   const [company, setCompany] = useState('')
   const [framework, setFramework] = useState('')
-  const [error, setError] = useState('')
   const [submitted, setSubmitted] = useState(false)
   const [busy, setBusy] = useState(false)
 
@@ -75,6 +76,10 @@ export default function Gatekeeper({ onPass }) {
     return 32
   }
 
+  /** Phone-only stacked layout. 640px+ uses laptop side-by-side. */
+  const isNarrow = () => window.matchMedia('(max-width: 639px)').matches
+
+
   /**
    * Lock modal pixel height once (and on real width/rotate only).
    * Never resize for keyboard open/close — that causes the shake.
@@ -86,7 +91,7 @@ export default function Gatekeeper({ onPass }) {
 
     const w = window.innerWidth
     const vh = window.innerHeight
-    const narrow = w <= 1023
+    const narrow = w <= 639
     const pad = pagePadY()
     // Prefer fitting the viewport; drop the old 360px floor that forced overflow on short screens
     const avail = Math.min(640, Math.max(280, vh - pad))
@@ -104,20 +109,26 @@ export default function Gatekeeper({ onPass }) {
     }
 
     if (narrow) {
-      // Use more of the viewport on short phones so register fields fit
-      const heightCap = vh < 700 ? 0.92 : 0.78
+      // Use more of the viewport on short screens so both panels fit
+      const heightCap = vh < 700 ? 0.94 : 0.78
       const h = Math.min(avail, Math.round(vh * heightCap))
-      // Short height → smaller welcome strip so the form keeps usable space
-      let artRatio = w < 640 ? 0.4 : 0.28
-      if (vh < 720) artRatio = w < 640 ? 0.26 : 0.22
-      if (vh < 580) artRatio = w < 640 ? 0.2 : 0.18
-      const artH = Math.round(h * artRatio)
-      frameHRef.current = h
+      const phone = w < 640
+      // Tablet short height still needs a readable welcome strip (not a stamp)
+      let artRatio = phone ? 0.4 : 0.3
+      if (vh < 720) artRatio = phone ? 0.28 : 0.26
+      if (vh < 580) artRatio = phone ? 0.2 : 0.22
+      // Enforce a usable welcome height on tablet so logo/text aren't crushed
+      const minArt = phone ? 96 : Math.min(168, Math.round(h * 0.32))
+      const artH = Math.max(minArt, Math.round(h * artRatio))
+      const formH = Math.max(220, h - artH)
+      const total = artH + formH
+      frameHRef.current = total
       frameWRef.current = w
-      panelPxRef.current = { artH, formH: h - artH, total: h }
+      panelPxRef.current = { artH, formH, total }
     } else {
-      // Laptop+: compact card that sits in the viewport with breathing room
-      frameHRef.current = Math.min(avail, Math.round(vh * 0.7))
+      // Tablet + laptop: side-by-side card with breathing room
+      const heightCap = vh < 700 ? 0.88 : 0.7
+      frameHRef.current = Math.min(avail, Math.round(vh * heightCap))
       frameWRef.current = w
       panelPxRef.current = null
     }
@@ -130,10 +141,14 @@ export default function Gatekeeper({ onPass }) {
     syncPageScrollRoom(h)
 
     if (force || widthChanged || !topPadLockedRef.current) {
-      // On short screens keep a small top pad so the card can scroll into view
-      const centered = Math.round((vh - h) / 2)
-      const topPad = vh < 700 ? Math.max(8, Math.min(pad / 2, 16)) : Math.max(pad / 2, centered)
-      document.documentElement.style.setProperty('--gate-top-pad', `${Math.max(8, topPad)}px`)
+      const centered = Math.max(8, Math.round((vh - h) / 2))
+      // Mobile/short: small top pad so the card can scroll. Laptop+: always vertically center.
+      const topPad = narrow
+        ? vh < 700
+          ? Math.max(8, Math.min(pad / 2, 16))
+          : centered
+        : centered
+      document.documentElement.style.setProperty('--gate-top-pad', `${topPad}px`)
       topPadLockedRef.current = true
     }
   }
@@ -286,6 +301,8 @@ html[data-gate-locked="1"] #gatekeeper-root {
       const root = rootRef.current
       const target = e.target
       if (root && target instanceof Node && root.contains(target)) return
+      // Allow toast dismiss / hover while gate is locked
+      if (target instanceof Element && target.closest('[data-peptide-toaster]')) return
       e.preventDefault()
       e.stopPropagation()
       e.stopImmediatePropagation()
@@ -319,7 +336,7 @@ html[data-gate-locked="1"] #gatekeeper-root {
       if (!(t instanceof HTMLElement)) return
       if (!t.matches('input, textarea, select')) return
       if (!rootRef.current?.contains(t)) return
-      if (window.matchMedia('(max-width: 1023px)').matches) setKeyboardPad(true)
+      if (window.matchMedia('(max-width: 639px)').matches) setKeyboardPad(true)
     }
     const onFocusOut = () => {
       // Mobile often blurs with null relatedTarget while the keypad opens — wait, then re-check
@@ -396,7 +413,7 @@ html[data-gate-locked="1"] #gatekeeper-root {
     // Avoid auto-opening the mobile keyboard (causes extra page scroll)
     if (
       firstInput instanceof HTMLElement &&
-      window.matchMedia('(min-width: 1024px)').matches
+      window.matchMedia('(min-width: 640px)').matches
     ) {
       firstInput.focus({ preventScroll: true })
     }
@@ -428,8 +445,6 @@ html[data-gate-locked="1"] #gatekeeper-root {
     root.addEventListener('keydown', onKeyDown)
     return () => root.removeEventListener('keydown', onKeyDown)
   }, [visible])
-
-  const isNarrow = () => window.matchMedia('(max-width: 1023px)').matches
 
   const layoutFor = (nextMode) => {
     const narrow = isNarrow()
@@ -736,7 +751,6 @@ html[data-gate-locked="1"] #gatekeeper-root {
 
   const swapTo = (next) => {
     if (next === modeRef.current || animating.current) return
-    setError('')
     setSubmitted(false)
     setShowPassword(false)
 
@@ -759,65 +773,69 @@ html[data-gate-locked="1"] #gatekeeper-root {
 
   const handleVerify = (e) => {
     e.preventDefault()
-    setError('')
     const value = email.trim()
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
-      setError('Enter a valid approved email address.')
+      toast.error('Enter a valid approved email address.')
       return
     }
     if (!password.trim()) {
-      setError('Enter your password to continue.')
+      toast.error('Enter your password to continue.')
       return
     }
     if (
       value.toLowerCase() !== GATE_EMAIL.toLowerCase() ||
       password !== GATE_PASSWORD
     ) {
-      setError('Invalid email or password.')
+      toast.error('Invalid email or password.')
       return
     }
     setBusy(true)
     window.setTimeout(() => {
       markGatePassed()
       setBusy(false)
+      toast.success('Access verified. Entering portal…', { title: 'Verified' })
       onPass?.()
     }, 480)
   }
 
   const handleReset = (e) => {
     e.preventDefault()
-    setError('')
     const value = email.trim()
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
-      setError('Enter the approved email linked to your account.')
+      toast.error('Enter the approved email linked to your account.')
       return
     }
     setBusy(true)
     window.setTimeout(() => {
       setBusy(false)
       setSubmitted(true)
+      toast.success('If an account exists, a reset link is on the way.', {
+        title: 'Reset link sent',
+      })
     }, 560)
   }
 
   const handleRegister = (e) => {
     e.preventDefault()
-    setError('')
     if (!company.trim() || !email.trim() || !password.trim() || !framework.trim()) {
-      setError('Complete all registration fields to continue.')
+      toast.error('Complete all registration fields to continue.')
       return
     }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
-      setError('Enter a valid institutional email address.')
+      toast.error('Enter a valid institutional email address.')
       return
     }
     if (password.trim().length < 8) {
-      setError('Password must be at least 8 characters.')
+      toast.error('Password must be at least 8 characters.')
       return
     }
     setBusy(true)
     window.setTimeout(() => {
       setBusy(false)
       setSubmitted(true)
+      toast.success('Registration received. We will confirm your access shortly.', {
+        title: 'Submitted',
+      })
     }, 560)
   }
 
@@ -840,26 +858,26 @@ html[data-gate-locked="1"] #gatekeeper-root {
   const welcomeInner = (
     <div
       data-gate-welcome
-      className="flex h-full flex-col items-center justify-center px-4 pt-1.5 pb-1.5 text-center sm:px-6 sm:pb-2 lg:px-10 lg:py-8 xl:px-12"
+      className="flex h-full flex-col items-center justify-center px-4 py-2 text-center sm:px-6 sm:py-6 md:px-10 md:py-8 xl:px-12"
     >
       <div data-gate-enter className="flex flex-col items-center">
         <img
           src="/images/logo.png"
           alt="Peptide Ops"
-          className="h-28 w-28 object-contain sm:h-24 sm:w-24 lg:h-36 lg:w-36 xl:h-40 xl:w-40"
+          className="h-24 w-24 object-contain sm:h-32 sm:w-32 md:h-36 md:w-36 xl:h-44 xl:w-44"
           draggable={false}
         />
         <h2
           id="gatekeeper-title"
-          className="mt-1 max-w-xs font-display text-[22px] leading-[1.05] font-bold tracking-tight text-white sm:mt-1 sm:text-[18px] lg:mt-2 lg:text-[30px] xl:text-[32px]"
+          className="mt-1.5 max-w-xs font-display text-[20px] leading-[1.05] font-bold tracking-tight text-white sm:mt-2.5 sm:text-[26px] md:mt-3 md:text-[28px] xl:text-[36px]"
         >
           {welcomeCopy.title}
         </h2>
-        <p className="mt-1 max-w-[16rem] text-[11px] leading-snug text-white/65 sm:mt-1 sm:max-w-xs sm:text-[10px] lg:mt-2 lg:max-w-xs lg:text-[13px] lg:leading-relaxed">
+        <p className="mt-1.5 max-w-[16rem] text-[11px] leading-snug text-white/65 sm:mt-2 sm:max-w-[15rem] sm:text-[12px] sm:leading-relaxed md:max-w-xs md:text-[13px] xl:text-[14px]">
           {welcomeCopy.text}
         </p>
       </div>
-      <div data-gate-enter className="mt-5 hidden w-full items-center gap-3 text-white/40 lg:flex">
+      <div data-gate-enter className="mt-4 hidden w-full items-center gap-3 text-white/40 sm:flex md:mt-5">
         <span className="h-px flex-1 bg-white/15" />
         <span className="text-[10px] font-bold tracking-[0.24em] uppercase">Secure Portal</span>
         <span className="h-px flex-1 bg-white/15" />
@@ -870,24 +888,24 @@ html[data-gate-locked="1"] #gatekeeper-root {
   const formInner = (
     <div
       data-gate-content
-      className={`mx-auto box-border flex h-full w-full min-w-0 max-w-xl flex-col justify-center overflow-x-hidden overflow-y-auto overscroll-contain px-4 text-left sm:px-5 lg:max-w-none lg:px-8 xl:px-10 ${
+      className={`mx-auto box-border flex h-full w-full min-w-0 max-w-xl flex-col justify-center overflow-hidden px-4 text-left sm:max-w-none sm:px-6 md:px-8 xl:px-10 ${
         mode === 'register'
-          ? 'pt-2.5 pb-2.5 sm:pt-3 sm:pb-3 lg:py-5'
-          : 'pt-2 pb-2 sm:pt-2.5 sm:pb-2.5 lg:py-5'
+          ? 'pt-2.5 pb-2.5 sm:py-4 md:py-5'
+          : 'pt-2 pb-2 sm:py-4 md:py-5'
       }`}
     >
       {mode === 'verify' ? (
         <>
           <div
             data-gate-enter
-            className="mb-1 w-full rounded-xl border border-white/15 bg-white/10 p-1.5 text-left backdrop-blur-sm sm:p-2 lg:mb-3 lg:rounded-2xl lg:p-3"
+            className="mb-1 w-full rounded-xl border border-white/15 bg-white/10 p-1.5 text-left backdrop-blur-sm sm:mb-2.5 sm:rounded-2xl sm:p-2.5 md:mb-3 md:p-3"
           >
-            <p className="font-display text-[8px] font-bold tracking-[0.18em] text-white uppercase lg:text-[10px]">
+            <p className="font-display text-[8px] font-bold tracking-[0.18em] text-white uppercase sm:text-[10px]">
               Registration Notice
             </p>
-            <ul className="mt-0.5 space-y-0.5 lg:mt-1.5 lg:space-y-1">
+            <ul className="mt-0.5 space-y-0.5 sm:mt-1.5 sm:space-y-1">
               {notices.map((item) => (
-                <li key={item.title} className="text-[9px] leading-snug text-white sm:text-[10px] lg:text-[12px] lg:leading-snug">
+                <li key={item.title} className="text-[9px] leading-snug text-white sm:text-[11px] sm:leading-snug md:text-[12px]">
                   <span className="font-semibold">{item.title}:</span> {item.text}
                 </li>
               ))}
@@ -896,17 +914,17 @@ html[data-gate-locked="1"] #gatekeeper-root {
 
           <h1
             data-gate-enter
-            className="font-display text-[14px] font-bold tracking-tight text-white uppercase sm:text-[15px] lg:text-[20px] xl:text-[22px]"
+            className="font-display text-[14px] font-bold tracking-tight text-white uppercase sm:text-[18px] md:text-[20px] xl:text-[22px]"
           >
             Portal Verification
           </h1>
-          <p data-gate-enter className="mt-0.5 max-w-md text-[9px] leading-snug text-white/80 sm:text-[10px] lg:mt-1 lg:text-[12px]">
+          <p data-gate-enter className="mt-0.5 max-w-md text-[9px] leading-snug text-white/80 sm:mt-1 sm:text-[11px] md:text-[12px]">
             Enter your approved research email to unlock the catalog.
           </p>
 
-          <form data-gate-enter onSubmit={handleVerify} className="mt-1 w-full space-y-1 sm:mt-1.5 sm:space-y-1.5 lg:mt-2.5 lg:space-y-2">
+          <form data-gate-enter onSubmit={handleVerify} className="mt-1 w-full space-y-1 sm:mt-2 sm:space-y-2 md:mt-2.5">
             <label className="block">
-              <span className="mb-0.5 block text-[8px] font-bold tracking-[0.18em] text-white uppercase lg:mb-1 lg:text-[10px]">
+              <span className="mb-0.5 block text-[8px] font-bold tracking-[0.18em] text-white uppercase sm:mb-1 sm:text-[10px]">
                 Approved Email Address
               </span>
               <input
@@ -915,11 +933,11 @@ html[data-gate-locked="1"] #gatekeeper-root {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="name@institution.com"
-                className="gate-input w-full rounded-lg border border-white/20 bg-white/[0.06] px-3 py-1.5 text-[12px] outline-none transition placeholder:text-white/40 focus:border-white/50 focus:bg-white/[0.08] sm:py-2 sm:text-[13px] lg:px-3.5 lg:py-2 lg:text-[13px]"
+                className="gate-input w-full rounded-lg border border-white/20 bg-white/[0.06] px-3 py-1.5 text-[12px] outline-none transition placeholder:text-white/40 focus:border-white/50 focus:bg-white/[0.08] sm:px-3.5 sm:py-2 sm:text-[13px]"
               />
             </label>
-            <label className="mb-3 block sm:mb-3.5 lg:mb-4">
-              <span className="mb-0.5 block text-[8px] font-bold tracking-[0.18em] text-white uppercase lg:mb-1 lg:text-[10px]">
+            <label className="mb-3 block sm:mb-3.5 md:mb-4">
+              <span className="mb-0.5 block text-[8px] font-bold tracking-[0.18em] text-white uppercase sm:mb-1 sm:text-[10px]">
                 Password
               </span>
               <div className="relative">
@@ -929,7 +947,7 @@ html[data-gate-locked="1"] #gatekeeper-root {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter your password"
-                  className="gate-input w-full rounded-lg border border-white/20 bg-white/[0.06] px-3 py-1.5 pr-11 text-[12px] outline-none transition placeholder:text-white/40 focus:border-white/50 focus:bg-white/[0.08] sm:py-2 sm:text-[13px] lg:px-3.5 lg:py-2 lg:pr-11 lg:text-[13px]"
+                  className="gate-input w-full rounded-lg border border-white/20 bg-white/[0.06] px-3 py-1.5 pr-11 text-[12px] outline-none transition placeholder:text-white/40 focus:border-white/50 focus:bg-white/[0.08] sm:px-3.5 sm:py-2 sm:pr-11 sm:text-[13px]"
                 />
                 <button
                   type="button"
@@ -947,16 +965,15 @@ html[data-gate-locked="1"] #gatekeeper-root {
               <button
                 type="button"
                 onClick={() => swapTo('reset')}
-                className="mt-2 w-full py-0.5 text-center text-[11px] font-semibold tracking-[0.04em] text-white/75 underline underline-offset-2 transition hover:text-white lg:mt-2.5 lg:text-[13px]"
+                className="mt-2 w-full py-0.5 text-center text-[11px] font-semibold tracking-[0.04em] text-white/75 underline underline-offset-2 transition hover:text-white sm:mt-2.5 sm:text-[13px]"
               >
                 Forgot Password?
               </button>
             </label>
-            {error ? <p className="text-[12px] text-white lg:text-sm">{error}</p> : null}
             <button
               type="submit"
               disabled={busy}
-              className="flex w-full items-center justify-center gap-2 rounded-xl bg-cyan px-4 py-1.5 text-[11px] font-bold tracking-[0.08em] text-navy uppercase transition hover:brightness-110 disabled:opacity-60 sm:py-2 lg:py-2 lg:text-[13px]"
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-cyan px-4 py-1.5 text-[11px] font-bold tracking-[0.08em] text-navy uppercase transition hover:brightness-110 disabled:opacity-60 sm:py-2 sm:text-[13px]"
             >
               <Lock className="h-4 w-4" strokeWidth={2.2} />
               {busy ? 'Verifying…' : 'Verify & Enter'}
@@ -964,7 +981,7 @@ html[data-gate-locked="1"] #gatekeeper-root {
             <button
               type="button"
               onClick={() => swapTo('register')}
-              className="mt-3 w-full rounded-xl border border-white/35 bg-transparent px-4 py-1.5 text-[11px] font-semibold tracking-[0.06em] text-white uppercase transition hover:border-white hover:bg-white/10 sm:mt-4 sm:py-2 lg:mt-4 lg:py-2 lg:text-[13px]"
+              className="mt-3 w-full rounded-xl border border-white/35 bg-transparent px-4 py-1.5 text-[11px] font-semibold tracking-[0.06em] text-white uppercase transition hover:border-white hover:bg-white/10 sm:mt-4 sm:py-2 sm:text-[13px]"
             >
               Register New Account
             </button>
@@ -974,12 +991,12 @@ html[data-gate-locked="1"] #gatekeeper-root {
         <>
           <div
             data-gate-enter
-            className="mb-1.5 w-full rounded-xl border border-white/15 bg-white/10 p-2 text-left backdrop-blur-sm lg:mb-4 lg:rounded-2xl lg:p-4"
+            className="mb-1.5 w-full rounded-xl border border-white/15 bg-white/10 p-2 text-left backdrop-blur-sm md:mb-4 md:rounded-2xl md:p-4"
           >
-            <p className="font-display text-[8px] font-bold tracking-[0.18em] text-white uppercase lg:text-[11px]">
+            <p className="font-display text-[8px] font-bold tracking-[0.18em] text-white uppercase md:text-[11px]">
               Password Recovery
             </p>
-            <p className="mt-1 text-[10px] leading-snug text-white lg:mt-2 lg:text-[13px] lg:leading-relaxed">
+            <p className="mt-1 text-[10px] leading-snug text-white md:mt-2 md:text-[13px] md:leading-relaxed">
               Enter your approved research email. If an account exists, a secure reset link will be sent within a few
               minutes.
             </p>
@@ -987,24 +1004,24 @@ html[data-gate-locked="1"] #gatekeeper-root {
 
           <h1
             data-gate-enter
-            className="font-display text-[15px] font-bold tracking-tight text-white uppercase lg:text-[22px] xl:text-[24px]"
+            className="font-display text-[15px] font-bold tracking-tight text-white uppercase md:text-[22px] xl:text-[24px]"
           >
             Reset Password
           </h1>
-          <p data-gate-enter className="mt-0.5 max-w-md text-[10px] leading-snug text-white/80 lg:mt-1 lg:text-[12px]">
+          <p data-gate-enter className="mt-0.5 max-w-md text-[10px] leading-snug text-white/80 md:mt-1 md:text-[12px]">
             Restore portal access without leaving the verification flow.
           </p>
 
           {submitted ? (
             <div
               data-gate-enter
-              className="mt-4 w-full rounded-2xl border border-white/25 bg-white/5 p-3 text-left lg:mt-8 lg:p-5"
+              className="mt-4 w-full rounded-2xl border border-white/25 bg-white/5 p-3 text-left md:mt-8 md:p-5"
             >
-              <ShieldCheck className="h-6 w-6 text-cyan lg:h-8 lg:w-8" />
-              <p className="mt-2 font-display text-sm font-bold text-white uppercase lg:mt-3 lg:text-lg">
+              <ShieldCheck className="h-6 w-6 text-cyan md:h-8 md:w-8" />
+              <p className="mt-2 font-display text-sm font-bold text-white uppercase md:mt-3 md:text-lg">
                 Reset link sent
               </p>
-              <p className="mt-1.5 text-[11px] text-white/85 lg:text-sm">
+              <p className="mt-1.5 text-[11px] text-white/85 md:text-sm">
                 Check <span className="font-semibold text-white">{email.trim() || 'your inbox'}</span> for a secure
                 password reset link. It expires in 30 minutes.
               </p>
@@ -1014,15 +1031,15 @@ html[data-gate-locked="1"] #gatekeeper-root {
                   setSubmitted(false)
                   swapTo('verify')
                 }}
-                className="mt-3 w-full rounded-xl border border-white/35 bg-transparent px-4 py-2 text-[11px] font-semibold tracking-[0.06em] text-white uppercase transition hover:border-white hover:bg-white/10 lg:mt-5 lg:py-3 lg:text-sm"
+                className="mt-3 w-full rounded-xl border border-white/35 bg-transparent px-4 py-2 text-[11px] font-semibold tracking-[0.06em] text-white uppercase transition hover:border-white hover:bg-white/10 md:mt-5 md:py-3 md:text-sm"
               >
                 Return to Login
               </button>
             </div>
           ) : (
-            <form data-gate-enter onSubmit={handleReset} className="mt-1.5 w-full space-y-1.5 lg:mt-3 lg:space-y-2">
+            <form data-gate-enter onSubmit={handleReset} className="mt-1.5 w-full space-y-1.5 md:mt-3 md:space-y-2">
               <label className="block">
-                <span className="mb-0.5 block text-[8px] font-bold tracking-[0.18em] text-white uppercase lg:mb-1 lg:text-[10px]">
+                <span className="mb-0.5 block text-[8px] font-bold tracking-[0.18em] text-white uppercase md:mb-1 md:text-[10px]">
                   Approved Email Address
                 </span>
                 <input
@@ -1031,14 +1048,13 @@ html[data-gate-locked="1"] #gatekeeper-root {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="name@institution.com"
-                  className="gate-input w-full rounded-lg border border-white/20 bg-white/[0.06] px-3 py-2 text-[13px] outline-none transition placeholder:text-white/40 focus:border-white/50 focus:bg-white/[0.08] lg:px-3.5 lg:py-2 lg:text-[13px]"
+                  className="gate-input w-full rounded-lg border border-white/20 bg-white/[0.06] px-3 py-2 text-[13px] outline-none transition placeholder:text-white/40 focus:border-white/50 focus:bg-white/[0.08] md:px-3.5 md:py-2 md:text-[13px]"
                 />
               </label>
-              {error ? <p className="text-[12px] text-white lg:text-sm">{error}</p> : null}
               <button
                 type="submit"
                 disabled={busy}
-                className="flex w-full items-center justify-center gap-2 rounded-xl bg-cyan px-4 py-2 text-[11px] font-bold tracking-[0.08em] text-navy uppercase transition hover:brightness-110 disabled:opacity-60 lg:py-2 lg:text-[13px]"
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-cyan px-4 py-2 text-[11px] font-bold tracking-[0.08em] text-navy uppercase transition hover:brightness-110 disabled:opacity-60 md:py-2 md:text-[13px]"
               >
                 <KeyRound className="h-4 w-4" strokeWidth={2.2} />
                 {busy ? 'Sending…' : 'Send Reset Link'}
@@ -1046,7 +1062,7 @@ html[data-gate-locked="1"] #gatekeeper-root {
               <button
                 type="button"
                 onClick={() => swapTo('verify')}
-                className="w-full rounded-xl border border-white/35 bg-transparent px-4 py-2 text-[11px] font-semibold tracking-[0.06em] text-white uppercase transition hover:border-white hover:bg-white/10 lg:py-2 lg:text-[13px]"
+                className="w-full rounded-xl border border-white/35 bg-transparent px-4 py-2 text-[11px] font-semibold tracking-[0.06em] text-white uppercase transition hover:border-white hover:bg-white/10 md:py-2 md:text-[13px]"
               >
                 Return to Login
               </button>
@@ -1057,30 +1073,30 @@ html[data-gate-locked="1"] #gatekeeper-root {
         <>
           <p
             data-gate-enter
-            className="font-display text-[7px] font-bold tracking-[0.16em] text-white uppercase sm:text-[8px] lg:text-[11px]"
+            className="font-display text-[7px] font-bold tracking-[0.16em] text-white uppercase sm:text-[8px] md:text-[11px]"
           >
             Secure Onboarding
           </p>
           <h1
             data-gate-enter
-            className="mt-0.5 font-display text-[13px] font-bold tracking-tight text-white uppercase whitespace-nowrap sm:text-[15px] lg:mt-1.5 lg:text-[20px] xl:text-[22px]"
+            className="mt-0.5 font-display text-[13px] font-bold tracking-tight text-white uppercase whitespace-nowrap sm:text-[15px] md:mt-1.5 md:text-[20px] xl:text-[22px]"
           >
             Account Registration
           </h1>
-          <p data-gate-enter className="mt-0.5 max-w-md text-[9px] leading-snug text-white/80 sm:text-[10px] lg:mt-1 lg:text-[12px]">
+          <p data-gate-enter className="mt-0.5 max-w-md text-[9px] leading-snug text-white/80 sm:text-[10px] md:mt-1 md:text-[12px]">
             Submit your credentials for same-day verification review.
           </p>
 
           {submitted ? (
             <div
               data-gate-enter
-              className="mt-3 w-full rounded-2xl border border-white/25 bg-white/5 p-3 text-left lg:mt-8 lg:p-5"
+              className="mt-3 w-full rounded-2xl border border-white/25 bg-white/5 p-3 text-left md:mt-8 md:p-5"
             >
-              <ShieldCheck className="h-5 w-5 text-white sm:h-6 sm:w-6 lg:h-8 lg:w-8" />
-              <p className="mt-2 font-display text-xs font-bold text-white uppercase sm:text-sm lg:mt-3 lg:text-lg">
+              <ShieldCheck className="h-5 w-5 text-white sm:h-6 sm:w-6 md:h-8 md:w-8" />
+              <p className="mt-2 font-display text-xs font-bold text-white uppercase sm:text-sm md:mt-3 md:text-lg">
                 Registration received
               </p>
-              <p className="mt-1.5 text-[10px] text-white sm:text-[11px] lg:text-sm">
+              <p className="mt-1.5 text-[10px] text-white sm:text-[11px] md:text-sm">
                 We will confirm your access shortly. You can return to verification once approved.
               </p>
               <button
@@ -1089,15 +1105,15 @@ html[data-gate-locked="1"] #gatekeeper-root {
                   setSubmitted(false)
                   swapTo('verify')
                 }}
-                className="mt-3 w-full rounded-xl border border-white/35 bg-transparent px-4 py-1.5 text-[10px] font-semibold tracking-[0.06em] text-white uppercase transition hover:border-white hover:bg-white/10 sm:py-2 sm:text-[11px] lg:mt-5 lg:py-3 lg:text-sm"
+                className="mt-3 w-full rounded-xl border border-white/35 bg-transparent px-4 py-1.5 text-[10px] font-semibold tracking-[0.06em] text-white uppercase transition hover:border-white hover:bg-white/10 sm:py-2 sm:text-[11px] md:mt-5 md:py-3 md:text-sm"
               >
                 Return to Login
               </button>
             </div>
           ) : (
-            <form data-gate-enter onSubmit={handleRegister} className="mt-1.5 w-full space-y-1 sm:space-y-1.5 lg:mt-3 lg:space-y-2">
+            <form data-gate-enter onSubmit={handleRegister} className="mt-1.5 w-full space-y-1 sm:space-y-1.5 md:mt-3 md:space-y-2">
               <label className="block">
-                <span className="mb-0.5 block text-[7px] font-bold tracking-[0.16em] text-white uppercase sm:text-[8px] lg:mb-1 lg:text-[10px]">
+                <span className="mb-0.5 block text-[7px] font-bold tracking-[0.16em] text-white uppercase sm:text-[8px] md:mb-1 md:text-[10px]">
                   Company / Institution Name
                 </span>
                 <input
@@ -1105,11 +1121,11 @@ html[data-gate-locked="1"] #gatekeeper-root {
                   value={company}
                   onChange={(e) => setCompany(e.target.value)}
                   placeholder="Company, LLC, or Individual Research Identity"
-                  className="gate-input w-full rounded-lg border border-white/20 bg-white/[0.06] px-2.5 py-1 text-[11px] outline-none transition placeholder:text-white/40 focus:border-white/50 sm:px-3 sm:py-1.5 sm:text-[12px] lg:px-3.5 lg:py-2 lg:text-[13px]"
+                  className="gate-input w-full rounded-lg border border-white/20 bg-white/[0.06] px-2.5 py-1 text-[11px] outline-none transition placeholder:text-white/40 focus:border-white/50 sm:px-3 sm:py-1.5 sm:text-[12px] md:px-3.5 md:py-2 md:text-[13px]"
                 />
               </label>
               <label className="block">
-                <span className="mb-0.5 block text-[7px] font-bold tracking-[0.16em] text-white uppercase sm:text-[8px] lg:mb-1 lg:text-[10px]">
+                <span className="mb-0.5 block text-[7px] font-bold tracking-[0.16em] text-white uppercase sm:text-[8px] md:mb-1 md:text-[10px]">
                   Institutional Email
                 </span>
                 <input
@@ -1117,11 +1133,11 @@ html[data-gate-locked="1"] #gatekeeper-root {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="name@institution.com"
-                  className="gate-input w-full rounded-lg border border-white/20 bg-white/[0.06] px-2.5 py-1 text-[11px] outline-none transition placeholder:text-white/40 focus:border-white/50 sm:px-3 sm:py-1.5 sm:text-[12px] lg:px-3.5 lg:py-2 lg:text-[13px]"
+                  className="gate-input w-full rounded-lg border border-white/20 bg-white/[0.06] px-2.5 py-1 text-[11px] outline-none transition placeholder:text-white/40 focus:border-white/50 sm:px-3 sm:py-1.5 sm:text-[12px] md:px-3.5 md:py-2 md:text-[13px]"
                 />
               </label>
               <label className="block">
-                <span className="mb-0.5 block text-[7px] font-bold tracking-[0.16em] text-white uppercase sm:text-[8px] lg:mb-1 lg:text-[10px]">
+                <span className="mb-0.5 block text-[7px] font-bold tracking-[0.16em] text-white uppercase sm:text-[8px] md:mb-1 md:text-[10px]">
                   Password
                 </span>
                 <div className="relative">
@@ -1131,7 +1147,7 @@ html[data-gate-locked="1"] #gatekeeper-root {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Create a secure password"
-                    className="gate-input w-full rounded-lg border border-white/20 bg-white/[0.06] px-2.5 py-1 pr-10 text-[11px] outline-none transition placeholder:text-white/40 focus:border-white/50 sm:px-3 sm:py-1.5 sm:pr-11 sm:text-[12px] lg:px-3.5 lg:py-2 lg:pr-11 lg:text-[13px]"
+                    className="gate-input w-full rounded-lg border border-white/20 bg-white/[0.06] px-2.5 py-1 pr-10 text-[11px] outline-none transition placeholder:text-white/40 focus:border-white/50 sm:px-3 sm:py-1.5 sm:pr-11 sm:text-[12px] md:px-3.5 md:py-2 md:pr-11 md:text-[13px]"
                   />
                   <button
                     type="button"
@@ -1148,7 +1164,7 @@ html[data-gate-locked="1"] #gatekeeper-root {
                 </div>
               </label>
               <label className="block">
-                <span className="mb-0.5 block text-[7px] font-bold tracking-[0.16em] text-white uppercase sm:text-[8px] lg:mb-1 lg:text-[10px]">
+                <span className="mb-0.5 block text-[7px] font-bold tracking-[0.16em] text-white uppercase sm:text-[8px] md:mb-1 md:text-[10px]">
                   Intended Evaluation Framework
                 </span>
                 <textarea
@@ -1156,14 +1172,13 @@ html[data-gate-locked="1"] #gatekeeper-root {
                   value={framework}
                   onChange={(e) => setFramework(e.target.value)}
                   placeholder="Briefly describe your research protocol or intended use."
-                  className="gate-input min-h-[56px] max-h-[72px] w-full resize-none rounded-lg border border-white/20 bg-white/[0.06] px-2.5 py-1.5 text-[11px] outline-none transition placeholder:text-white/40 focus:border-white/50 sm:min-h-[56px] sm:max-h-[64px] sm:px-3 sm:py-1.5 sm:text-[12px] lg:min-h-[52px] lg:max-h-[56px] lg:px-3.5 lg:py-2 lg:text-[13px]"
+                  className="gate-input min-h-[56px] max-h-[72px] w-full resize-none rounded-lg border border-white/20 bg-white/[0.06] px-2.5 py-1.5 text-[11px] outline-none transition placeholder:text-white/40 focus:border-white/50 sm:min-h-[56px] sm:max-h-[64px] sm:px-3 sm:py-1.5 sm:text-[12px] md:min-h-[52px] md:max-h-[56px] md:px-3.5 md:py-2 md:text-[13px]"
                 />
               </label>
-              {error ? <p className="text-[11px] text-white sm:text-[12px] lg:text-sm">{error}</p> : null}
               <button
                 type="submit"
                 disabled={busy}
-                className="flex w-full items-center justify-center gap-1.5 rounded-xl bg-cyan px-3 py-1.5 text-[10px] font-bold tracking-[0.08em] text-navy uppercase transition hover:brightness-110 disabled:opacity-60 sm:gap-2 sm:px-4 sm:text-[11px] lg:py-2 lg:text-[13px]"
+                className="flex w-full items-center justify-center gap-1.5 rounded-xl bg-cyan px-4 py-2 text-[11px] font-bold tracking-[0.08em] text-navy uppercase transition hover:brightness-110 disabled:opacity-60 sm:gap-2 sm:text-[12px] md:text-[13px]"
               >
                 <Sparkles className="h-3.5 w-3.5 sm:h-4 sm:w-4" strokeWidth={2.2} />
                 {busy ? 'Submitting…' : 'Submit Registration'}
@@ -1171,7 +1186,7 @@ html[data-gate-locked="1"] #gatekeeper-root {
               <button
                 type="button"
                 onClick={() => swapTo('verify')}
-                className="w-full rounded-xl border border-white/35 bg-transparent px-3 py-1.5 text-[10px] font-semibold tracking-[0.06em] text-white uppercase transition hover:border-white hover:bg-white/10 sm:px-4 sm:text-[11px] lg:py-2 lg:text-[13px]"
+                className="mt-3 flex w-full items-center justify-center rounded-xl border border-white/35 bg-transparent px-4 py-2 text-[11px] font-bold tracking-[0.08em] text-white uppercase transition hover:border-white hover:bg-white/10 sm:mt-4 sm:text-[12px] md:mt-4 md:text-[13px]"
               >
                 Return to Login
               </button>
@@ -1199,10 +1214,10 @@ html[data-gate-locked="1"] #gatekeeper-root {
       }}
       onClick={(e) => e.stopPropagation()}
     >
-      <div className="gate-page box-border flex w-full justify-center px-3 sm:px-5 md:px-8 lg:px-10 xl:px-14">
+      <div className="gate-page box-border flex w-full justify-center px-3 sm:px-5 md:px-8 md:px-10 xl:px-14">
         <div
           ref={modalRef}
-          className={`relative isolate flex w-full max-w-3xl shrink-0 overflow-hidden rounded-[20px] border border-white/20 bg-white/10 shadow-[0_24px_80px_rgba(0,0,0,0.35)] backdrop-blur-2xl sm:rounded-[24px] lg:max-w-4xl lg:rounded-[28px] ${
+          className={`relative isolate flex w-full max-w-3xl shrink-0 overflow-hidden rounded-[20px] border border-white/20 bg-white/10 shadow-[0_24px_80px_rgba(0,0,0,0.35)] backdrop-blur-2xl sm:max-w-4xl sm:rounded-[28px] ${
             visible ? '' : 'pointer-events-none opacity-0'
           }`}
           style={{ height: 'var(--gate-frame-h, min(640px, calc(100svh - 2rem)))' }}
@@ -1219,7 +1234,7 @@ html[data-gate-locked="1"] #gatekeeper-root {
 
             <div
               ref={formRef}
-              className="absolute z-[1] overflow-x-hidden overflow-y-auto overscroll-contain border-white/10 bg-[#141A22]/70 backdrop-blur-xl"
+              className="absolute z-[1] overflow-hidden border-white/10 bg-[#141A22]/70 backdrop-blur-xl"
               style={{ left: '40%', width: '60%', top: '0%', height: '100%', borderRadius: '0 28px 28px 0' }}
             >
               {formInner}
@@ -1227,7 +1242,7 @@ html[data-gate-locked="1"] #gatekeeper-root {
 
             <div
               ref={seamRef}
-              className="pointer-events-none absolute z-10 bg-gradient-to-r from-transparent via-cyan/35 to-transparent lg:bg-gradient-to-b lg:via-cyan/45"
+              className="pointer-events-none absolute z-10 bg-gradient-to-r from-transparent via-cyan/35 to-transparent sm:bg-gradient-to-b sm:via-cyan/45"
               style={{ left: '40%', top: '0%', width: '1px', height: '100%' }}
             />
           </div>

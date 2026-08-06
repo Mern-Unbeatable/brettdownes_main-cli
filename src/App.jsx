@@ -12,6 +12,7 @@ import WhatsAppFloat from './components/WhatsAppFloat'
 import CartDrawer from './components/CartDrawer'
 import PromoModal from './components/PromoModal'
 import Gatekeeper, { isGatePassed } from './components/Gatekeeper'
+import { ToastProvider } from './components/Toaster'
 import { CartProvider } from './context/CartContext'
 
 gsap.registerPlugin(ScrollTrigger)
@@ -122,32 +123,34 @@ export default function App() {
 
   return (
     <BrowserRouter>
-      <CartProvider>
-        <RouteEffects />
-        <div
-          id="app-shell"
-          {...(gateOpen ? { inert: true } : {})}
-          aria-hidden={gateOpen || undefined}
-          className={gateOpen ? 'pointer-events-none select-none' : undefined}
-        >
-          <Routes>
-            <Route path="/" element={<HomePage />} />
-            <Route path="/shop" element={<ShopPage />} />
-            <Route path="/shop/:slug" element={<ProductDetailPage />} />
-            <Route path="/checkout" element={<CheckoutPage />} />
-            <Route path="/faq" element={<FaqPage />} />
-            <Route path="/contact" element={<ContactPage />} />
-          </Routes>
-        </div>
-        {!gateOpen ? (
-          <>
-            <CartDrawer />
-            <PromoModal />
-            <WhatsAppFloat />
-          </>
-        ) : null}
-        {gateOpen ? <Gatekeeper key={gateMountKey} onPass={handleGatePass} /> : null}
-      </CartProvider>
+      <ToastProvider>
+        <CartProvider>
+          <RouteEffects />
+          <div
+            id="app-shell"
+            {...(gateOpen ? { inert: true } : {})}
+            aria-hidden={gateOpen || undefined}
+            className={gateOpen ? 'pointer-events-none select-none' : undefined}
+          >
+            <Routes>
+              <Route path="/" element={<HomePage />} />
+              <Route path="/shop" element={<ShopPage />} />
+              <Route path="/shop/:slug" element={<ProductDetailPage />} />
+              <Route path="/checkout" element={<CheckoutPage />} />
+              <Route path="/faq" element={<FaqPage />} />
+              <Route path="/contact" element={<ContactPage />} />
+            </Routes>
+          </div>
+          {!gateOpen ? (
+            <>
+              <CartDrawer />
+              <PromoModal />
+              <WhatsAppFloat />
+            </>
+          ) : null}
+          {gateOpen ? <Gatekeeper key={gateMountKey} onPass={handleGatePass} /> : null}
+        </CartProvider>
+      </ToastProvider>
     </BrowserRouter>
   )
 }
