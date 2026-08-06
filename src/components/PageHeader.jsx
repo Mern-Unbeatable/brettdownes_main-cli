@@ -103,7 +103,7 @@ export default function PageHeader({ title, subtitle, image }) {
   const headerRef = useRef(null)
   const headerNavRef = useRef(null)
   const stickyNavRef = useRef(null)
-  const light = !title && !subtitle
+  const light = !image && !title && !subtitle
 
   useLayoutEffect(() => {
     setIsSticky(false)
@@ -131,7 +131,7 @@ export default function PageHeader({ title, subtitle, image }) {
         ref={headerRef}
         className={`relative z-50 overflow-hidden border-b ${
           light ? 'border-black/8 bg-white' : 'border-white/10 bg-[#0a0b0d]'
-        } ${image ? 'flex min-h-[340px] flex-col md:min-h-[420px]' : ''}`}
+        } ${image ? 'flex min-h-[200px] flex-col md:min-h-[220px]' : ''}`}
       >
         {image ? (
           <>
@@ -142,11 +142,11 @@ export default function PageHeader({ title, subtitle, image }) {
               className="pointer-events-none absolute inset-0 h-full w-full object-cover object-[center_42%]"
             />
             <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-black/80 via-black/55 to-black/35" />
-            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/50 to-transparent" />
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/50 to-transparent" />
           </>
         ) : null}
 
-        <div className="relative mx-auto flex min-h-[80px] w-full max-w-12xl items-center justify-between px-6 py-2 md:px-10 lg:px-12">
+        <div className="relative mx-auto flex min-h-[72px] w-full max-w-12xl items-center justify-between px-6 py-2 md:px-10 lg:px-12">
           <Link to="/" className="flex shrink-0 items-center">
             <Logo className="h-[80px] w-auto" />
           </Link>
@@ -201,11 +201,11 @@ export default function PageHeader({ title, subtitle, image }) {
 
         {(title || subtitle) && (
           <div
-            className={`relative mt-auto mx-auto w-full max-w-12xl px-6 pt-4 md:px-10 lg:px-12 ${
-              image ? 'pb-16 pt-8 md:pb-24 md:pt-12' : 'pb-10 md:pb-14'
+            className={`relative mx-auto w-full max-w-12xl px-6 md:px-10 lg:px-12 ${
+              image ? 'pb-6 pt-1 md:pb-8 md:pt-2' : 'pb-6 pt-2 md:pb-8'
             }`}
           >
-            {title ? (
+            {title && title.trim() ? (
               <h1
                 data-reveal="up"
                 data-reveal-start="top 100%"
@@ -219,7 +219,7 @@ export default function PageHeader({ title, subtitle, image }) {
                 data-reveal="up"
                 data-reveal-delay="0.1"
                 data-reveal-start="top 100%"
-                className="mt-3 max-w-xl text-sm leading-relaxed text-white/75 sm:text-base"
+                className="mt-2 max-w-xl text-sm leading-relaxed text-white/75 sm:text-base"
               >
                 {subtitle}
               </p>

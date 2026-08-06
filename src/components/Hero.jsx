@@ -76,9 +76,9 @@ export default function Hero() {
     <section
       ref={rootRef}
       id="home"
-      className="relative bg-white px-3 pt-3 pb-3 sm:px-4 sm:pt-4 sm:pb-4"
+      className="relative bg-white px-3 pt-2 pb-2 sm:px-4 sm:pt-3 sm:pb-3"
     >
-      <div className="relative isolate mx-auto w-full max-w-12xl min-h-[calc(100vh-24px)] overflow-hidden rounded-[28px] bg-[#0a0b0d] sm:min-h-[calc(100vh-32px)] sm:rounded-[36px] md:rounded-[44px]">
+      <div className="relative isolate mx-auto w-full max-w-12xl min-h-[calc(100vh-16px)] overflow-hidden rounded-[28px] bg-[#0a0b0d] sm:min-h-[calc(100vh-24px)] sm:rounded-[36px] md:rounded-[44px]">
         <img
           data-hero-bg
           src="/images/hero.webp"
@@ -93,7 +93,7 @@ export default function Hero() {
 
         <Navbar />
 
-        <div className="relative z-10 mx-auto flex min-h-[calc(100vh-24px)] w-full flex-col px-6 pt-[100px] pb-8 sm:min-h-[calc(100vh-32px)] md:px-10 md:pt-[105px] md:pb-10 lg:px-12">
+        <div className="relative z-10 mx-auto flex min-h-[calc(100vh-16px)] w-full flex-col px-6 pt-[88px] pb-5 sm:min-h-[calc(100vh-24px)] md:px-10 md:pt-[92px] md:pb-6 lg:px-12">
           <div className="flex flex-1 items-center">
             <div className="w-full max-w-[min(100%,440px)] lg:max-w-[480px]">
               <h1 className="font-display font-extrabold tracking-[-0.04em] text-white uppercase">
