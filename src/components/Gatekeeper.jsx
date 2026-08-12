@@ -3,27 +3,10 @@ import { createPortal, flushSync } from 'react-dom'
 import gsap from 'gsap'
 import { Eye, EyeOff, KeyRound, Lock, ShieldCheck, Sparkles } from 'lucide-react'
 import { useToast } from './Toaster'
+import { useAuth } from '../context/AuthContext'
+import { api } from '../lib/api'
 
-const STORAGE_KEY = 'peptideops_gate_ok'
-const GATE_EMAIL = 'admin@peptideops.com'
-const GATE_PASSWORD = 'PeptideOps1'
 const APPEAR_DELAY_MS = 1000
-
-export function isGatePassed() {
-  try {
-    return sessionStorage.getItem(STORAGE_KEY) === '1'
-  } catch {
-    return false
-  }
-}
-
-function markGatePassed() {
-  try {
-    sessionStorage.setItem(STORAGE_KEY, '1')
-  } catch {
-    /* ignore */
-  }
-}
 
 const notices = [
   {
@@ -55,11 +38,12 @@ export default function Gatekeeper({ onPass }) {
   const panelPxRef = useRef(null)
   const topPadLockedRef = useRef(false)
   const toast = useToast()
+  const { login, register } = useAuth()
 
   const [visible, setVisible] = useState(false)
   const [mode, setMode] = useState('verify')
-  const [email, setEmail] = useState(GATE_EMAIL)
-  const [password, setPassword] = useState(GATE_PASSWORD)
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [company, setCompany] = useState('')
   const [framework, setFramework] = useState('')
@@ -222,12 +206,21 @@ html[data-gate-locked="1"] .sticky-nav-pill {
   pointer-events: none !important;
   visibility: hidden !important;
 }
+/* Toasts must sit above the gate (same stacking context as body portal). */
+html[data-gate-locked="1"] [data-peptide-toaster] {
+  display: flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: none !important;
+  z-index: 2147483647 !important;
+  position: fixed !important;
+}
 html[data-gate-locked="1"] #gatekeeper-root {
   display: block !important;
   visibility: visible !important;
   opacity: 1 !important;
   pointer-events: auto !important;
-  z-index: 2147483647 !important;
+  z-index: 2147483646 !important;
   position: relative !important;
   inset: auto !important;
   top: 0 !important;
@@ -266,7 +259,7 @@ html[data-gate-locked="1"] #gatekeeper-root {
       root.style.setProperty('visibility', 'visible', 'important')
       root.style.setProperty('opacity', '1', 'important')
       root.style.setProperty('pointer-events', 'auto', 'important')
-      root.style.setProperty('z-index', '2147483647', 'important')
+      root.style.setProperty('z-index', '2147483646', 'important')
       root.style.setProperty('position', 'relative', 'important')
       root.style.setProperty('inset', 'auto', 'important')
       root.style.setProperty('top', '0', 'important')
@@ -763,16 +756,17 @@ html[data-gate-locked="1"] #gatekeeper-root {
           setPassword('')
           if (next === 'register') setEmail('')
         } else {
-          setEmail(GATE_EMAIL)
-          setPassword(GATE_PASSWORD)
+          setPassword('')
         }
         setMode(next)
       },
     })
   }
 
-  const handleVerify = (e) => {
+  const handleVerify = async (e) => {
     e.preventDefault()
+    if (busy) return
+
     const value = email.trim()
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
       toast.error('Enter a valid approved email address.')
@@ -782,41 +776,47 @@ html[data-gate-locked="1"] #gatekeeper-root {
       toast.error('Enter your password to continue.')
       return
     }
-    if (
-      value.toLowerCase() !== GATE_EMAIL.toLowerCase() ||
-      password !== GATE_PASSWORD
-    ) {
-      toast.error('Invalid email or password.')
-      return
-    }
+
     setBusy(true)
-    window.setTimeout(() => {
-      markGatePassed()
-      setBusy(false)
+    try {
+      await login(value, password)
       toast.success('Access verified. Entering portal…', { title: 'Verified' })
       onPass?.()
-    }, 480)
+    } catch (error) {
+      toast.error(error.message || 'Invalid email or password.')
+    } finally {
+      setBusy(false)
+    }
   }
 
-  const handleReset = (e) => {
+  const handleReset = async (e) => {
     e.preventDefault()
+    if (busy) return
+
     const value = email.trim()
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
       toast.error('Enter the approved email linked to your account.')
       return
     }
+
     setBusy(true)
-    window.setTimeout(() => {
-      setBusy(false)
+    try {
+      await api.post('/api/auth/forgot-password', { email: value })
       setSubmitted(true)
       toast.success('If an account exists, a reset link is on the way.', {
         title: 'Reset link sent',
       })
-    }, 560)
+    } catch (error) {
+      toast.error(error.message || 'Could not send the reset link. Try again shortly.')
+    } finally {
+      setBusy(false)
+    }
   }
 
-  const handleRegister = (e) => {
+  const handleRegister = async (e) => {
     e.preventDefault()
+    if (busy) return
+
     if (!company.trim() || !email.trim() || !password.trim() || !framework.trim()) {
       toast.error('Complete all registration fields to continue.')
       return
@@ -829,14 +829,32 @@ html[data-gate-locked="1"] #gatekeeper-root {
       toast.error('Password must be at least 8 characters.')
       return
     }
+
     setBusy(true)
-    window.setTimeout(() => {
-      setBusy(false)
+    try {
+      const result = await register({
+        company: company.trim(),
+        email: email.trim(),
+        password,
+        researchFramework: framework.trim(),
+      })
+
+      // Auto-approval signs the researcher straight in; otherwise they wait.
+      if (result.autoApproved) {
+        toast.success('Account approved. Entering portal…', { title: 'Welcome' })
+        onPass?.()
+        return
+      }
+
       setSubmitted(true)
       toast.success('Registration received. We will confirm your access shortly.', {
         title: 'Submitted',
       })
-    }, 560)
+    } catch (error) {
+      toast.error(error.message || 'Registration failed. Please try again.')
+    } finally {
+      setBusy(false)
+    }
   }
 
   const welcomeCopy =

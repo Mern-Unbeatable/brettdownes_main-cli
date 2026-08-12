@@ -16,13 +16,15 @@ const ToastContext = createContext(null)
 
 const VARIANTS = {
   error: {
-    label: 'Validation',
+    label: 'Error',
     Icon: AlertCircle,
-    accent: '#00f5d4',
-    glow: 'rgba(0, 245, 212, 0.22)',
-    iconBg: 'rgba(0, 245, 212, 0.12)',
-    iconColor: '#00f5d4',
-    bar: 'linear-gradient(90deg, #00f5d4, #00c4ab)',
+    accent: '#f43f5e',
+    glow: 'rgba(244, 63, 94, 0.28)',
+    iconBg: 'rgba(244, 63, 94, 0.14)',
+    iconColor: '#fb7185',
+    bar: 'linear-gradient(90deg, #f43f5e, #e11d48)',
+    border: 'rgba(244, 63, 94, 0.35)',
+    ring: 'rgba(244, 63, 94, 0.14)',
   },
   success: {
     label: 'Success',
@@ -32,15 +34,19 @@ const VARIANTS = {
     iconBg: 'rgba(0, 245, 212, 0.14)',
     iconColor: '#00f5d4',
     bar: 'linear-gradient(90deg, #00f5d4, #00c4ab)',
+    border: 'rgba(0, 245, 212, 0.25)',
+    ring: 'rgba(0, 245, 212, 0.08)',
   },
   warning: {
     label: 'Notice',
     Icon: AlertTriangle,
-    accent: '#00c4ab',
-    glow: 'rgba(0, 196, 171, 0.24)',
-    iconBg: 'rgba(0, 196, 171, 0.12)',
-    iconColor: '#00f5d4',
-    bar: 'linear-gradient(90deg, #00c4ab, #00f5d4)',
+    accent: '#f59e0b',
+    glow: 'rgba(245, 158, 11, 0.24)',
+    iconBg: 'rgba(245, 158, 11, 0.14)',
+    iconColor: '#fbbf24',
+    bar: 'linear-gradient(90deg, #f59e0b, #d97706)',
+    border: 'rgba(245, 158, 11, 0.3)',
+    ring: 'rgba(245, 158, 11, 0.1)',
   },
   info: {
     label: 'Info',
@@ -50,6 +56,8 @@ const VARIANTS = {
     iconBg: 'rgba(0, 245, 212, 0.1)',
     iconColor: '#00f5d4',
     bar: 'linear-gradient(90deg, #00f5d4, #00c4ab)',
+    border: 'rgba(0, 245, 212, 0.25)',
+    ring: 'rgba(0, 245, 212, 0.08)',
   },
 }
 
@@ -105,9 +113,10 @@ function ToastItem({ toast, onDismiss }) {
       }}
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
-      className="pointer-events-auto relative mx-auto w-[min(100%,220px)] list-none overflow-hidden rounded-md border border-cyan/25 bg-[#0a121c]/92 backdrop-blur-xl md:mx-0 md:w-[min(92vw,300px)] md:rounded-xl"
+      className="pointer-events-auto relative mx-auto w-[min(100%,220px)] list-none overflow-hidden rounded-md bg-[#0a121c]/92 backdrop-blur-xl md:mx-0 md:w-[min(92vw,300px)] md:rounded-xl"
       style={{
-        boxShadow: `0 12px 32px rgba(5,11,20,0.5), 0 0 0 1px rgba(0,245,212,0.08), 0 0 24px ${meta.glow}`,
+        border: `1px solid ${meta.border}`,
+        boxShadow: `0 12px 32px rgba(5,11,20,0.5), 0 0 0 1px ${meta.ring}, 0 0 24px ${meta.glow}`,
       }}
     >
       <div
@@ -188,7 +197,7 @@ export function ToastProvider({ children }) {
     () => ({
       push,
       dismiss,
-      error: (message, options) => push('error', message, { title: 'Validation', ...options }),
+      error: (message, options) => push('error', message, { title: 'Error', ...options }),
       success: (message, options) => push('success', message, { title: 'Success', ...options }),
       warning: (message, options) => push('warning', message, { title: 'Notice', ...options }),
       info: (message, options) => push('info', message, { title: 'Info', ...options }),
@@ -202,7 +211,8 @@ export function ToastProvider({ children }) {
       {createPortal(
         <ul
           data-peptide-toaster
-          className="pointer-events-none fixed inset-x-0 top-0 z-[2147483647] flex w-full flex-col-reverse items-center gap-1.5 px-3 pt-[max(0.5rem,env(safe-area-inset-top))] md:items-end md:gap-2.5 md:px-5 md:pt-5"
+          className="pointer-events-none fixed inset-x-0 top-0 flex w-full flex-col-reverse items-center gap-1.5 px-3 pt-[max(0.5rem,env(safe-area-inset-top))] md:items-end md:gap-2.5 md:px-5 md:pt-5"
+          style={{ zIndex: 2147483647 }}
           aria-label="Notifications"
         >
           <AnimatePresence initial={false}>

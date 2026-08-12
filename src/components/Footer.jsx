@@ -2,6 +2,12 @@ import { Link } from 'react-router-dom'
 import Logo from './Logo'
 import { navLinks, siteContact } from '../data/site'
 
+const legalLinks = [
+  { label: 'COA', to: '/coa' },
+  { label: 'Terms of Service', to: '/terms' },
+  { label: 'Privacy Policy', to: '/privacy' },
+]
+
 function whatsappHref() {
   return `https://wa.me/${siteContact.whatsapp}?text=${encodeURIComponent(siteContact.whatsappMessage)}`
 }
@@ -14,7 +20,7 @@ export default function Footer() {
         data-stagger="0.1"
         className="mx-auto grid max-w-10xl gap-10 px-5 sm:grid-cols-2 lg:grid-cols-4 md:px-8"
       >
-        <div className="flex flex-col items-center text-center sm:col-span-2 lg:col-span-2 lg:items-start lg:text-left">
+        <div className="flex flex-col items-center text-center sm:col-span-2 lg:col-span-1 lg:items-start lg:text-left">
           <Logo className="h-[150px] w-auto max-w-full" />
           <p className="mt-4 max-w-xs text-sm leading-relaxed text-muted">
             Precision. Purity. Documentation. Lyophilized research use only.
@@ -45,10 +51,23 @@ export default function Footer() {
           </div>
         </div>
 
-        <div className="hidden lg:block">
+        <div className="text-center lg:text-left">
           <h3 className="font-display text-sm font-semibold tracking-wide text-ink">Menu</h3>
           <ul className="mt-4 space-y-2">
             {navLinks.map((item) => (
+              <li key={item.label}>
+                <Link to={item.to} className="text-sm text-muted transition hover:text-ink">
+                  {item.label}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <div className="text-center lg:text-left">
+          <h3 className="font-display text-sm font-semibold tracking-wide text-ink">Policies</h3>
+          <ul className="mt-4 space-y-2">
+            {legalLinks.map((item) => (
               <li key={item.label}>
                 <Link to={item.to} className="text-sm text-muted transition hover:text-ink">
                   {item.label}
@@ -69,23 +88,50 @@ export default function Footer() {
         </div>
       </div>
 
-      <div className="mx-auto mt-12 flex max-w-10xl items-center justify-center border-t border-fog-deep px-5 pt-6 md:px-8">
-        <div className="flex flex-wrap items-center justify-center gap-3">
-          <img
-            src="/images/visa.svg"
-            alt="Visa"
-            className="h-10 w-16 object-contain"
-          />
-          <img
-            src="/images/mastercard.svg"
-            alt="Mastercard"
-            className="h-10 w-16 object-contain"
-          />
-          <img
-            src="/images/amex.svg"
-            alt="American Express"
-            className="h-10 w-16 object-contain"
-          />
+      <div className="mx-auto mt-12 max-w-10xl border-t border-fog-deep px-5 pt-6 md:px-8">
+        <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-wrap items-center justify-center gap-3 sm:justify-start">
+            <span className="text-sm font-semibold text-ink">We accept all:</span>
+            <div className="flex flex-wrap items-center gap-2.5">
+              <img
+                src="/images/visa.svg"
+                alt="Visa"
+                className="h-9 w-14 object-contain sm:h-10 sm:w-16"
+              />
+              <img
+                src="/images/mastercard.svg"
+                alt="Mastercard"
+                className="h-9 w-14 object-contain sm:h-10 sm:w-16"
+              />
+              <img
+                src="/images/amex.svg"
+                alt="American Express"
+                className="h-9 w-14 object-contain sm:h-10 sm:w-16"
+              />
+            </div>
+          </div>
+
+          <nav
+            aria-label="Policies"
+            className="flex flex-wrap items-center justify-center gap-2 sm:justify-end"
+          >
+            {legalLinks.map((item) => {
+              const isCoa = item.to === '/coa'
+              return (
+                <Link
+                  key={item.label}
+                  to={item.to}
+                  className={
+                    isCoa
+                      ? 'inline-flex items-center rounded-full bg-cyan px-3.5 py-1.5 text-[12px] font-bold text-navy shadow-sm transition-colors duration-200 hover:bg-[#A8F9EE]'
+                      : 'inline-flex items-center rounded-full px-3 py-1.5 text-[12px] font-medium text-muted transition-colors duration-200 hover:bg-[#A8F9EE] hover:text-navy'
+                  }
+                >
+                  {item.label}
+                </Link>
+              )
+            })}
+          </nav>
         </div>
       </div>
 

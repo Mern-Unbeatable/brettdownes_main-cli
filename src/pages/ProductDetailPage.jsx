@@ -6,11 +6,13 @@ import PageTransition from '../components/PageTransition'
 import Footer from '../components/Footer'
 import RuoNotice from '../components/RuoNotice'
 import { useCart } from '../context/CartContext'
-import { formatPrice, getProductBySlug, products } from '../data/site'
+import { useCatalog } from '../context/CatalogContext'
+import { assetUrl, formatPrice } from '../lib/api'
 
 export default function ProductDetailPage() {
   const { slug } = useParams()
-  const product = getProductBySlug(slug)
+  const { products, loading, getBySlug } = useCatalog()
+  const product = getBySlug(slug)
   const { addItem } = useCart()
 
   const [variantId, setVariantId] = useState(() => product?.variants[0]?.id)
@@ -20,7 +22,7 @@ export default function ProductDetailPage() {
   )
 
   useEffect(() => {
-    if (!product) return
+    if (!product?.variants?.length) return
     setVariantId(product.variants[0].id)
     setQty(1)
     setActiveImage(product.variants[0].image || product.image)
@@ -59,7 +61,18 @@ export default function ProductDetailPage() {
     if (item.variantId) setVariantId(item.variantId)
   }
 
-  if (!product) {
+  // The catalogue loads asynchronously, so only redirect once it has settled.
+  if (loading && !product) {
+    return (
+      <PageTransition>
+        <div className="flex min-h-[60vh] items-center justify-center bg-white">
+          <span className="h-10 w-10 animate-spin rounded-full border-2 border-black/10 border-t-cyan" />
+        </div>
+      </PageTransition>
+    )
+  }
+
+  if (!product || !variant) {
     return <Navigate to="/shop" replace />
   }
 
@@ -105,7 +118,7 @@ export default function ProductDetailPage() {
                       aria-label={`Show ${item.dose} image`}
                     >
                       <img
-                        src={item.src}
+                        src={assetUrl(item.src)}
                         alt={`${product.name} ${item.dose}`}
                         className="aspect-square w-full object-cover"
                       />
@@ -117,7 +130,7 @@ export default function ProductDetailPage() {
               <div className="min-w-0 flex-1 overflow-hidden rounded-[24px] bg-[#f2f2f2]">
                 <img
                   key={activeImage}
-                  src={activeImage}
+                  src={assetUrl(activeImage)}
                   alt={product.name}
                   className="aspect-[3/4] w-full object-cover"
                 />
@@ -141,9 +154,6 @@ export default function ProductDetailPage() {
                 </span>
                 <span className="rounded-full bg-fog px-3 py-1.5 font-medium text-ink">
                   {product.form}
-                </span>
-                <span className="rounded-full bg-fog px-3 py-1.5 font-medium text-ink">
-                  SKU {variant.sku}
                 </span>
               </div>
 
@@ -253,7 +263,7 @@ export default function ProductDetailPage() {
                   <Link key={item.id} to={`/shop/${item.slug}`} className="group text-center">
                     <div className="overflow-hidden rounded-2xl bg-[#f2f2f2]">
                       <img
-                        src={item.image}
+                        src={assetUrl(item.image)}
                         alt={item.name}
                         className="aspect-[3/4] w-full object-cover transition duration-500 group-hover:scale-[1.03]"
                       />

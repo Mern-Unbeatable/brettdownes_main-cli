@@ -1,7 +1,9 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react'
 
 const CartContext = createContext(null)
-const STORAGE_KEY = 'peptide-ops-cart'
+// Bumped to v2 when variant ids moved from static strings to database uuids;
+// carts saved under the old key would no longer resolve at checkout.
+const STORAGE_KEY = 'peptide-ops-cart-v2'
 
 function loadCart() {
   try {

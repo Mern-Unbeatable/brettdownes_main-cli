@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom'
 import { Minus, Plus, Trash2 } from 'lucide-react'
 import SideDrawer from './SideDrawer'
 import { useCart } from '../context/CartContext'
-import { formatPrice } from '../data/site'
+import { assetUrl, formatPrice } from '../lib/api'
 
 export default function CartDrawer() {
   const { items, subtotal, cartOpen, closeCart, updateQty, removeItem } = useCart()
@@ -30,7 +30,7 @@ export default function CartDrawer() {
                   className="flex items-start gap-3 rounded-2xl border border-black/6 bg-fog/70 p-3"
                 >
                   <img
-                    src={item.image}
+                    src={assetUrl(item.image)}
                     alt={item.name}
                     className="h-16 w-16 shrink-0 rounded-xl object-cover bg-white"
                   />

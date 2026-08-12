@@ -8,12 +8,14 @@ import PartnerSourcing from '../components/PartnerSourcing'
 import VolumePricing from '../components/VolumePricing'
 import { useCart } from '../context/CartContext'
 import { useGsapReveal } from '../hooks/useGsapReveal'
-import { formatPrice, lowestPrice, products } from '../data/site'
+import { lowestPrice, useCatalog } from '../context/CatalogContext'
+import { assetUrl, formatPrice } from '../lib/api'
 
 const filters = ['All', 'Peptides', 'Blends']
 
 export default function ShopPage() {
   const { addItem } = useCart()
+  const { products, loading, error, reload } = useCatalog()
   const [filter, setFilter] = useState('All')
   const [query, setQuery] = useState('')
   const gridRef = useRef(null)
@@ -29,7 +31,7 @@ export default function ShopPage() {
         p.variants.some((v) => v.dose.toLowerCase().includes(q))
       return matchFilter && matchQuery
     })
-  }, [filter, query])
+  }, [products, filter, query])
 
   useGsapReveal(gridRef, [list])
 
@@ -131,7 +133,31 @@ export default function ShopPage() {
             </div>
           </div>
 
-          {list.length === 0 ? (
+          {loading ? (
+            <div className="grid grid-cols-2 gap-4 sm:gap-6 lg:grid-cols-4">
+              {Array.from({ length: 8 }).map((_, index) => (
+                <div key={index} className="animate-pulse">
+                  <div className="aspect-[3/4] w-full rounded-2xl bg-fog" />
+                  <div className="mx-auto mt-4 h-3 w-2/3 rounded bg-fog" />
+                  <div className="mx-auto mt-2 h-3 w-1/3 rounded bg-fog" />
+                </div>
+              ))}
+            </div>
+          ) : error ? (
+            <div className="rounded-3xl bg-fog px-6 py-16 text-center">
+              <p className="font-display text-lg font-semibold text-ink">
+                Could not load the catalog
+              </p>
+              <p className="mt-2 text-sm text-muted">{error}</p>
+              <button
+                type="button"
+                onClick={reload}
+                className="mt-5 inline-flex rounded-xl bg-cyan px-5 py-3 text-sm font-semibold text-ink transition hover:bg-cyan-dim"
+              >
+                Try again
+              </button>
+            </div>
+          ) : list.length === 0 ? (
             <div data-reveal="scale" className="rounded-3xl bg-fog px-6 py-16 text-center">
               <p className="font-display text-lg font-semibold text-ink">No peptides found</p>
               <p className="mt-2 text-sm text-muted">
@@ -184,7 +210,7 @@ export default function ShopPage() {
 
                     <Link to={`/shop/${product.slug}`} className="block aspect-[3/4] w-full">
                       <img
-                        src={product.image}
+                        src={assetUrl(product.image)}
                         alt={product.name}
                         className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]"
                       />

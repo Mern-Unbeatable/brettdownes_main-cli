@@ -8,6 +8,7 @@ import { Menu, ShoppingBag } from 'lucide-react'
 import Logo from './Logo'
 import MenuDrawer from './MenuDrawer'
 import SideActionDock from './SideActionDock'
+import AccountMenu from './AccountMenu'
 import { useCart } from '../context/CartContext'
 import { navLinks } from '../data/site'
 import { activeFromPath } from '../utils/nav'
@@ -149,6 +150,7 @@ export default function Navbar() {
                 </span>
               ) : null}
             </button>
+            <AccountMenu onBeforeNavigate={() => setMenuOpen(false)} />
             <button
               type="button"
               aria-label="Menu"

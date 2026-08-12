@@ -1,10 +1,12 @@
 import { Link } from 'react-router-dom'
 import { Component, ShoppingCart } from 'lucide-react'
 import { useCart } from '../context/CartContext'
-import { formatPrice, lowestPrice, products } from '../data/site'
+import { lowestPrice, useCatalog } from '../context/CatalogContext'
+import { assetUrl, formatPrice } from '../lib/api'
 
 export default function BestSellers() {
   const { addItem } = useCart()
+  const { products, loading } = useCatalog()
   const featured = products.slice(0, 4)
 
   return (
@@ -22,6 +24,17 @@ export default function BestSellers() {
           </h2>
         </div>
 
+        {loading && featured.length === 0 ? (
+          <div className="grid grid-cols-2 gap-4 sm:gap-6 lg:grid-cols-4">
+            {Array.from({ length: 4 }).map((_, index) => (
+              <div key={index} className="animate-pulse">
+                <div className="aspect-[3/4] w-full rounded-2xl bg-fog" />
+                <div className="mx-auto mt-4 h-3 w-2/3 rounded bg-fog" />
+                <div className="mx-auto mt-2 h-3 w-1/3 rounded bg-fog" />
+              </div>
+            ))}
+          </div>
+        ) : (
         <div data-reveal-stagger data-stagger="0.12" className="grid grid-cols-2 gap-4 sm:gap-6 lg:grid-cols-4">
           {featured.map((product) => (
             <article key={product.id} className="group text-center">
@@ -51,7 +64,7 @@ export default function BestSellers() {
 
                 <Link to={`/shop/${product.slug}`} className="block aspect-[3/4] w-full">
                   <img
-                    src={product.image}
+                    src={assetUrl(product.image)}
                     alt={product.name}
                     className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]"
                   />
@@ -71,6 +84,7 @@ export default function BestSellers() {
             </article>
           ))}
         </div>
+        )}
 
         <div data-reveal="up" className="mt-12 flex items-center justify-between gap-6">
           <div className="progress-track-dark hidden w-44 sm:block" aria-hidden />
