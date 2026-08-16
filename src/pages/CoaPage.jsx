@@ -17,6 +17,7 @@ import PageTransition from '../components/PageTransition'
 import Footer from '../components/Footer'
 import { siteContact } from '../data/site'
 import { api, assetUrl } from '../lib/api'
+import { isImageDocument, pdfViewerUrl } from '../utils/coaFiles'
 import { lockBodyScroll, unlockBodyScroll } from '../hooks/lockBodyScroll'
 
 const pillars = [
@@ -166,7 +167,11 @@ export default function CoaPage() {
                               {document.name}
                             </span>
                             <span className="mt-1 block text-[12px] text-muted">
-                              {document.documentUrl ? 'PDF certificate attached' : 'Certificate details'}
+                              {document.documentUrl
+                                ? isImageDocument(document.documentUrl)
+                                  ? 'Image certificate attached'
+                                  : 'PDF certificate attached'
+                                : 'Certificate details'}
                             </span>
                             <span className="mt-3 inline-flex items-center gap-1.5 text-[11px] font-bold tracking-wide text-cyan-dim uppercase">
                               View certificate
@@ -293,7 +298,7 @@ export default function CoaPage() {
                         className="inline-flex items-center gap-1.5 rounded-xl bg-fog px-3 py-2 text-[12px] font-semibold text-ink transition hover:bg-fog-deep"
                       >
                         <ExternalLink className="h-3.5 w-3.5" />
-                        Open PDF
+                        Open full size
                       </a>
                     ) : null}
                     <button
@@ -320,12 +325,36 @@ export default function CoaPage() {
                     </div>
                   </div>
                   {selected.documentUrl ? (
-                    <div className="min-h-[55vh] border-t border-black/8 bg-fog lg:min-h-[70vh] lg:border-t-0 lg:border-l">
-                      <iframe
-                        src={assetUrl(selected.documentUrl)}
-                        title={`${selected.name} PDF`}
-                        className="h-[70vh] w-full bg-white"
-                      />
+                    <div className="border-t border-black/8 bg-fog p-4 md:p-5 lg:border-t-0 lg:border-l">
+                      {isImageDocument(selected.documentUrl) ? (
+                        <img
+                          src={assetUrl(selected.documentUrl)}
+                          alt={selected.name}
+                          className="mx-auto max-h-[70vh] w-full rounded-2xl bg-white object-contain shadow-sm"
+                        />
+                      ) : (
+                        <object
+                          data={pdfViewerUrl(assetUrl(selected.documentUrl))}
+                          type="application/pdf"
+                          aria-label={`${selected.name} certificate`}
+                          className="h-[70vh] w-full rounded-2xl bg-white shadow-sm"
+                        >
+                          <div className="flex h-full flex-col items-center justify-center gap-3 rounded-2xl bg-white p-6 text-center">
+                            <FileText className="h-8 w-8 text-muted" />
+                            <p className="text-sm text-muted">
+                              Your browser cannot display this certificate inline.
+                            </p>
+                            <a
+                              href={assetUrl(selected.documentUrl)}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="rounded-xl bg-cyan px-4 py-2.5 text-sm font-semibold text-navy"
+                            >
+                              Open certificate
+                            </a>
+                          </div>
+                        </object>
+                      )}
                     </div>
                   ) : null}
                 </div>

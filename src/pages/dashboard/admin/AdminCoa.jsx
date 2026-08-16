@@ -11,6 +11,7 @@ import {
   X,
 } from 'lucide-react'
 import { api, assetUrl } from '../../../lib/api'
+import { isImageDocument, pdfViewerUrl } from '../../../utils/coaFiles'
 import { useToast } from '../../../components/Toaster'
 import {
   Badge,
@@ -82,17 +83,17 @@ export default function AdminCoa() {
     })
   }
 
-  const uploadPdf = async (file) => {
+  const uploadFile = async (file) => {
     if (!file) return
-    if (file.type !== 'application/pdf') {
-      toast.error('Choose a PDF document.')
+    if (file.type !== 'application/pdf' && !file.type.startsWith('image/')) {
+      toast.error('Choose a PDF or an image file.')
       return
     }
     setUploading(true)
     try {
       const data = await api.upload('/api/uploads/document', file)
       setDraft((current) => ({ ...current, documentUrl: data.url }))
-      toast.success('PDF uploaded.')
+      toast.success('File uploaded.')
     } catch (err) {
       toast.error(err.message)
     } finally {
@@ -237,7 +238,7 @@ export default function AdminCoa() {
                                 target="_blank"
                                 rel="noreferrer"
                                 className="cursor-pointer rounded-lg p-2 text-muted hover:bg-fog hover:text-ink"
-                                title="Open PDF"
+                                title="Open file"
                               >
                                 <ExternalLink className="h-4 w-4" />
                               </a>
@@ -261,7 +262,11 @@ export default function AdminCoa() {
                           </div>
                         </div>
                         <p className="mt-2 text-[12px] text-muted">
-                          {document.documentUrl ? 'PDF certificate attached' : 'Text certificate'}
+                          {document.documentUrl
+                            ? isImageDocument(document.documentUrl)
+                              ? 'Image certificate attached'
+                              : 'PDF certificate attached'
+                            : 'Text certificate'}
                         </p>
                       </div>
                     </Card>
@@ -333,13 +338,16 @@ export default function AdminCoa() {
                 placeholder="Lab, batch, purity result, test date and any notes…"
               />
             </Field>
-            <Field label="PDF document" hint="Optional. Maximum upload size follows the server upload limit.">
+            <Field
+              label="Certificate file"
+              hint="Optional. Upload a PDF or an image (JPG, PNG, WEBP)."
+            >
               <input
                 ref={fileRef}
                 type="file"
-                accept="application/pdf"
+                accept="application/pdf,image/jpeg,image/png,image/webp,image/avif,image/gif"
                 className="hidden"
-                onChange={(event) => uploadPdf(event.target.files?.[0])}
+                onChange={(event) => uploadFile(event.target.files?.[0])}
               />
               <div className="flex flex-wrap items-center gap-2 rounded-xl border border-dashed border-black/15 bg-fog p-3">
                 <Button
@@ -349,7 +357,7 @@ export default function AdminCoa() {
                   onClick={() => fileRef.current?.click()}
                 >
                   <Upload className="h-4 w-4" />
-                  {uploading ? 'Uploading…' : draft.documentUrl ? 'Replace PDF' : 'Upload PDF'}
+                  {uploading ? 'Uploading…' : draft.documentUrl ? 'Replace file' : 'Upload file'}
                 </Button>
                 {draft.documentUrl ? (
                   <>
@@ -359,20 +367,20 @@ export default function AdminCoa() {
                       rel="noreferrer"
                       className="text-[12px] font-semibold text-cyan-dim hover:text-ink"
                     >
-                      View current PDF
+                      View current file
                     </a>
                     <button
                       type="button"
                       onClick={() => setDraft((current) => ({ ...current, documentUrl: '' }))}
-                      aria-label="Remove PDF"
-                      title="Remove PDF"
+                      aria-label="Remove file"
+                      title="Remove file"
                       className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-rose-600 transition hover:bg-rose-50 hover:text-rose-700"
                     >
                       <X className="h-4 w-4" />
                     </button>
                   </>
                 ) : (
-                  <span className="text-[12px] text-muted">No PDF selected</span>
+                  <span className="text-[12px] text-muted">No file selected</span>
                 )}
               </div>
             </Field>
@@ -411,7 +419,7 @@ export default function AdminCoa() {
           <>
             {preview?.documentUrl ? (
               <Button as="a" href={assetUrl(preview.documentUrl)} target="_blank" rel="noreferrer" variant="outline">
-                <ExternalLink className="h-4 w-4" /> Open PDF
+                <ExternalLink className="h-4 w-4" /> Open full size
               </Button>
             ) : null}
             <Button variant="ghost" onClick={() => setPreview(null)}>Close</Button>
@@ -440,12 +448,30 @@ export default function AdminCoa() {
               </div>
             </div>
             {preview.documentUrl ? (
-              <div className="overflow-hidden rounded-2xl border border-black/8 bg-fog">
-                <iframe
-                  src={assetUrl(preview.documentUrl)}
-                  title={`${preview.name} PDF`}
-                  className="h-[55vh] w-full bg-white"
-                />
+              <div className="overflow-hidden rounded-2xl border border-black/8 bg-fog p-3">
+                {isImageDocument(preview.documentUrl) ? (
+                  <img
+                    src={assetUrl(preview.documentUrl)}
+                    alt={preview.name}
+                    className="mx-auto max-h-[55vh] w-full rounded-xl bg-white object-contain"
+                  />
+                ) : (
+                  <object
+                    data={pdfViewerUrl(assetUrl(preview.documentUrl))}
+                    type="application/pdf"
+                    aria-label={`${preview.name} certificate`}
+                    className="h-[55vh] w-full rounded-xl bg-white"
+                  >
+                    <a
+                      href={assetUrl(preview.documentUrl)}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="block p-6 text-center text-[13px] font-semibold text-cyan-dim"
+                    >
+                      Open certificate
+                    </a>
+                  </object>
+                )}
               </div>
             ) : null}
           </div>
