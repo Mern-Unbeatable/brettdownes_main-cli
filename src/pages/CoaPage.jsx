@@ -1,9 +1,23 @@
+import { useEffect, useMemo, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { Link } from 'react-router-dom'
-import { Beaker, FileCheck2, FlaskConical, RefreshCw } from 'lucide-react'
+import { AnimatePresence, motion } from 'framer-motion'
+import {
+  Beaker,
+  ExternalLink,
+  FileCheck2,
+  FileText,
+  FlaskConical,
+  RefreshCw,
+  Search,
+  X,
+} from 'lucide-react'
 import PageHeader from '../components/PageHeader'
 import PageTransition from '../components/PageTransition'
 import Footer from '../components/Footer'
 import { siteContact } from '../data/site'
+import { api, assetUrl } from '../lib/api'
+import { lockBodyScroll, unlockBodyScroll } from '../hooks/lockBodyScroll'
 
 const pillars = [
   {
@@ -24,12 +38,57 @@ const pillars = [
 ]
 
 export default function CoaPage() {
+  const [documents, setDocuments] = useState([])
+  const [search, setSearch] = useState('')
+  const [selected, setSelected] = useState(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    api
+      .get('/api/coa')
+      .then((data) => setDocuments(data.documents || []))
+      .catch(() => setDocuments([]))
+      .finally(() => setLoading(false))
+  }, [])
+
+  useEffect(() => {
+    if (!selected) return undefined
+    lockBodyScroll()
+    const onKey = (event) => {
+      if (event.key === 'Escape') setSelected(null)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => {
+      unlockBodyScroll()
+      window.removeEventListener('keydown', onKey)
+    }
+  }, [selected])
+
+  const filtered = useMemo(() => {
+    const term = search.trim().toLowerCase()
+    if (!term) return documents
+    return documents.filter((document) =>
+      `${document.name} ${document.content} ${document.product?.name || ''} ${document.product?.category || ''}`
+        .toLowerCase()
+        .includes(term),
+    )
+  }, [documents, search])
+
+  const groups = useMemo(
+    () =>
+      [...new Set(filtered.map((document) => document.productId))].map((productId) => ({
+        product: filtered.find((document) => document.productId === productId)?.product,
+        documents: filtered.filter((document) => document.productId === productId),
+      })),
+    [filtered],
+  )
+
   return (
     <PageTransition>
       <PageHeader />
 
       <main className="bg-white py-14 md:py-20">
-        <div className="mx-auto max-w-3xl px-5 md:px-8">
+        <div className="mx-auto max-w-5xl px-5 md:px-8">
           <div data-reveal="up" className="text-center">
             <div className="inline-flex items-center gap-2 rounded-full border border-cyan/30 bg-cyan/5 px-3.5 py-1.5">
               <Beaker className="h-3.5 w-3.5 text-cyan-dim" strokeWidth={2} />
@@ -45,6 +104,95 @@ export default function CoaPage() {
               certification library.
             </p>
           </div>
+
+          <section data-reveal="up" data-reveal-delay="0.1" className="mt-12">
+            <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+              <div>
+                <p className="text-[11px] font-bold tracking-[0.18em] text-cyan-dim uppercase">
+                  Testing archive
+                </p>
+                <h2 className="mt-1 font-display text-xl font-bold text-ink md:text-2xl">
+                  Certificates of Analysis
+                </h2>
+                <p className="mt-1 text-sm text-muted">
+                  Search by product, certificate, batch or laboratory details.
+                </p>
+              </div>
+              <div className="relative w-full md:max-w-sm">
+                <Search className="absolute top-1/2 left-4 h-4 w-4 -translate-y-1/2 text-muted" />
+                <input
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                  placeholder="Search the COA library"
+                  className="w-full rounded-2xl border border-black/10 bg-fog py-3 pr-4 pl-11 text-sm text-ink outline-none transition focus:border-cyan focus:bg-white"
+                />
+              </div>
+            </div>
+
+            {loading ? (
+              <div className="flex min-h-48 items-center justify-center rounded-3xl bg-fog">
+                <span className="h-7 w-7 animate-spin rounded-full border-2 border-black/10 border-t-cyan" />
+              </div>
+            ) : groups.length ? (
+              <div className="space-y-8">
+                {groups.map(({ product, documents: productDocuments }) => (
+                  <div key={product?.id}>
+                    <div className="mb-3 flex items-center gap-3">
+                      <img
+                        src={assetUrl(product?.image)}
+                        alt=""
+                        className="h-11 w-11 rounded-xl bg-fog object-cover"
+                      />
+                      <div>
+                        <h3 className="font-display text-base font-bold text-ink">{product?.name}</h3>
+                        <p className="text-[11px] text-muted">
+                          {productDocuments.length} certificate{productDocuments.length === 1 ? '' : 's'}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="grid gap-3 md:grid-cols-2">
+                      {productDocuments.map((document) => (
+                        <button
+                          key={document.id}
+                          type="button"
+                          onClick={() => setSelected(document)}
+                          className="group flex cursor-pointer items-start gap-4 rounded-2xl border border-black/7 bg-white p-5 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-cyan/40 hover:shadow-md"
+                        >
+                          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-cyan/10 text-cyan-dim transition group-hover:bg-cyan group-hover:text-navy">
+                            <FileText className="h-5 w-5" />
+                          </span>
+                          <span className="min-w-0 flex-1">
+                            <span className="block font-display text-[15px] font-bold text-ink">
+                              {document.name}
+                            </span>
+                            <span className="mt-1 block text-[12px] text-muted">
+                              {document.documentUrl ? 'PDF certificate attached' : 'Certificate details'}
+                            </span>
+                            <span className="mt-3 inline-flex items-center gap-1.5 text-[11px] font-bold tracking-wide text-cyan-dim uppercase">
+                              View certificate
+                              {document.documentUrl ? <ExternalLink className="h-3 w-3" /> : null}
+                            </span>
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="rounded-3xl border border-dashed border-black/12 bg-fog px-6 py-14 text-center">
+                <FileText className="mx-auto h-8 w-8 text-muted" />
+                <p className="mt-3 font-display text-base font-bold text-ink">
+                  {documents.length ? 'No matching certificates' : 'Certificates are being prepared'}
+                </p>
+                <p className="mx-auto mt-1 max-w-md text-sm text-muted">
+                  {documents.length
+                    ? 'Try a different product, batch or certificate name.'
+                    : 'Published batch documents will appear here as laboratory results are finalized.'}
+                </p>
+              </div>
+            )}
+          </section>
 
           <div
             data-reveal="up"
@@ -103,6 +251,90 @@ export default function CoaPage() {
       </main>
 
       <Footer />
+
+      {createPortal(
+        <AnimatePresence>
+          {selected ? (
+            <div className="fixed inset-0 z-[10070] flex items-end justify-center sm:items-center sm:p-5">
+              <motion.button
+                type="button"
+                aria-label="Close certificate"
+                onClick={() => setSelected(null)}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="absolute inset-0 bg-navy/65 backdrop-blur-[3px]"
+              />
+              <motion.div
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="coa-document-title"
+                initial={{ opacity: 0, y: 24, scale: 0.98 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 18, scale: 0.98 }}
+                transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+                className="relative flex max-h-[94vh] w-full max-w-5xl flex-col overflow-hidden rounded-t-3xl bg-white shadow-2xl sm:rounded-3xl"
+              >
+                <div className="flex shrink-0 items-start justify-between gap-4 border-b border-black/8 px-5 py-4 md:px-7">
+                  <div className="min-w-0">
+                    <p className="text-[10px] font-bold tracking-[0.18em] text-cyan-dim uppercase">
+                      {selected.product?.name}
+                    </p>
+                    <h2 id="coa-document-title" className="mt-1 truncate font-display text-lg font-bold text-ink">
+                      {selected.name}
+                    </h2>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-2">
+                    {selected.documentUrl ? (
+                      <a
+                        href={assetUrl(selected.documentUrl)}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-1.5 rounded-xl bg-fog px-3 py-2 text-[12px] font-semibold text-ink transition hover:bg-fog-deep"
+                      >
+                        <ExternalLink className="h-3.5 w-3.5" />
+                        Open PDF
+                      </a>
+                    ) : null}
+                    <button
+                      type="button"
+                      onClick={() => setSelected(null)}
+                      aria-label="Close"
+                      className="flex h-9 w-9 items-center justify-center rounded-full bg-fog text-ink transition hover:bg-fog-deep"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+                <div
+                  className={`min-h-0 flex-1 overflow-y-auto ${
+                    selected.documentUrl ? 'grid lg:grid-cols-[0.38fr_0.62fr]' : ''
+                  }`}
+                >
+                  <div className="p-5 md:p-7">
+                    <p className="text-[10px] font-bold tracking-[0.16em] text-muted uppercase">
+                      Certificate details
+                    </p>
+                    <div className="mt-3 whitespace-pre-line text-sm leading-7 text-ink">
+                      {selected.content || 'No additional certificate notes were provided.'}
+                    </div>
+                  </div>
+                  {selected.documentUrl ? (
+                    <div className="min-h-[55vh] border-t border-black/8 bg-fog lg:min-h-[70vh] lg:border-t-0 lg:border-l">
+                      <iframe
+                        src={assetUrl(selected.documentUrl)}
+                        title={`${selected.name} PDF`}
+                        className="h-[70vh] w-full bg-white"
+                      />
+                    </div>
+                  ) : null}
+                </div>
+              </motion.div>
+            </div>
+          ) : null}
+        </AnimatePresence>,
+        document.body,
+      )}
     </PageTransition>
   )
 }

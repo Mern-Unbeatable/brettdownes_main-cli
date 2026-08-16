@@ -12,6 +12,7 @@ import {
   Info,
   MapPin,
   RefreshCw,
+  Tag,
   Truck,
   Wallet,
 } from 'lucide-react'
@@ -24,6 +25,7 @@ import { useSettings } from '../context/SettingsContext'
 import { useToast } from '../components/Toaster'
 import { lockBodyScroll, unlockBodyScroll } from '../hooks/lockBodyScroll'
 import { api, assetUrl, formatCents, formatPrice } from '../lib/api'
+import { calculateBulkDiscount } from '../utils/discounts'
 
 const DESCRIPTOR_NOTICE_MS = 3500
 
@@ -50,6 +52,7 @@ export default function CheckoutPage() {
   const [saveAddress, setSaveAddress] = useState(false)
 
   const [rates, setRates] = useState([])
+  const [parcel, setParcel] = useState(null)
   const [shipmentId, setShipmentId] = useState(null)
   const [selectedRateId, setSelectedRateId] = useState('')
   const [ratesLoading, setRatesLoading] = useState(false)
@@ -61,6 +64,17 @@ export default function CheckoutPage() {
   const [descriptorNotice, setDescriptorNotice] = useState(null)
   const [noticeProgress, setNoticeProgress] = useState(0)
   const [placedOrder, setPlacedOrder] = useState(null)
+  const [discountTiers, setDiscountTiers] = useState([])
+  const [couponCode, setCouponCode] = useState('')
+  const [appliedCoupon, setAppliedCoupon] = useState(null)
+  const [couponLoading, setCouponLoading] = useState(false)
+
+  useEffect(() => {
+    api
+      .get('/api/discounts/public')
+      .then((data) => setDiscountTiers(data.tiers || []))
+      .catch(() => setDiscountTiers([]))
+  }, [])
 
   useEffect(() => {
     if (!user) return
@@ -132,7 +146,36 @@ export default function CheckoutPage() {
   const shippingCents =
     fulfillment === 'PICKUP' ? 0 : selectedRate ? selectedRate.amountCents : 0
   const subtotalCents = Math.round(subtotal * 100)
-  const totalCents = subtotalCents + shippingCents
+  const { discountCents: bulkDiscountCents, discountLabel } = calculateBulkDiscount(
+    items,
+    discountTiers,
+  )
+  const cartSignature = items.map((item) => `${item.variantId}:${item.qty}`).sort().join('|')
+  const currentCoupon =
+    appliedCoupon?.cartSignature === cartSignature ? appliedCoupon : null
+  const couponDiscountCents = currentCoupon?.discountCents || 0
+  const discountCents = Math.min(subtotalCents, bulkDiscountCents + couponDiscountCents)
+  const totalCents = Math.max(0, subtotalCents - discountCents + shippingCents)
+
+  const applyCoupon = async () => {
+    const code = couponCode.trim()
+    if (!code) return
+    setCouponLoading(true)
+    try {
+      const data = await api.post('/api/discounts/validate-coupon', {
+        code,
+        items: items.map((item) => ({ variantId: item.variantId, qty: item.qty })),
+      })
+      setAppliedCoupon({ ...data.coupon, cartSignature })
+      setCouponCode(data.coupon.code)
+      toast.success(`${data.coupon.code} applied.`)
+    } catch (err) {
+      setAppliedCoupon(null)
+      toast.error(err.message)
+    } finally {
+      setCouponLoading(false)
+    }
+  }
 
   const fetchRates = useCallback(async () => {
     if (fulfillment !== 'DELIVERY' || !addressComplete || items.length === 0) return
@@ -154,12 +197,14 @@ export default function CheckoutPage() {
         },
       })
       setRates(data.rates || [])
+      setParcel(data.parcel || null)
       setShipmentId(data.shipmentId)
       setSelectedRateId((current) =>
         data.rates?.some((rate) => rate.id === current) ? current : data.rates?.[0]?.id || '',
       )
     } catch (err) {
       setRates([])
+      setParcel(null)
       setShipmentId(null)
       setSelectedRateId('')
       setRatesError(err.message)
@@ -173,6 +218,7 @@ export default function CheckoutPage() {
   useEffect(() => {
     if (fulfillment !== 'DELIVERY' || !addressComplete) {
       setRates([])
+      setParcel(null)
       setSelectedRateId('')
       setRatesError(null)
       return undefined
@@ -239,6 +285,7 @@ export default function CheckoutPage() {
               pickupLocationId,
             }),
         notes: form.notes.trim(),
+        couponCode: currentCoupon?.code || '',
       })
 
       if (order.paymentMethod === 'PICKUP') {
@@ -549,6 +596,21 @@ export default function CheckoutPage() {
                                 No rates yet. Check the address, or switch to warehouse pickup.
                               </p>
                             ) : (
+                              <>
+                              {parcel ? (
+                                <p className="mb-3 rounded-2xl border border-cyan/20 bg-cyan/5 px-4 py-3 text-[12px] leading-relaxed text-ink">
+                                  Package used for rates:{' '}
+                                  <span className="font-semibold">
+                                    {parcel.length} × {parcel.width} × {parcel.height} in
+                                  </span>
+                                  {' · '}
+                                  <span className="font-semibold">{parcel.weight} oz</span>
+                                  {' '}
+                                  <span className="text-muted">
+                                    ({(Number(parcel.weight) / 16).toFixed(2)} lb)
+                                  </span>
+                                </p>
+                              ) : null}
                               <ul className="space-y-2">
                                 {rates.map((rate) => (
                                   <li key={rate.id}>
@@ -584,6 +646,7 @@ export default function CheckoutPage() {
                                   </li>
                                 ))}
                               </ul>
+                              </>
                             )}
                           </div>
 
@@ -728,8 +791,69 @@ export default function CheckoutPage() {
                   ))}
                 </ul>
 
+                <div className="mt-5 rounded-2xl bg-fog p-3.5">
+                  <label
+                    htmlFor="coupon-code"
+                    className="mb-2 flex items-center gap-2 text-[12px] font-semibold text-ink"
+                  >
+                    <Tag className="h-3.5 w-3.5 text-cyan-dim" />
+                    Coupon code
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      id="coupon-code"
+                      value={couponCode}
+                      onChange={(event) => {
+                        setCouponCode(event.target.value.toUpperCase())
+                        if (appliedCoupon && event.target.value.toUpperCase() !== appliedCoupon.code) {
+                          setAppliedCoupon(null)
+                        }
+                      }}
+                      placeholder="Enter code"
+                      className="min-w-0 flex-1 rounded-xl border border-black/8 bg-white px-3.5 py-2.5 text-sm font-semibold tracking-wide text-ink uppercase outline-none transition focus:border-cyan"
+                    />
+                    <button
+                      type="button"
+                      onClick={applyCoupon}
+                      disabled={!couponCode.trim() || couponLoading}
+                      className="rounded-xl bg-ink px-4 py-2.5 text-[12px] font-semibold text-white transition hover:bg-navy disabled:opacity-40"
+                    >
+                      {couponLoading ? 'Checking…' : currentCoupon ? 'Applied' : 'Apply'}
+                    </button>
+                  </div>
+                  {currentCoupon ? (
+                    <div className="mt-2 flex items-center justify-between gap-3 text-[11px]">
+                      <span className="font-semibold text-emerald-700">
+                        {currentCoupon.description || 'Coupon applied successfully.'}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setCouponCode('')
+                          setAppliedCoupon(null)
+                        }}
+                        className="font-semibold text-muted hover:text-rose-600"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ) : null}
+                </div>
+
                 <div className="mt-5 space-y-2 border-t border-black/8 pt-4 text-sm">
                   <Row label="Subtotal" value={formatCents(subtotalCents)} />
+                  {bulkDiscountCents > 0 ? (
+                    <Row
+                      label={`Bulk reward${discountLabel ? ` (${discountLabel})` : ''}`}
+                      value={`-${formatCents(bulkDiscountCents)}`}
+                    />
+                  ) : null}
+                  {couponDiscountCents > 0 ? (
+                    <Row
+                      label={`Coupon (${currentCoupon.code})`}
+                      value={`-${formatCents(couponDiscountCents)}`}
+                    />
+                  ) : null}
                   <Row
                     label={fulfillment === 'PICKUP' ? 'Pickup' : 'Shipping'}
                     value={

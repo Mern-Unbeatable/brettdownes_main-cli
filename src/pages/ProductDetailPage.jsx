@@ -144,7 +144,7 @@ export default function ProductDetailPage() {
               <h2 className="mt-2 font-display text-3xl font-extrabold tracking-tight text-ink md:text-4xl">
                 {product.name}
               </h2>
-              <p className="mt-3 text-sm leading-relaxed text-muted md:text-base">
+              <p className="mt-3 whitespace-pre-line text-sm leading-relaxed text-muted md:text-base">
                 {product.description}
               </p>
 
@@ -217,6 +217,7 @@ export default function ProductDetailPage() {
                     variantId: variant.id,
                     name: product.name,
                     dose: variant.dose,
+                    sku: variant.sku,
                     price: variant.price,
                     image: variant.image || product.image,
                     slug: product.slug,

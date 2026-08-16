@@ -3,6 +3,8 @@ import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-do
 import { AnimatePresence, motion } from 'framer-motion'
 import {
   ChevronLeft,
+  BadgePercent,
+  Beaker,
   Home,
   LayoutDashboard,
   LogOut,
@@ -28,8 +30,10 @@ const NAV = {
   admin: [
     { to: '/admin', end: true, label: 'Overview', icon: LayoutDashboard },
     { to: '/admin/products', label: 'Products', icon: ShoppingBag },
+    { to: '/admin/coa', label: 'COA library', icon: Beaker },
     { to: '/admin/orders', label: 'Orders', icon: Package },
     { to: '/admin/customers', label: 'Customers', icon: Users },
+    { to: '/admin/discounts', label: 'Discounts & coupons', icon: BadgePercent },
     { to: '/admin/settings', label: 'Settings', icon: Settings },
     { to: '/admin/profile', label: 'Profile', icon: User },
   ],

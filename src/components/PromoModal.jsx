@@ -3,7 +3,8 @@ import { createPortal } from 'react-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Link, useLocation } from 'react-router-dom'
 import { X } from 'lucide-react'
-import { bulkRewards, siteContact } from '../data/site'
+import { siteContact } from '../data/site'
+import { api } from '../lib/api'
 import { lockBodyScroll, unlockBodyScroll } from '../hooks/lockBodyScroll'
 
 function whatsappHref() {
@@ -13,17 +14,26 @@ function whatsappHref() {
 export default function PromoModal() {
   const { pathname } = useLocation()
   const [open, setOpen] = useState(false)
+  const [bulkRewards, setBulkRewards] = useState([])
   const isHome = pathname === '/'
 
   useEffect(() => {
-    if (!isHome) {
+    if (!isHome) return
+    api
+      .get('/api/discounts/public')
+      .then((data) => setBulkRewards(data.tiers || []))
+      .catch(() => setBulkRewards([]))
+  }, [isHome])
+
+  useEffect(() => {
+    if (!isHome || !bulkRewards.length) {
       setOpen(false)
       return undefined
     }
 
     const t = window.setTimeout(() => setOpen(true), 3000)
     return () => window.clearTimeout(t)
-  }, [isHome, pathname])
+  }, [isHome, pathname, bulkRewards.length])
 
   const dismiss = () => setOpen(false)
 
@@ -101,11 +111,11 @@ export default function PromoModal() {
                 <ul className="mt-6 grid gap-2.5 sm:mt-7 sm:grid-cols-3 sm:gap-3">
                   {bulkRewards.map((tier) => (
                     <li
-                      key={tier.save}
+                      key={tier.id}
                       className="rounded-2xl border border-black/8 bg-fog px-4 py-4 text-center sm:py-5"
                     >
                       <p className="font-display text-xl font-bold tracking-wide text-cyan-dim uppercase sm:text-[22px]">
-                        Save {tier.save}
+                        Save {tier.percent}%
                       </p>
                       <p className="mt-1 text-[11px] font-semibold tracking-[0.12em] text-muted uppercase sm:text-[10px] md:text-[11px]">
                         {tier.detail}

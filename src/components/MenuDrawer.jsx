@@ -15,7 +15,9 @@ export default function MenuDrawer({ open, onClose, active }) {
         isAdmin
           ? { label: 'Admin dashboard', icon: ShieldCheck, to: '/admin' }
           : { label: 'Dashboard', icon: LayoutDashboard, to: '/dashboard' },
-        { label: 'My orders', icon: Package, to: isAdmin ? '/admin/orders' : '/dashboard/orders' },
+        ...(isAdmin
+          ? []
+          : [{ label: 'My orders', icon: Package, to: '/dashboard/orders' }]),
         {
           label: 'Settings',
           icon: Settings,

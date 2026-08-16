@@ -47,6 +47,8 @@ const AdminOrders = lazy(() => import('./pages/dashboard/admin/AdminOrders'))
 const AdminOrderDetail = lazy(() => import('./pages/dashboard/admin/AdminOrderDetail'))
 const AdminCustomers = lazy(() => import('./pages/dashboard/admin/AdminCustomers'))
 const AdminSettings = lazy(() => import('./pages/dashboard/admin/AdminSettings'))
+const AdminDiscounts = lazy(() => import('./pages/dashboard/admin/AdminDiscounts'))
+const AdminCoa = lazy(() => import('./pages/dashboard/admin/AdminCoa'))
 
 gsap.registerPlugin(ScrollTrigger)
 
@@ -202,9 +204,11 @@ function AppShell() {
                 <Route path="products" element={<AdminProducts />} />
                 <Route path="products/new" element={<AdminProductEditor />} />
                 <Route path="products/:id" element={<AdminProductEditor />} />
+                <Route path="coa" element={<AdminCoa />} />
                 <Route path="orders" element={<AdminOrders />} />
                 <Route path="orders/:id" element={<AdminOrderDetail />} />
                 <Route path="customers" element={<AdminCustomers />} />
+                <Route path="discounts" element={<AdminDiscounts />} />
                 <Route path="settings" element={<AdminSettings />} />
                 <Route path="profile" element={<AdminProfile />} />
               </Route>

@@ -291,6 +291,16 @@ export default function AdminOrderDetail() {
                 <span className="text-muted">Subtotal</span>
                 <span className="font-medium text-ink">{formatCents(order.subtotalCents)}</span>
               </div>
+              {order.discountCents > 0 ? (
+                <div className="flex justify-between">
+                  <span className="text-muted">
+                    Bulk reward{order.discountLabel ? ` (${order.discountLabel})` : ''}
+                  </span>
+                  <span className="font-medium text-emerald-600">
+                    -{formatCents(order.discountCents)}
+                  </span>
+                </div>
+              ) : null}
               <div className="flex justify-between">
                 <span className="text-muted">{isPickup ? 'Warehouse pickup' : 'Shipping'}</span>
                 <span className="font-medium text-ink">

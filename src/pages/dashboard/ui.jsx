@@ -56,10 +56,11 @@ export function PageHeading({ title, subtitle, actions }) {
   )
 }
 
-export function Card({ children, className = '', padded = true }) {
+export function Card({ children, className = '', padded = true, ...props }) {
   return (
     <section
       className={`rounded-2xl border border-black/6 bg-white shadow-sm ${padded ? 'p-5 md:p-6' : ''} ${className}`}
+      {...props}
     >
       {children}
     </section>

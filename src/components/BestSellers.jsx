@@ -86,11 +86,10 @@ export default function BestSellers() {
         </div>
         )}
 
-        <div data-reveal="up" className="mt-12 flex items-center justify-between gap-6">
-          <div className="progress-track-dark hidden w-44 sm:block" aria-hidden />
+        <div data-reveal="up" className="mt-12 flex justify-end">
           <Link
             to="/shop"
-            className="ml-auto inline-flex items-center gap-2.5 rounded-xl bg-cyan px-6 py-3.5 text-sm font-semibold text-ink transition hover:bg-cyan-dim"
+            className="inline-flex items-center gap-2.5 rounded-xl bg-cyan px-6 py-3.5 text-sm font-semibold text-ink transition hover:bg-cyan-dim"
           >
             Shop Now
             <ShoppingCart className="h-4 w-4" strokeWidth={2.2} />

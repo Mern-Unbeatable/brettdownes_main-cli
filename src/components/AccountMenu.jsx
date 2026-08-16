@@ -90,11 +90,15 @@ export default function AccountMenu({ onBeforeNavigate, align = 'right', tone = 
         isAdmin
           ? { label: 'Admin dashboard', icon: ShieldCheck, path: '/admin' }
           : { label: 'Dashboard', icon: LayoutDashboard, path: '/dashboard' },
-        {
-          label: 'My orders',
-          icon: Package,
-          path: isAdmin ? '/admin/orders' : '/dashboard/orders',
-        },
+        ...(isAdmin
+          ? []
+          : [
+              {
+                label: 'My orders',
+                icon: Package,
+                path: '/dashboard/orders',
+              },
+            ]),
         {
           label: 'Profile',
           icon: User,

@@ -22,30 +22,39 @@ export function SettingsProvider({ children }) {
 
   useEffect(() => {
     let active = true
-    api
-      .get('/api/settings/public')
-      .then((data) => {
-        if (!active || !data?.settings) return
-        const next = { ...FALLBACK, ...data.settings }
-        if (!Array.isArray(next.pickupLocations) || !next.pickupLocations.length) {
-          next.pickupLocations = next.pickupAddress?.name
-            ? [
-                {
-                  id: next.pickupAddress.id || 'default',
-                  name: next.pickupAddress.name,
-                  lines: next.pickupAddress.lines || [],
-                },
-              ]
-            : FALLBACK.pickupLocations
-        }
-        setSettings(next)
-      })
-      .catch(() => {})
-      .finally(() => {
-        if (active) setReady(true)
-      })
+    let retryTimer
+
+    const load = (attempt = 0) =>
+      api
+        .get('/api/settings/public')
+        .then((data) => {
+          if (!active || !data?.settings) return
+          const next = { ...FALLBACK, ...data.settings }
+          if (!Array.isArray(next.pickupLocations) || !next.pickupLocations.length) {
+            next.pickupLocations = next.pickupAddress?.name
+              ? [
+                  {
+                    id: next.pickupAddress.id || 'default',
+                    name: next.pickupAddress.name,
+                    lines: next.pickupAddress.lines || [],
+                  },
+                ]
+              : FALLBACK.pickupLocations
+          }
+          setSettings(next)
+        })
+        .catch(() => {
+          if (!active || attempt >= 2) return
+          retryTimer = window.setTimeout(() => load(attempt + 1), 2000 * (attempt + 1))
+        })
+        .finally(() => {
+          if (active) setReady(true)
+        })
+
+    load()
     return () => {
       active = false
+      window.clearTimeout(retryTimer)
     }
   }, [])
 

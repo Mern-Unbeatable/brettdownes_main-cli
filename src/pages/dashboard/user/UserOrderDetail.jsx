@@ -139,6 +139,16 @@ export default function UserOrderDetail() {
                 <span className="text-muted">Subtotal</span>
                 <span className="text-ink">{formatCents(order.subtotalCents)}</span>
               </div>
+              {order.discountCents > 0 ? (
+                <div className="flex justify-between">
+                  <span className="text-muted">
+                    Bulk reward{order.discountLabel ? ` (${order.discountLabel})` : ''}
+                  </span>
+                  <span className="text-emerald-600">
+                    -{formatCents(order.discountCents)}
+                  </span>
+                </div>
+              ) : null}
               <div className="flex justify-between">
                 <span className="text-muted">
                   {order.fulfillment === 'PICKUP' ? 'Warehouse pickup' : 'Shipping'}

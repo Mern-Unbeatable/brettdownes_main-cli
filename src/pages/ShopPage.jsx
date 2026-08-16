@@ -61,10 +61,7 @@ export default function ShopPage() {
                   <rect width="11" height="9.5" fill="#3C3B6E" />
                 </svg>
               </span>
-              <span>
-                All in-stock orders ship within{' '}
-                <span className="font-semibold">24 hours</span>
-                        </span>
+              <span>Usually ships within one business day.</span>
             </p>
 
             <label htmlFor="peptide-search" className="sr-only">
