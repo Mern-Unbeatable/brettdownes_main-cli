@@ -5,8 +5,8 @@ import {
   CreditCard,
   Download,
   ExternalLink,
-  MapPin,
-  Package,
+  Eye,
+  MapPin,  Package,
   Printer,
   Truck,
   User,
@@ -14,12 +14,14 @@ import {
 } from 'lucide-react'
 import { api, assetUrl, formatCents } from '../../../lib/api'
 import { useToast } from '../../../components/Toaster'
+import { isImageDocument, pdfViewerUrl } from '../../../utils/coaFiles'
 import {
   Badge,
   Button,
   Card,
   ErrorBlock,
   LoadingBlock,
+  Modal,
   Select,
   Spinner,
   formatDate,
@@ -37,6 +39,7 @@ export default function AdminOrderDetail() {
   const [showLoader, setShowLoader] = useState(false)
   const [error, setError] = useState(null)
   const [busy, setBusy] = useState(false)
+  const [labelPreview, setLabelPreview] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -461,12 +464,16 @@ export default function AdminOrderDetail() {
                   </div>
                 </div>
                 <div className="flex flex-col gap-2">
+                  <Button variant="primary" onClick={() => setLabelPreview(true)}>
+                    <Eye className="h-4 w-4" />
+                    View label
+                  </Button>
                   <Button
                     as="a"
                     href={order.labelUrl}
                     target="_blank"
                     rel="noreferrer"
-                    variant="primary"
+                    variant="outline"
                   >
                     <Printer className="h-4 w-4" />
                     Print label
@@ -565,6 +572,40 @@ export default function AdminOrderDetail() {
         </div>
       </div>
 
+      <Modal
+        open={labelPreview}
+        onClose={() => setLabelPreview(false)}
+        title="Shipping label"
+        size="lg"
+        footer={
+          <>
+            <Button variant="ghost" onClick={downloadLabel} disabled={busy}>
+              <Download className="h-4 w-4" />
+              {busy ? 'Downloading…' : 'Download'}
+            </Button>
+            <Button as="a" href={order.labelUrl} target="_blank" rel="noreferrer" variant="primary">
+              <Printer className="h-4 w-4" />
+              Print
+            </Button>
+          </>
+        }
+      >
+        {order.labelUrl ? (
+          isImageDocument(order.labelUrl) ? (
+            <img
+              src={order.labelUrl}
+              alt={`Shipping label for ${order.orderNumber}`}
+              className="mx-auto max-h-[70vh] w-auto rounded-xl border border-black/8 bg-white object-contain"
+            />
+          ) : (
+            <iframe
+              src={pdfViewerUrl(order.labelUrl)}
+              title={`Shipping label for ${order.orderNumber}`}
+              className="h-[70vh] w-full rounded-xl border border-black/8 bg-white"
+            />
+          )
+        ) : null}
+      </Modal>
     </>
   )
 }
