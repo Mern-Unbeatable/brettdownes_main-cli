@@ -7,7 +7,6 @@ import {
   MapPin,
   Package,
   Printer,
-  RefreshCw,
   Truck,
   User,
   Warehouse,
@@ -20,7 +19,6 @@ import {
   Card,
   ErrorBlock,
   LoadingBlock,
-  Modal,
   Select,
   Spinner,
   formatDate,
@@ -38,11 +36,6 @@ export default function AdminOrderDetail() {
   const [showLoader, setShowLoader] = useState(false)
   const [error, setError] = useState(null)
   const [busy, setBusy] = useState(false)
-
-  const [labelModal, setLabelModal] = useState(false)
-  const [rates, setRates] = useState([])
-  const [ratesLoading, setRatesLoading] = useState(false)
-  const [selectedRate, setSelectedRate] = useState('')
 
   useEffect(() => {
     let cancelled = false
@@ -116,60 +109,6 @@ export default function AdminOrderDetail() {
       const data = await api.patch(`/api/admin/orders/${id}/payment`, { paymentStatus })
       setOrder(data.order)
       toast.success(`Payment marked as ${paymentStatus.toLowerCase()}.`, { title: 'Updated' })
-    } catch (err) {
-      toast.error(err.message)
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  const openLabelModal = async () => {
-    setLabelModal(true)
-    setRatesLoading(true)
-    setRates([])
-    try {
-      let data
-      try {
-        data = await api.get(`/api/admin/orders/${id}/rates`)
-      } catch {
-        data = await api.post(`/api/admin/orders/${id}/rates`)
-      }
-      setRates(data.rates || [])
-      setSelectedRate(order?.easypostRateId || data.rates?.[0]?.id || '')
-    } catch (err) {
-      toast.error(err.message)
-      setLabelModal(false)
-    } finally {
-      setRatesLoading(false)
-    }
-  }
-
-  const requoteRates = async () => {
-    setRatesLoading(true)
-    try {
-      const data = await api.post(`/api/admin/orders/${id}/rates`)
-      setRates(data.rates || [])
-      setSelectedRate(data.rates?.[0]?.id || '')
-      toast.success('Fresh carrier rates loaded.')
-    } catch (err) {
-      toast.error(err.message)
-    } finally {
-      setRatesLoading(false)
-    }
-  }
-
-  const buyLabel = async () => {
-    if (!selectedRate) {
-      toast.error('Choose a carrier rate first.')
-      return
-    }
-
-    setBusy(true)
-    try {
-      const data = await api.post(`/api/admin/orders/${id}/label`, { rateId: selectedRate })
-      setOrder(data.order)
-      setLabelModal(false)
-      toast.success('Label purchased and the customer has been emailed.', { title: 'Shipped' })
     } catch (err) {
       toast.error(err.message)
     } finally {
@@ -431,6 +370,12 @@ export default function AdminOrderDetail() {
                     </span>
                   </div>
                   <div className="flex justify-between gap-3">
+                    <span className="text-muted">Shipping paid</span>
+                    <span className="text-right font-semibold text-ink">
+                      {formatCents(order.shippingCents)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between gap-3">
                     <span className="text-muted">Tracking</span>
                     <span className="text-right font-semibold text-ink">{order.trackingCode}</span>
                   </div>
@@ -461,15 +406,26 @@ export default function AdminOrderDetail() {
                 </div>
               </div>
             ) : (
-              <div className="space-y-3">
-                <p className="text-[13px] leading-relaxed text-muted">
-                  Buy postage through EasyPost. Tracking is emailed automatically and the order moves
-                  to shipped.
+              <div className="space-y-3 text-[13px]">
+                <div className="space-y-2 rounded-2xl bg-fog px-4 py-3">
+                  <div className="flex justify-between gap-3">
+                    <span className="text-muted">Service chosen by customer</span>
+                    <span className="text-right font-semibold text-ink">
+                      {order.carrier ? `${order.carrier} ${order.service || ''}` : 'Not selected'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between gap-3">
+                    <span className="text-muted">Shipping paid</span>
+                    <span className="text-right font-semibold text-ink">
+                      {formatCents(order.shippingCents)}
+                    </span>
+                  </div>
+                </div>
+                <p className="leading-relaxed text-muted">
+                  {order.paymentStatus === 'PAID'
+                    ? 'The label is purchased automatically with the service the customer paid for. Tracking appears here once the carrier issues it.'
+                    : 'The label is purchased automatically once the payment is confirmed.'}
                 </p>
-                <Button variant="primary" onClick={openLabelModal} disabled={busy}>
-                  <Printer className="h-4 w-4" />
-                  Buy shipping label
-                </Button>
               </div>
             )}
           </Card>
@@ -519,66 +475,6 @@ export default function AdminOrderDetail() {
         </div>
       </div>
 
-      <Modal
-        open={labelModal}
-        onClose={() => setLabelModal(false)}
-        title="Buy shipping label"
-        footer={
-          <>
-            <Button variant="ghost" onClick={requoteRates} disabled={ratesLoading}>
-              <RefreshCw className={`h-4 w-4 ${ratesLoading ? 'animate-spin' : ''}`} />
-              Re-quote
-            </Button>
-            <Button variant="primary" onClick={buyLabel} disabled={busy || !selectedRate}>
-              {busy ? 'Purchasing…' : 'Buy label'}
-            </Button>
-          </>
-        }
-      >
-        {ratesLoading ? (
-          <p className="py-8 text-center text-[13px] text-muted">Fetching carrier rates…</p>
-        ) : rates.length === 0 ? (
-          <p className="py-8 text-center text-[13px] text-muted">
-            No rates available. Try re-quoting, or check the delivery address.
-          </p>
-        ) : (
-          <ul className="space-y-2">
-            {rates.map((rate) => (
-              <li key={rate.id}>
-                <label
-                  className={`flex cursor-pointer items-center gap-3 rounded-xl border px-4 py-3 transition ${
-                    selectedRate === rate.id
-                      ? 'border-cyan bg-cyan/5'
-                      : 'border-black/10 hover:border-black/25'
-                  }`}
-                >
-                  <input
-                    type="radio"
-                    name="rate"
-                    value={rate.id}
-                    checked={selectedRate === rate.id}
-                    onChange={() => setSelectedRate(rate.id)}
-                    className="h-4 w-4 accent-[#00c4ab]"
-                  />
-                  <span className="min-w-0 flex-1">
-                    <span className="block text-[13px] font-semibold text-ink">
-                      {rate.carrier} {rate.service}
-                    </span>
-                    <span className="block text-[12px] text-muted">
-                      {rate.deliveryDays
-                        ? `${rate.deliveryDays} business days`
-                        : 'Transit time varies'}
-                    </span>
-                  </span>
-                  <span className="font-display text-[15px] font-bold text-ink">
-                    {formatCents(rate.amountCents)}
-                  </span>
-                </label>
-              </li>
-            ))}
-          </ul>
-        )}
-      </Modal>
     </>
   )
 }
