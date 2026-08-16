@@ -128,6 +128,23 @@ export default function AdminOrderDetail() {
 
   const isPickup = order.fulfillment === 'PICKUP'
   const isManualPayment = order.paymentMethod === 'PICKUP'
+  const autoFulfillment = !isPickup && !isManualPayment
+  const canRetryLabel =
+    !isPickup && order.paymentStatus === 'PAID' && !order.labelUrl
+
+  const retryLabel = async () => {
+    setBusy(true)
+    try {
+      const data = await api.post(`/api/admin/orders/${id}/label/retry`)
+      setOrder(data.order)
+      toast.success('Label purchased. Order marked shipped.', { title: 'Shipped' })
+    } catch (err) {
+      toast.error(err.message)
+      load()
+    } finally {
+      setBusy(false)
+    }
+  }
 
   return (
     <>
@@ -280,20 +297,50 @@ export default function AdminOrderDetail() {
           <Card>
             <h2 className="mb-4 font-display text-[15px] font-bold text-ink">Fulfilment</h2>
             <div className="space-y-3">
-              <label className="block">
+              <div className="block">
                 <span className="mb-1.5 block text-[12px] font-semibold text-ink">Order status</span>
-                <Select
-                  value={order.status}
-                  disabled={busy}
-                  onChange={(event) => changeStatus(event.target.value)}
-                >
-                  {STATUSES.map((entry) => (
-                    <option key={entry} value={entry}>
-                      {entry.charAt(0) + entry.slice(1).toLowerCase()}
-                    </option>
-                  ))}
-                </Select>
-              </label>
+                {autoFulfillment ? (
+                  <div className="flex items-center justify-between rounded-xl border border-black/8 bg-fog px-3.5 py-2.5">
+                    <Badge>{order.status}</Badge>
+                    <span className="text-[11px] font-medium text-muted">Auto</span>
+                  </div>
+                ) : (
+                  <Select
+                    value={order.status}
+                    disabled={busy}
+                    onChange={(event) => changeStatus(event.target.value)}
+                  >
+                    {STATUSES.map((entry) => (
+                      <option key={entry} value={entry}>
+                        {entry.charAt(0) + entry.slice(1).toLowerCase()}
+                      </option>
+                    ))}
+                  </Select>
+                )}
+              </div>
+
+              {autoFulfillment ? (
+                <div className="flex flex-col gap-2">
+                  {order.status === 'SHIPPED' ? (
+                    <Button
+                      variant="outline"
+                      disabled={busy}
+                      onClick={() => changeStatus('DELIVERED')}
+                    >
+                      Mark delivered
+                    </Button>
+                  ) : null}
+                  {order.status !== 'CANCELLED' && order.status !== 'REFUNDED' ? (
+                    <Button
+                      variant="ghost"
+                      disabled={busy}
+                      onClick={() => changeStatus('CANCELLED')}
+                    >
+                      Cancel order
+                    </Button>
+                  ) : null}
+                </div>
+              ) : null}
 
               <div className="block">
                 <span className="mb-1.5 flex items-center gap-1.5 text-[12px] font-semibold text-ink">
@@ -318,7 +365,12 @@ export default function AdminOrderDetail() {
                 )}
               </div>
 
-              {!isManualPayment ? (
+              {autoFulfillment ? (
+                <p className="rounded-2xl border border-black/6 bg-fog px-3.5 py-3 text-[12px] leading-relaxed text-muted">
+                  Status updates automatically — Processing after Stripe payment, Shipped when the
+                  EasyPost label is bought. You can mark Delivered or Cancel here.
+                </p>
+              ) : !isManualPayment ? (
                 <p className="rounded-2xl border border-black/6 bg-fog px-3.5 py-3 text-[12px] leading-relaxed text-muted">
                   Paid via Stripe — payment status is updated automatically and cannot be edited
                   here.
@@ -423,9 +475,15 @@ export default function AdminOrderDetail() {
                 </div>
                 <p className="leading-relaxed text-muted">
                   {order.paymentStatus === 'PAID'
-                    ? 'The label is purchased automatically with the service the customer paid for. Tracking appears here once the carrier issues it.'
+                    ? 'This paid order still needs its EasyPost label. Retry uses the exact service the customer paid for — no rate picking.'
                     : 'The label is purchased automatically once the payment is confirmed.'}
                 </p>
+                {canRetryLabel ? (
+                  <Button variant="primary" onClick={retryLabel} disabled={busy}>
+                    <Printer className="h-4 w-4" />
+                    {busy ? 'Buying label…' : 'Retry automatic label'}
+                  </Button>
+                ) : null}
               </div>
             )}
           </Card>
