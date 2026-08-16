@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import {
   ArrowLeft,
   CreditCard,
+  Download,
   ExternalLink,
   MapPin,
   Package,
@@ -141,6 +142,33 @@ export default function AdminOrderDetail() {
     } catch (err) {
       toast.error(err.message)
       load()
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const downloadLabel = async () => {
+    setBusy(true)
+    try {
+      const base = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '')
+      const response = await fetch(`${base}/api/admin/orders/${id}/label/download`, {
+        credentials: 'include',
+      })
+      if (!response.ok) {
+        const payload = await response.json().catch(() => null)
+        throw new Error(payload?.error || 'Could not download the shipping label.')
+      }
+      const blob = await response.blob()
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `shipping-label-${order.orderNumber}.pdf`
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      URL.revokeObjectURL(url)
+    } catch (err) {
+      toast.error(err.message)
     } finally {
       setBusy(false)
     }
@@ -442,6 +470,10 @@ export default function AdminOrderDetail() {
                   >
                     <Printer className="h-4 w-4" />
                     Print label
+                  </Button>
+                  <Button variant="outline" onClick={downloadLabel} disabled={busy}>
+                    <Download className="h-4 w-4" />
+                    {busy ? 'Downloading…' : 'Download label'}
                   </Button>
                   {order.trackingUrl ? (
                     <Button
