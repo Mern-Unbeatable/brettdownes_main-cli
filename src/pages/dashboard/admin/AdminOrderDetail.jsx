@@ -6,8 +6,9 @@ import {
   Download,
   ExternalLink,
   Eye,
-  MapPin,  Package,
-  Printer,
+  MapPin,
+  Package,
+  RefreshCw,
   Truck,
   User,
   Warehouse,
@@ -468,16 +469,6 @@ export default function AdminOrderDetail() {
                     <Eye className="h-4 w-4" />
                     View label
                   </Button>
-                  <Button
-                    as="a"
-                    href={order.labelUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    variant="outline"
-                  >
-                    <Printer className="h-4 w-4" />
-                    Print label
-                  </Button>
                   <Button variant="outline" onClick={downloadLabel} disabled={busy}>
                     <Download className="h-4 w-4" />
                     {busy ? 'Downloading…' : 'Download label'}
@@ -519,7 +510,7 @@ export default function AdminOrderDetail() {
                 </p>
                 {canRetryLabel ? (
                   <Button variant="primary" onClick={retryLabel} disabled={busy}>
-                    <Printer className="h-4 w-4" />
+                    <RefreshCw className={`h-4 w-4 ${busy ? 'animate-spin' : ''}`} />
                     {busy ? 'Buying label…' : 'Retry automatic label'}
                   </Button>
                 ) : null}
@@ -578,16 +569,10 @@ export default function AdminOrderDetail() {
         title="Shipping label"
         size="lg"
         footer={
-          <>
-            <Button variant="ghost" onClick={downloadLabel} disabled={busy}>
-              <Download className="h-4 w-4" />
-              {busy ? 'Downloading…' : 'Download'}
-            </Button>
-            <Button as="a" href={order.labelUrl} target="_blank" rel="noreferrer" variant="primary">
-              <Printer className="h-4 w-4" />
-              Print
-            </Button>
-          </>
+          <Button variant="primary" onClick={downloadLabel} disabled={busy}>
+            <Download className="h-4 w-4" />
+            {busy ? 'Downloading…' : 'Download label'}
+          </Button>
         }
       >
         {order.labelUrl ? (
