@@ -5,6 +5,7 @@ import PageHeader from '../components/PageHeader'
 import PageTransition from '../components/PageTransition'
 import Footer from '../components/Footer'
 import RuoNotice from '../components/RuoNotice'
+import ProductBadge from '../components/ProductBadge'
 import { useCart } from '../context/CartContext'
 import { useCatalog } from '../context/CatalogContext'
 import { assetUrl, formatPrice } from '../lib/api'
@@ -18,14 +19,14 @@ export default function ProductDetailPage() {
   const [variantId, setVariantId] = useState(() => product?.variants[0]?.id)
   const [qty, setQty] = useState(1)
   const [activeImage, setActiveImage] = useState(
-    () => product?.variants[0]?.image || product?.image,
+    () => product?.image || product?.variants[0]?.image,
   )
 
   useEffect(() => {
     if (!product?.variants?.length) return
     setVariantId(product.variants[0].id)
     setQty(1)
-    setActiveImage(product.variants[0].image || product.image)
+    setActiveImage(product.image || product.variants[0].image)
   }, [slug, product])
 
   const variant = useMemo(
@@ -37,15 +38,16 @@ export default function ProductDetailPage() {
     if (!product) return []
     const seen = new Set()
     const list = []
+    if (product.image) {
+      seen.add(product.image)
+      list.push({ src: product.image, variantId: null, dose: 'Main' })
+    }
     for (const v of product.variants) {
       const src = v.image || product.image
-      if (!seen.has(src)) {
+      if (src && !seen.has(src)) {
         seen.add(src)
         list.push({ src, variantId: v.id, dose: v.dose })
       }
-    }
-    if (!seen.has(product.image)) {
-      list.unshift({ src: product.image, variantId: product.variants[0].id, dose: 'Main' })
     }
     return list
   }, [product])
@@ -127,7 +129,8 @@ export default function ProductDetailPage() {
                 })}
               </div>
 
-              <div className="min-w-0 flex-1 overflow-hidden rounded-[24px] bg-[#f2f2f2]">
+              <div className="relative min-w-0 flex-1 overflow-hidden rounded-[24px] bg-[#f2f2f2]">
+                <ProductBadge label={product.badge} />
                 <img
                   key={activeImage}
                   src={assetUrl(activeImage)}
@@ -262,7 +265,8 @@ export default function ProductDetailPage() {
               >
                 {related.map((item) => (
                   <Link key={item.id} to={`/shop/${item.slug}`} className="group text-center">
-                    <div className="overflow-hidden rounded-2xl bg-[#f2f2f2]">
+                    <div className="relative overflow-hidden rounded-2xl bg-[#f2f2f2]">
+                      <ProductBadge label={item.badge} />
                       <img
                         src={assetUrl(item.image)}
                         alt={item.name}

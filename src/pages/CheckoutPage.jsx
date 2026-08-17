@@ -453,12 +453,13 @@ export default function CheckoutPage() {
                               Certificates of Analysis
                             </p>
                             <h3 className="mt-1.5 font-display text-lg font-bold text-ink">
-                              All products are tested — COAs available
+                              Lab-tested products — COAs available
                             </h3>
                             <p className="mt-2 max-w-md text-[13px] leading-relaxed text-muted">
-                              Every product we source undergoes batch verification. Certificates are
-                              published as results are finalized — review our COA commitment before
-                              you pay.
+                              We verify analytical certificates from our manufacturing partners and
+                              publish independent third-party lab reports as they are completed.
+                              Testing is periodic rather than on every batch — see the COA library
+                              for what is currently available.
                             </p>
                           </div>
                         </div>

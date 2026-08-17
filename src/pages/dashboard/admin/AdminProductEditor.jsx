@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { ArrowLeft, ImagePlus, Plus, Save, Trash2, X } from 'lucide-react'
+import { ArrowLeft, Check, ImagePlus, Plus, Save, Sparkles, Trash2, X } from 'lucide-react'
 import { api, assetUrl } from '../../../lib/api'
 import { useToast } from '../../../components/Toaster'
 import { useCatalog } from '../../../context/CatalogContext'
@@ -39,6 +39,9 @@ const EMPTY_PRODUCT = {
   form: 'Lyophilized',
   image: '',
   highlights: [],
+  badge: '',
+  showOnHome: false,
+  homeOrder: 0,
   isActive: true,
   sortOrder: 0,
 }
@@ -254,6 +257,9 @@ export default function AdminProductEditor() {
         variants.find((variant) => variant.image)?.image ||
         '',
       highlights: product.highlights || [],
+      badge: product.badge || '',
+      showOnHome: product.showOnHome === true,
+      homeOrder: Number(product.homeOrder) || 0,
       isActive: product.isActive,
       sortOrder: Number(product.sortOrder) || 0,
     }
@@ -475,6 +481,60 @@ export default function AdminProductEditor() {
 
           <div className="space-y-5">
             <Card>
+              <h2 className="mb-1 font-display text-[15px] font-bold text-ink">Main product image</h2>
+              <p className="mb-4 text-[12px] leading-relaxed text-muted">
+                This image appears on the shop page, homepage, and product listing cards.
+              </p>
+              <div className="w-[180px]">
+                <ImagePicker
+                  square
+                  label=""
+                  value={product.image}
+                  onChange={(value) => setField('image', value)}
+                />
+              </div>
+
+              {variants.some((variant) => variant.image) ? (
+                <div className="mt-4">
+                  <p className="mb-2 text-[11px] font-semibold tracking-wide text-muted uppercase">
+                    Or select a variant image
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {variants
+                      .filter((variant) => variant.image)
+                      .map((variant, index) => {
+                        const selected = product.image === variant.image
+                        return (
+                          <button
+                            key={`${variant.id || 'new'}-${index}`}
+                            type="button"
+                            onClick={() => setField('image', variant.image)}
+                            className={`relative h-16 w-16 shrink-0 overflow-hidden rounded-xl border-2 transition ${
+                              selected
+                                ? 'border-cyan shadow-[0_0_0_3px_rgba(0,245,212,0.16)]'
+                                : 'border-transparent hover:border-black/15'
+                            }`}
+                            aria-label={`Use ${variant.dose || `variant ${index + 1}`} image as main`}
+                          >
+                            <img
+                              src={assetUrl(variant.image)}
+                              alt=""
+                              className="h-full w-full object-cover"
+                            />
+                            {selected ? (
+                              <span className="absolute top-1.5 right-1.5 grid h-5 w-5 place-items-center rounded-full bg-cyan text-navy shadow">
+                                <Check className="h-3 w-3" strokeWidth={3} />
+                              </span>
+                            ) : null}
+                          </button>
+                        )
+                      })}
+                  </div>
+                </div>
+              ) : null}
+            </Card>
+
+            <Card>
               <h2 className="mb-4 font-display text-[15px] font-bold text-ink">Visibility</h2>
               <div className="space-y-3">
                 <Toggle
@@ -491,6 +551,75 @@ export default function AdminProductEditor() {
                     onChange={(e) => setField('sortOrder', e.target.value)}
                   />
                 </Field>
+              </div>
+            </Card>
+
+            <Card>
+              <h2 className="mb-1 flex items-center gap-2 font-display text-[15px] font-bold text-ink">
+                <Sparkles className="h-4 w-4 text-cyan-dim" />
+                Homepage &amp; badge
+              </h2>
+              <p className="mb-4 text-[12px] leading-relaxed text-muted">
+                Select up to four products for the homepage and add an optional label over the photo.
+              </p>
+              <div className="space-y-4">
+                <Toggle
+                  checked={product.showOnHome}
+                  onChange={(value) => setField('showOnHome', value)}
+                  label="Show on homepage"
+                  description="Appears in the four-product homepage section."
+                />
+                {product.showOnHome ? (
+                  <Field label="Homepage position" hint="Choose a unique position from 1 to 4.">
+                    <select
+                      value={product.homeOrder}
+                      onChange={(event) => setField('homeOrder', Number(event.target.value))}
+                      className="w-full rounded-xl border border-black/10 bg-white px-3.5 py-3 text-[13px] text-ink outline-none transition focus:border-cyan"
+                    >
+                      {[0, 1, 2, 3].map((position) => (
+                        <option key={position} value={position}>
+                          Position {position + 1}
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
+                ) : null}
+                <Field
+                  label="Photo badge"
+                  hint="Optional — examples: HOT, FEATURED, NEW, LIMITED."
+                >
+                  <Input
+                    value={product.badge}
+                    maxLength={24}
+                    placeholder="FEATURED"
+                    onChange={(event) => setField('badge', event.target.value)}
+                  />
+                </Field>
+                <div className="flex flex-wrap gap-2">
+                  {['HOT', 'FEATURED', 'NEW', 'LIMITED'].map((badge) => (
+                    <button
+                      key={badge}
+                      type="button"
+                      onClick={() => setField('badge', badge)}
+                      className={`rounded-full px-3 py-1.5 text-[10px] font-bold tracking-[0.12em] transition ${
+                        product.badge === badge
+                          ? 'bg-navy text-cyan'
+                          : 'bg-fog text-muted hover:bg-fog-deep hover:text-ink'
+                      }`}
+                    >
+                      {badge}
+                    </button>
+                  ))}
+                  {product.badge ? (
+                    <button
+                      type="button"
+                      onClick={() => setField('badge', '')}
+                      className="rounded-full px-3 py-1.5 text-[10px] font-semibold text-rose-600 transition hover:bg-rose-50"
+                    >
+                      Clear
+                    </button>
+                  ) : null}
+                </div>
               </div>
             </Card>
 

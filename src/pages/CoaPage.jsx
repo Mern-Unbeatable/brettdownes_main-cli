@@ -23,18 +23,18 @@ import { lockBodyScroll, unlockBodyScroll } from '../hooks/lockBodyScroll'
 const pillars = [
   {
     icon: FileCheck2,
-    title: 'Manufacturer Verified',
-    text: 'Prior to issuing purchase orders, we review and verify private HPLC/MS analytical certificates directly from our certified manufacturing partners.',
+    title: 'Supplier & Manufacturer COAs:',
+    text: 'Every product we source is accompanied by verifiable analytical certificates (HPLC / Mass Spectrometry) directly from our qualified manufacturing partners. Because these originate at the synthesis facility, the entity name on these certificates may reflect our source laboratory.',
   },
   {
     icon: FlaskConical,
-    title: 'Expanding Independent Testing',
-    text: 'We are progressively submitting batches to independent third-party laboratories (such as Janoshik and ILS) to generate custom, lot-matched COAs featuring our brand name.',
+    title: 'Independent Verification:',
+    text: 'To ensure purity, safety, and potency, we also send product lines out for independent, third-party laboratory verification. As these tests are completed, lot-matched certificates featuring our company name are published directly to this archive.',
   },
   {
     icon: RefreshCw,
-    title: 'Live Updates',
-    text: 'Certificates are uploaded to this portal as batch results are finalized.',
+    title: 'Continuous Updates:',
+    text: 'We test across our entire product catalog to verify compound identity and purity standards. All available manufacturer documentation and independent lab reports are updated here in real time so you always know exactly what you are researching.',
   },
 ]
 
@@ -98,11 +98,11 @@ export default function CoaPage() {
               </span>
             </div>
             <h1 className="mt-5 font-display text-2xl font-bold tracking-tight text-ink md:text-3xl">
-              Our Commitment to Quality &amp; Transparency
+              Our Commitment to Product Quality &amp; Testing Transparency
             </h1>
             <p className="mx-auto mt-4 max-w-2xl text-sm leading-relaxed text-muted md:text-base">
-              As a growing company, we are actively expanding our independent third-party
-              certification library.
+              Direct supplier certificates, independent third-party verification, and continuous
+              updates across our research catalog.
             </p>
           </div>
 
@@ -205,7 +205,7 @@ export default function CoaPage() {
             className="mt-10 rounded-3xl border border-cyan/25 bg-gradient-to-br from-cyan/10 via-fog to-white p-6 md:p-8"
           >
             <p className="font-display text-base font-bold text-ink md:text-lg">
-              Every product we source undergoes strict batch verification:
+              Direct Supplier Certificates · Independent Third-Party Testing · Full Transparency
             </p>
             <ul className="mt-6 space-y-5">
               {pillars.map((item) => {
@@ -230,8 +230,8 @@ export default function CoaPage() {
             data-reveal-delay="0.12"
             className="mt-8 text-center text-sm leading-relaxed text-muted"
           >
-            Thank you for your trust and support as we build our inventory and expand our public
-            testing archive.
+            Thank you for your trust and support as we maintain complete transparency across our
+            research catalog.
           </p>
 
           <div

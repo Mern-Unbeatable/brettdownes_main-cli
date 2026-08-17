@@ -10,6 +10,7 @@ import { useCart } from '../context/CartContext'
 import { useGsapReveal } from '../hooks/useGsapReveal'
 import { lowestPrice, useCatalog } from '../context/CatalogContext'
 import { assetUrl, formatPrice } from '../lib/api'
+import ProductBadge from '../components/ProductBadge'
 
 const filters = ['All', 'Peptides', 'Blends']
 
@@ -182,6 +183,7 @@ export default function ShopPage() {
               {list.map((product) => (
                 <article key={product.id} className="group text-center">
                   <div className="relative overflow-hidden rounded-2xl bg-[#f2f2f2]">
+                    <ProductBadge label={product.badge} />
                     <div className="absolute top-3.5 right-3.5 z-10 flex -translate-y-1 flex-col gap-2 opacity-0 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
                       <button
                         type="button"
