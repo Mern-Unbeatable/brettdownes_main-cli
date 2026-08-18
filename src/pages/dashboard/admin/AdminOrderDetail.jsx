@@ -163,10 +163,13 @@ export default function AdminOrderDetail() {
         throw new Error(payload?.error || 'Could not download the shipping label.')
       }
       const blob = await response.blob()
+      const headerName = response.headers.get('content-disposition')?.match(/filename="([^"]+)"/)?.[1]
+      const type = blob.type || response.headers.get('content-type') || ''
+      const extension = headerName?.split('.').pop() || (type.includes('pdf') ? 'pdf' : type.includes('jpeg') ? 'jpg' : 'png')
       const url = URL.createObjectURL(blob)
       const link = document.createElement('a')
       link.href = url
-      link.download = `shipping-label-${order.orderNumber}.pdf`
+      link.download = headerName || `shipping-label-${order.orderNumber}.${extension}`
       document.body.appendChild(link)
       link.click()
       link.remove()
