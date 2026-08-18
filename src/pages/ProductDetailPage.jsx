@@ -9,6 +9,7 @@ import ProductBadge from '../components/ProductBadge'
 import { useCart } from '../context/CartContext'
 import { useCatalog } from '../context/CatalogContext'
 import { assetUrl, formatPrice } from '../lib/api'
+import { normalizeCategory } from '../data/categories'
 
 export default function ProductDetailPage() {
   const { slug } = useParams()
@@ -78,7 +79,9 @@ export default function ProductDetailPage() {
     return <Navigate to="/shop" replace />
   }
 
-  const related = products.filter((p) => p.id !== product.id && p.category === product.category).slice(0, 4)
+  const related = products
+    .filter((p) => p.id !== product.id && normalizeCategory(p.category) === normalizeCategory(product.category))
+    .slice(0, 4)
 
   return (
     <PageTransition>

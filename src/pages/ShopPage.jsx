@@ -11,8 +11,9 @@ import { useGsapReveal } from '../hooks/useGsapReveal'
 import { lowestPrice, useCatalog } from '../context/CatalogContext'
 import { assetUrl, formatPrice } from '../lib/api'
 import ProductBadge from '../components/ProductBadge'
+import { PRODUCT_CATEGORIES, normalizeCategory } from '../data/categories'
 
-const filters = ['All', 'Peptides', 'Blends']
+const filters = ['All', ...PRODUCT_CATEGORIES]
 
 export default function ShopPage() {
   const { addItem } = useCart()
@@ -24,7 +25,7 @@ export default function ShopPage() {
   const list = useMemo(() => {
     const q = query.trim().toLowerCase()
     return products.filter((p) => {
-      const matchFilter = filter === 'All' || p.category === filter
+      const matchFilter = filter === 'All' || normalizeCategory(p.category) === filter
       const matchQuery =
         !q ||
         p.name.toLowerCase().includes(q) ||
@@ -62,7 +63,7 @@ export default function ShopPage() {
                   <rect width="11" height="9.5" fill="#3C3B6E" />
                 </svg>
               </span>
-              <span>Usually ships within one business day.</span>
+              <span>All in-stock items ship within 24–48 hours.</span>
             </p>
 
             <label htmlFor="peptide-search" className="sr-only">

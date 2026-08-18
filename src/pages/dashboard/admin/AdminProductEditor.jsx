@@ -13,9 +13,11 @@ import {
   LoadingBlock,
   PageHeading,
   Reveal,
+  Select,
   Textarea,
   Toggle,
 } from '../ui'
+import { PRODUCT_CATEGORIES, normalizeCategory } from '../../../data/categories'
 
 const EMPTY_VARIANT = {
   dose: '',
@@ -198,7 +200,11 @@ export default function AdminProductEditor() {
     api
       .get(`/api/products/${id}`)
       .then((data) => {
-        setProduct({ ...EMPTY_PRODUCT, ...data.product })
+        setProduct({
+          ...EMPTY_PRODUCT,
+          ...data.product,
+          category: normalizeCategory(data.product.category),
+        })
         setVariants(data.product.variants.length ? data.product.variants : [{ ...EMPTY_VARIANT }])
       })
       .catch((err) => setError(err.message))
@@ -246,7 +252,7 @@ export default function AdminProductEditor() {
 
     const productPayload = {
       name: product.name.trim(),
-      category: product.category.trim() || 'Peptides',
+      category: normalizeCategory(product.category),
       summary: product.summary || '',
       description: product.description || '',
       purity: product.purity || '',
@@ -373,10 +379,16 @@ export default function AdminProductEditor() {
                   <Input value={product.name} onChange={(e) => setField('name', e.target.value)} />
                 </Field>
                 <Field label="Category" className="sm:col-span-2">
-                  <Input
-                    value={product.category}
-                    onChange={(e) => setField('category', e.target.value)}
-                  />
+                  <Select
+                    value={normalizeCategory(product.category)}
+                    onChange={(event) => setField('category', event.target.value)}
+                  >
+                    {PRODUCT_CATEGORIES.map((category) => (
+                      <option key={category} value={category}>
+                        {category}
+                      </option>
+                    ))}
+                  </Select>
                 </Field>
                 <Field label="Description" className="sm:col-span-2">
                   <Textarea

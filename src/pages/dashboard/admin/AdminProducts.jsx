@@ -17,6 +17,7 @@ import {
   Reveal,
   Select,
 } from '../ui'
+import { PRODUCT_CATEGORIES, normalizeCategory } from '../../../data/categories'
 
 const PAGE_SIZE = 9
 
@@ -51,15 +52,10 @@ export default function AdminProducts() {
     setPage(1)
   }, [search, category])
 
-  const categories = useMemo(
-    () => [...new Set(products.map((product) => product.category))].filter(Boolean),
-    [products],
-  )
-
   const filtered = useMemo(() => {
     const term = search.trim().toLowerCase()
     return products.filter((product) => {
-      if (category !== 'ALL' && product.category !== category) return false
+      if (category !== 'ALL' && normalizeCategory(product.category) !== category) return false
       if (!term) return true
       return (
         product.name.toLowerCase().includes(term) ||
@@ -188,7 +184,7 @@ export default function AdminProducts() {
             className="w-full sm:w-52"
           >
             <option value="ALL">All categories</option>
-            {categories.map((entry) => (
+            {PRODUCT_CATEGORIES.map((entry) => (
               <option key={entry} value={entry}>
                 {entry}
               </option>
