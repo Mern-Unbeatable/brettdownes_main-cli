@@ -121,9 +121,12 @@ export default function AdminProducts() {
     try {
       const result = await api.upload('/api/products/import', file)
       const { summary } = result
+      const skipped = summary.skipped
+        ? ` ${summary.skipped} row${summary.skipped === 1 ? '' : 's'} skipped.`
+        : ''
       toast.success(
-        `${summary.rows} rows · ${summary.productsCreated} new · ${summary.productsUpdated} updated · ${summary.variantsUpdated} qty refreshed.`,
-        { title: 'Inventory imported' },
+        `${summary.variantsUpdated} variant${summary.variantsUpdated === 1 ? '' : 's'} updated.${skipped}`,
+        { title: 'Inventory updated' },
       )
       load()
       reloadCatalog()
@@ -134,6 +137,30 @@ export default function AdminProducts() {
     }
   }
 
+  const downloadTemplate = async () => {
+    try {
+      const base = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '')
+      const response = await fetch(`${base}/api/products/import/template`, {
+        credentials: 'include',
+      })
+      if (!response.ok) {
+        const payload = await response.json().catch(() => null)
+        throw new Error(payload?.error || 'Could not download the inventory template.')
+      }
+      const blob = await response.blob()
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = 'peptide-ops-inventory.xlsx'
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      URL.revokeObjectURL(url)
+    } catch (err) {
+      toast.error(err.message)
+    }
+  }
+
   return (
     <>
       <PageHeading
@@ -141,7 +168,6 @@ export default function AdminProducts() {
         subtitle={`${products.length} product${products.length === 1 ? '' : 's'} in the catalogue`}
         actions={
           <div className="flex flex-wrap items-center gap-2">
-            {/* Excel import — temporarily disabled
             <input
               ref={fileRef}
               type="file"
@@ -149,6 +175,10 @@ export default function AdminProducts() {
               className="hidden"
               onChange={handleImport}
             />
+            <Button type="button" variant="outline" onClick={downloadTemplate}>
+              <FileSpreadsheet className="h-4 w-4" />
+              Download template
+            </Button>
             <Button
               type="button"
               variant="outline"
@@ -158,7 +188,6 @@ export default function AdminProducts() {
               <FileSpreadsheet className="h-4 w-4" />
               {importing ? 'Importing…' : 'Import Excel'}
             </Button>
-            */}
             <Button as={Link} to="/admin/products/new" variant="primary">
               <PackagePlus className="h-4 w-4" />
               New product
