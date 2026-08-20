@@ -15,7 +15,10 @@ export function CatalogProvider({ children }) {
     setError(null)
     try {
       const data = await api.get('/api/products')
-      setProducts(data.products || [])
+      const next = [...(data.products || [])].sort((a, b) =>
+        a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }),
+      )
+      setProducts(next)
     } catch (err) {
       setError(err.message)
       setProducts([])

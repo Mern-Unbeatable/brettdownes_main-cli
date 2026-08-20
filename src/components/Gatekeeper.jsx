@@ -200,7 +200,6 @@ html[data-gate-locked="1"] #app-shell {
 }
 html[data-gate-locked="1"] .side-action-dock,
 html[data-gate-locked="1"] .faq-category-dock,
-html[data-gate-locked="1"] .whatsapp-float,
 html[data-gate-locked="1"] .sticky-nav-pill {
   opacity: 0 !important;
   pointer-events: none !important;

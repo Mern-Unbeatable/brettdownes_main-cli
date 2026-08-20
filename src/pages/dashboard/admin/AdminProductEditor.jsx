@@ -568,14 +568,6 @@ export default function AdminProductEditor() {
                   label="Live on the storefront"
                   description="Hidden products stay in the catalogue but are not purchasable."
                 />
-                <Field label="Sort order" hint="Lower numbers appear first.">
-                  <Input
-                    type="number"
-                    min="0"
-                    value={product.sortOrder}
-                    onChange={(e) => setField('sortOrder', e.target.value)}
-                  />
-                </Field>
               </div>
             </Card>
 

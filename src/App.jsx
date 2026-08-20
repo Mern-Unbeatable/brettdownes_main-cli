@@ -17,7 +17,6 @@ import TermsOfServicePage from './pages/TermsOfServicePage'
 import PrivacyPolicyPage from './pages/PrivacyPolicyPage'
 import ProductDetailPage from './pages/ProductDetailPage'
 import ResetPasswordPage from './pages/ResetPasswordPage'
-import WhatsAppFloat from './components/WhatsAppFloat'
 import CartDrawer from './components/CartDrawer'
 import PromoModal from './components/PromoModal'
 import Gatekeeper from './components/Gatekeeper'
@@ -221,7 +220,6 @@ function AppShell() {
         <>
           <CartDrawer />
           <PromoModal />
-          <WhatsAppFloat />
         </>
       ) : null}
 

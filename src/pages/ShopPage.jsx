@@ -24,15 +24,17 @@ export default function ShopPage() {
 
   const list = useMemo(() => {
     const q = query.trim().toLowerCase()
-    return products.filter((p) => {
-      const matchFilter = filter === 'All' || normalizeCategory(p.category) === filter
-      const matchQuery =
-        !q ||
-        p.name.toLowerCase().includes(q) ||
-        p.category.toLowerCase().includes(q) ||
-        p.variants.some((v) => v.dose.toLowerCase().includes(q))
-      return matchFilter && matchQuery
-    })
+    return products
+      .filter((p) => {
+        const matchFilter = filter === 'All' || normalizeCategory(p.category) === filter
+        const matchQuery =
+          !q ||
+          p.name.toLowerCase().includes(q) ||
+          p.category.toLowerCase().includes(q) ||
+          p.variants.some((v) => v.dose.toLowerCase().includes(q))
+        return matchFilter && matchQuery
+      })
+      .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }))
   }, [products, filter, query])
 
   useGsapReveal(gridRef, [list])

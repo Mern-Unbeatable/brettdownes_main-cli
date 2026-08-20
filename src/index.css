@@ -44,7 +44,6 @@ body.drawer-open {
 
 body.drawer-open .side-action-dock,
 body.drawer-open .faq-category-dock,
-body.drawer-open .whatsapp-float,
 body.drawer-open .sticky-nav-pill {
   opacity: 0 !important;
   pointer-events: none !important;

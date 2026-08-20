@@ -54,15 +54,22 @@ export default function AdminProducts() {
 
   const filtered = useMemo(() => {
     const term = search.trim().toLowerCase()
-    return products.filter((product) => {
-      if (category !== 'ALL' && normalizeCategory(product.category) !== category) return false
-      if (!term) return true
-      return (
-        product.name.toLowerCase().includes(term) ||
-        product.slug.includes(term) ||
-        product.variants.some((variant) => variant.dose.toLowerCase().includes(term))
-      )
-    })
+    return products
+      .filter((product) => {
+        if (category !== 'ALL' && normalizeCategory(product.category) !== category) return false
+        if (!term) return true
+        return (
+          product.name.toLowerCase().includes(term) ||
+          product.slug.includes(term) ||
+          product.variants.some((variant) => variant.dose.toLowerCase().includes(term)) ||
+          product.variants.some((variant) =>
+            String(variant.barcode || '')
+              .toLowerCase()
+              .includes(term),
+          )
+        )
+      })
+      .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }))
   }, [products, search, category])
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
