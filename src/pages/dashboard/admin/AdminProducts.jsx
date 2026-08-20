@@ -121,13 +121,34 @@ export default function AdminProducts() {
     try {
       const result = await api.upload('/api/products/import', file)
       const { summary } = result
-      const skipped = summary.skipped
-        ? ` ${summary.skipped} row${summary.skipped === 1 ? '' : 's'} skipped.`
-        : ''
-      toast.success(
-        `${summary.variantsUpdated} variant${summary.variantsUpdated === 1 ? '' : 's'} updated.${skipped}`,
-        { title: 'Inventory updated' },
-      )
+      const notFound = summary.notFound || []
+
+      if (summary.variantsUpdated > 0) {
+        toast.success(
+          `${summary.variantsUpdated} variant${summary.variantsUpdated === 1 ? '' : 's'} updated.`,
+          { title: 'Inventory updated' },
+        )
+      }
+
+      if (notFound.length) {
+        const preview = notFound
+          .slice(0, 8)
+          .map((entry) => entry.barcode)
+          .join(', ')
+        const extra = notFound.length > 8 ? ` (+${notFound.length - 8} more)` : ''
+        const message =
+          summary.variantsUpdated > 0
+            ? `These barcodes were not found on the site, so quantity was not updated: ${preview}${extra}. Add the barcode on the product page first.`
+            : `No quantities were updated. Barcode not found: ${preview}${extra}. Add each barcode on the product page first, then upload again.`
+
+        toast.warning(message, {
+          title: 'Barcode not found',
+          duration: 12000,
+        })
+      } else if (summary.variantsUpdated === 0) {
+        toast.info('No rows to update in that file.', { title: 'Import complete' })
+      }
+
       load()
       reloadCatalog()
     } catch (err) {

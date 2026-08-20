@@ -48,8 +48,8 @@ function SidebarContent({ scope, collapsed, onNavigate, user, isAdmin, onLogout 
   return (
     <div className="flex h-full flex-col">
       <div
-        className={`flex shrink-0 flex-col items-center border-b border-white/8 px-3 pt-3 pb-2.5 ${
-          collapsed ? 'lg:px-1.5 lg:pt-2.5 lg:pb-2' : ''
+        className={`flex shrink-0 flex-col items-center border-b border-white/8 px-3 pt-4 pb-3 ${
+          collapsed ? 'lg:px-1.5 lg:pt-3 lg:pb-2.5' : ''
         }`}
       >
         <Link
@@ -57,19 +57,14 @@ function SidebarContent({ scope, collapsed, onNavigate, user, isAdmin, onLogout 
           onClick={onNavigate}
           className="flex w-full flex-col items-center gap-1.5 text-center"
         >
-          {/* logo.png has large baked-in margins + wordmark — crop to the emblem only */}
-          <span
-            className={`relative block overflow-hidden ${
-              collapsed ? 'h-11 w-11' : 'h-24 w-24'
+          <img
+            src="/images/logo.png"
+            alt="Peptide Ops"
+            className={`object-contain object-center ${
+              collapsed ? 'h-11 w-11' : 'h-16 w-auto max-w-[9rem]'
             }`}
-          >
-            <img
-              src="/images/logo.png"
-              alt="Peptide Ops"
-              className="absolute top-[-6%] left-1/2 h-[175%] w-[175%] max-w-none -translate-x-1/2 object-contain"
-              draggable={false}
-            />
-          </span>
+            draggable={false}
+          />
           {!collapsed ? (
             <span className="text-[9px] font-bold tracking-[0.2em] text-cyan uppercase">
               {portalLabel}

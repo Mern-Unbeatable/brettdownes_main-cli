@@ -223,7 +223,7 @@ export default function ProductDetailPage() {
                     variantId: variant.id,
                     name: product.name,
                     dose: variant.dose,
-                    sku: variant.sku,
+                    barcode: variant.barcode,
                     price: variant.price,
                     image: variant.image || product.image,
                     slug: product.slug,

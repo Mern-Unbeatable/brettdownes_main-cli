@@ -22,7 +22,7 @@ import { PRODUCT_CATEGORIES, normalizeCategory } from '../../../data/categories'
 const EMPTY_VARIANT = {
   dose: '',
   price: '',
-  sku: '',
+  barcode: '',
   image: '',
   stock: 0,
   weightOz: 2,
@@ -231,7 +231,7 @@ export default function AdminProductEditor() {
 
     for (const [index, variant] of variants.entries()) {
       if (!variant.dose?.toString().trim()) return `Variant ${index + 1} needs a dose.`
-      if (!variant.sku?.toString().trim()) return `Variant ${index + 1} needs a SKU.`
+      if (!variant.barcode?.toString().trim()) return `Variant ${index + 1} needs a barcode.`
       if (variant.price === '' || Number(variant.price) < 0) {
         return `Variant ${index + 1} needs a valid price.`
       }
@@ -240,8 +240,8 @@ export default function AdminProductEditor() {
       }
     }
 
-    const skus = variants.map((variant) => variant.sku.toString().trim().toLowerCase())
-    if (new Set(skus).size !== skus.length) return 'Each variant needs a unique SKU.'
+    const barcodes = variants.map((variant) => variant.barcode.toString().trim().toLowerCase())
+    if (new Set(barcodes).size !== barcodes.length) return 'Each variant needs a unique barcode.'
 
     return null
   }
@@ -277,7 +277,7 @@ export default function AdminProductEditor() {
 
     const variantPayload = variants.map((variant, index) => ({
       dose: variant.dose.trim(),
-      sku: variant.sku.trim(),
+      barcode: variant.barcode.trim(),
       price: Number(variant.price),
       image: variant.image || '',
       stock: Number(variant.stock) || 0,
@@ -455,11 +455,11 @@ export default function AdminProductEditor() {
                         </div>
 
                         <div className="grid gap-3 sm:grid-cols-2">
-                          <Field label="SKU" hint="Required on every variant — used to match Excel inventory.">
+                          <Field label="Barcode" hint="Required on every variant — used to match Excel inventory.">
                             <Input
-                              value={variant.sku || ''}
-                              onChange={(e) => setVariantField(index, 'sku', e.target.value)}
-                              placeholder="PO-BPC-5"
+                              value={variant.barcode || ''}
+                              onChange={(e) => setVariantField(index, 'barcode', e.target.value)}
+                              placeholder="bpc5"
                             />
                           </Field>
                           <Field label="Dose">

@@ -60,9 +60,9 @@ export const products = [
       'Research use only',
     ],
     variants: [
-      { id: 'glp-5', dose: '5mg', price: 95, sku: 'PO-GLP-5', image: IMG.glp },
-      { id: 'glp-10', dose: '10mg', price: 110, sku: 'PO-GLP-10', image: IMG.mots },
-      { id: 'glp-20', dose: '20mg', price: 185, sku: 'PO-GLP-20', image: IMG.bpc },
+      { id: 'glp-5', dose: '5mg', price: 95, barcode: 'PO-GLP-5', image: IMG.glp },
+      { id: 'glp-10', dose: '10mg', price: 110, barcode: 'PO-GLP-10', image: IMG.mots },
+      { id: 'glp-20', dose: '20mg', price: 185, barcode: 'PO-GLP-20', image: IMG.bpc },
     ],
   },
   {
@@ -82,9 +82,9 @@ export const products = [
       'Multiple vial strengths',
     ],
     variants: [
-      { id: 'mots-5', dose: '5mg', price: 80, sku: 'PO-MOTS-5', image: IMG.mots },
-      { id: 'mots-10', dose: '10mg', price: 95, sku: 'PO-MOTS-10', image: IMG.glp },
-      { id: 'mots-15', dose: '15mg', price: 130, sku: 'PO-MOTS-15', image: IMG.tb },
+      { id: 'mots-5', dose: '5mg', price: 80, barcode: 'PO-MOTS-5', image: IMG.mots },
+      { id: 'mots-10', dose: '10mg', price: 95, barcode: 'PO-MOTS-10', image: IMG.glp },
+      { id: 'mots-15', dose: '15mg', price: 130, barcode: 'PO-MOTS-15', image: IMG.tb },
     ],
   },
   {
@@ -104,9 +104,9 @@ export const products = [
       'Research documentation on request',
     ],
     variants: [
-      { id: 'bpc-5', dose: '5mg', price: 85, sku: 'PO-BPC-5', image: IMG.bpc },
-      { id: 'bpc-10', dose: '10mg', price: 145, sku: 'PO-BPC-10', image: IMG.tb },
-      { id: 'bpc-kit', dose: '5mg × 10', price: 720, sku: 'PO-BPC-KIT', image: IMG.glp },
+      { id: 'bpc-5', dose: '5mg', price: 85, barcode: 'PO-BPC-5', image: IMG.bpc },
+      { id: 'bpc-10', dose: '10mg', price: 145, barcode: 'PO-BPC-10', image: IMG.tb },
+      { id: 'bpc-kit', dose: '5mg × 10', price: 720, barcode: 'PO-BPC-KIT', image: IMG.glp },
     ],
   },
   {
@@ -126,9 +126,9 @@ export const products = [
       'Cold-chain packing available',
     ],
     variants: [
-      { id: 'tb-5', dose: '5mg', price: 90, sku: 'PO-TB-5', image: IMG.tb },
-      { id: 'tb-10', dose: '10mg', price: 155, sku: 'PO-TB-10', image: IMG.bpc },
-      { id: 'tb-20', dose: '20mg', price: 270, sku: 'PO-TB-20', image: IMG.mots },
+      { id: 'tb-5', dose: '5mg', price: 90, barcode: 'PO-TB-5', image: IMG.tb },
+      { id: 'tb-10', dose: '10mg', price: 155, barcode: 'PO-TB-10', image: IMG.bpc },
+      { id: 'tb-20', dose: '20mg', price: 270, barcode: 'PO-TB-20', image: IMG.mots },
     ],
   },
   {
@@ -148,9 +148,9 @@ export const products = [
       'Verified lot tracking',
     ],
     variants: [
-      { id: 'amino-5', dose: '5mg', price: 75, sku: 'PO-1MQ-5', image: IMG.glp },
-      { id: 'amino-10', dose: '10mg', price: 95, sku: 'PO-1MQ-10', image: IMG.mots },
-      { id: 'amino-50', dose: '50mg', price: 310, sku: 'PO-1MQ-50', image: IMG.tb },
+      { id: 'amino-5', dose: '5mg', price: 75, barcode: 'PO-1MQ-5', image: IMG.glp },
+      { id: 'amino-10', dose: '10mg', price: 95, barcode: 'PO-1MQ-10', image: IMG.mots },
+      { id: 'amino-50', dose: '50mg', price: 310, barcode: 'PO-1MQ-50', image: IMG.tb },
     ],
   },
   {
@@ -170,9 +170,9 @@ export const products = [
       'COA on select batches',
     ],
     variants: [
-      { id: 'cjc-2', dose: '2mg', price: 120, sku: 'PO-CJC-2', image: IMG.mots },
-      { id: 'cjc-5', dose: '5mg', price: 195, sku: 'PO-CJC-5', image: IMG.glp },
-      { id: 'cjc-10', dose: '10mg', price: 340, sku: 'PO-CJC-10', image: IMG.bpc },
+      { id: 'cjc-2', dose: '2mg', price: 120, barcode: 'PO-CJC-2', image: IMG.mots },
+      { id: 'cjc-5', dose: '5mg', price: 195, barcode: 'PO-CJC-5', image: IMG.glp },
+      { id: 'cjc-10', dose: '10mg', price: 340, barcode: 'PO-CJC-10', image: IMG.bpc },
     ],
   },
   {
@@ -192,9 +192,9 @@ export const products = [
       'Research-ready packaging',
     ],
     variants: [
-      { id: 'ipa-2', dose: '2mg', price: 70, sku: 'PO-IPA-2', image: IMG.bpc },
-      { id: 'ipa-5', dose: '5mg', price: 88, sku: 'PO-IPA-5', image: IMG.tb },
-      { id: 'ipa-10', dose: '10mg', price: 150, sku: 'PO-IPA-10', image: IMG.glp },
+      { id: 'ipa-2', dose: '2mg', price: 70, barcode: 'PO-IPA-2', image: IMG.bpc },
+      { id: 'ipa-5', dose: '5mg', price: 88, barcode: 'PO-IPA-5', image: IMG.tb },
+      { id: 'ipa-10', dose: '10mg', price: 150, barcode: 'PO-IPA-10', image: IMG.glp },
     ],
   },
   {
@@ -214,9 +214,9 @@ export const products = [
       'Research use only',
     ],
     variants: [
-      { id: 'nad-50', dose: '50mg', price: 95, sku: 'PO-NAD-50', image: IMG.tb },
-      { id: 'nad-100', dose: '100mg', price: 145, sku: 'PO-NAD-100', image: IMG.mots },
-      { id: 'nad-250', dose: '250mg', price: 165, sku: 'PO-NAD-250', image: IMG.bpc },
+      { id: 'nad-50', dose: '50mg', price: 95, barcode: 'PO-NAD-50', image: IMG.tb },
+      { id: 'nad-100', dose: '100mg', price: 145, barcode: 'PO-NAD-100', image: IMG.mots },
+      { id: 'nad-250', dose: '250mg', price: 165, barcode: 'PO-NAD-250', image: IMG.bpc },
     ],
   },
 ]
