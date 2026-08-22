@@ -260,10 +260,7 @@ export default function ShopPage() {
           )}
 
           {!loading && !error && totalPages > 1 ? (
-            <div
-              data-reveal="up"
-              className="mt-10 flex flex-col items-center justify-between gap-4 sm:flex-row"
-            >
+            <div data-reveal="up" className="mt-10 flex flex-col items-center gap-4 text-center">
               <p className="text-sm text-muted">
                 Showing {(currentPage - 1) * PAGE_SIZE + 1}–
                 {Math.min(currentPage * PAGE_SIZE, list.length)} of {list.length}
