@@ -23,6 +23,13 @@ export default function ShopPage() {
   const [query, setQuery] = useState('')
   const [page, setPage] = useState(1)
   const gridRef = useRef(null)
+  const catalogRef = useRef(null)
+  const shouldScrollToProducts = useRef(false)
+
+  const goToPage = (nextPage) => {
+    shouldScrollToProducts.current = true
+    setPage(nextPage)
+  }
 
   const list = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -53,6 +60,12 @@ export default function ShopPage() {
   useEffect(() => {
     if (page > totalPages) setPage(totalPages)
   }, [page, totalPages])
+
+  useEffect(() => {
+    if (!shouldScrollToProducts.current) return
+    shouldScrollToProducts.current = false
+    catalogRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }, [currentPage, pageItems])
 
   useGsapReveal(gridRef, [pageItems, currentPage])
 
@@ -119,9 +132,10 @@ export default function ShopPage() {
           </div>
 
           <div
+            ref={catalogRef}
             data-reveal="up"
             data-reveal-delay="0.08"
-            className="mb-10 flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between"
+            className="mb-10 scroll-mt-28 flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between"
           >
             <div className="flex items-center gap-2">
               <Component className="h-4 w-4 text-cyan" strokeWidth={2.25} />
@@ -269,10 +283,7 @@ export default function ShopPage() {
                 <button
                   type="button"
                   disabled={currentPage <= 1}
-                  onClick={() => {
-                    setPage((value) => Math.max(1, value - 1))
-                    window.scrollTo({ top: 0, behavior: 'smooth' })
-                  }}
+                  onClick={() => goToPage(Math.max(1, currentPage - 1))}
                   className="inline-flex items-center gap-1.5 rounded-full border border-black/10 bg-white px-4 py-2 text-sm font-medium text-ink transition hover:bg-fog disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   <ChevronLeft className="h-4 w-4" />
@@ -286,10 +297,7 @@ export default function ShopPage() {
                       type="button"
                       aria-label={`Go to page ${pageNumber}`}
                       aria-current={pageNumber === currentPage ? 'page' : undefined}
-                      onClick={() => {
-                        setPage(pageNumber)
-                        window.scrollTo({ top: 0, behavior: 'smooth' })
-                      }}
+                      onClick={() => goToPage(pageNumber)}
                       className={`min-w-10 rounded-full px-3 py-2 text-sm font-semibold transition ${
                         pageNumber === currentPage
                           ? 'bg-ink text-white'
@@ -304,10 +312,7 @@ export default function ShopPage() {
                 <button
                   type="button"
                   disabled={currentPage >= totalPages}
-                  onClick={() => {
-                    setPage((value) => Math.min(totalPages, value + 1))
-                    window.scrollTo({ top: 0, behavior: 'smooth' })
-                  }}
+                  onClick={() => goToPage(Math.min(totalPages, currentPage + 1))}
                   className="inline-flex items-center gap-1.5 rounded-full border border-black/10 bg-white px-4 py-2 text-sm font-medium text-ink transition hover:bg-fog disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   Next
