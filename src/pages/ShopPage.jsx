@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ChevronLeft, ChevronRight, Component, Search, ShoppingCart, X } from 'lucide-react'
 import PageHeader from '../components/PageHeader'
@@ -15,6 +15,13 @@ import { PRODUCT_CATEGORIES, normalizeCategory } from '../data/categories'
 
 const filters = ['All', ...PRODUCT_CATEGORIES]
 const PAGE_SIZE = 12
+const SCROLL_OFFSET = 112
+
+function scrollToProductGrid(gridEl) {
+  if (!gridEl) return
+  const top = gridEl.getBoundingClientRect().top + window.scrollY - SCROLL_OFFSET
+  window.scrollTo({ top: Math.max(0, top), behavior: 'auto' })
+}
 
 export default function ShopPage() {
   const { addItem } = useCart()
@@ -23,13 +30,7 @@ export default function ShopPage() {
   const [query, setQuery] = useState('')
   const [page, setPage] = useState(1)
   const gridRef = useRef(null)
-  const catalogRef = useRef(null)
-  const shouldScrollToProducts = useRef(false)
-
-  const goToPage = (nextPage) => {
-    shouldScrollToProducts.current = true
-    setPage(nextPage)
-  }
+  const pendingScroll = useRef(false)
 
   const list = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -53,6 +54,12 @@ export default function ShopPage() {
     return list.slice(start, start + PAGE_SIZE)
   }, [list, currentPage])
 
+  const goToPage = (nextPage) => {
+    if (nextPage === currentPage) return
+    pendingScroll.current = true
+    setPage(nextPage)
+  }
+
   useEffect(() => {
     setPage(1)
   }, [filter, query])
@@ -61,10 +68,13 @@ export default function ShopPage() {
     if (page > totalPages) setPage(totalPages)
   }, [page, totalPages])
 
-  useEffect(() => {
-    if (!shouldScrollToProducts.current) return
-    shouldScrollToProducts.current = false
-    catalogRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  useLayoutEffect(() => {
+    if (!pendingScroll.current) return
+    pendingScroll.current = false
+    scrollToProductGrid(gridRef.current)
+    // GSAP reveal on the new page can shift layout after the first scroll pass.
+    const retry = window.setTimeout(() => scrollToProductGrid(gridRef.current), 80)
+    return () => window.clearTimeout(retry)
   }, [currentPage, pageItems])
 
   useGsapReveal(gridRef, [pageItems, currentPage])
@@ -132,10 +142,9 @@ export default function ShopPage() {
           </div>
 
           <div
-            ref={catalogRef}
             data-reveal="up"
             data-reveal-delay="0.08"
-            className="mb-10 scroll-mt-28 flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between"
+            className="mb-10 flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between"
           >
             <div className="flex items-center gap-2">
               <Component className="h-4 w-4 text-cyan" strokeWidth={2.25} />
@@ -211,11 +220,12 @@ export default function ShopPage() {
             </div>
           ) : (
             <div
+              id="shop-products"
               ref={gridRef}
               data-reveal-managed
               data-reveal-stagger
               data-stagger="0.08"
-              className="grid grid-cols-2 gap-4 sm:gap-6 lg:grid-cols-4"
+              className="scroll-mt-28 grid grid-cols-2 gap-4 sm:gap-6 lg:grid-cols-4"
             >
               {pageItems.map((product) => (
                 <article key={product.id} className="group text-center">
