@@ -1,6 +1,6 @@
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Component, Search, ShoppingCart, X } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Component, Search, ShoppingCart, X } from 'lucide-react'
 import PageHeader from '../components/PageHeader'
 import PageTransition from '../components/PageTransition'
 import Footer from '../components/Footer'
@@ -14,12 +14,14 @@ import ProductBadge from '../components/ProductBadge'
 import { PRODUCT_CATEGORIES, normalizeCategory } from '../data/categories'
 
 const filters = ['All', ...PRODUCT_CATEGORIES]
+const PAGE_SIZE = 12
 
 export default function ShopPage() {
   const { addItem } = useCart()
   const { products, loading, error, reload } = useCatalog()
   const [filter, setFilter] = useState('All')
   const [query, setQuery] = useState('')
+  const [page, setPage] = useState(1)
   const gridRef = useRef(null)
 
   const list = useMemo(() => {
@@ -37,7 +39,22 @@ export default function ShopPage() {
       .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }))
   }, [products, filter, query])
 
-  useGsapReveal(gridRef, [list])
+  const totalPages = Math.max(1, Math.ceil(list.length / PAGE_SIZE))
+  const currentPage = Math.min(page, totalPages)
+  const pageItems = useMemo(() => {
+    const start = (currentPage - 1) * PAGE_SIZE
+    return list.slice(start, start + PAGE_SIZE)
+  }, [list, currentPage])
+
+  useEffect(() => {
+    setPage(1)
+  }, [filter, query])
+
+  useEffect(() => {
+    if (page > totalPages) setPage(totalPages)
+  }, [page, totalPages])
+
+  useGsapReveal(gridRef, [pageItems, currentPage])
 
   return (
     <PageTransition>
@@ -113,6 +130,9 @@ export default function ShopPage() {
               </span>
               <span className="ml-2 text-xs text-muted">
                 {list.length} result{list.length === 1 ? '' : 's'}
+                {totalPages > 1
+                  ? ` · page ${currentPage} of ${totalPages}`
+                  : ''}
               </span>
             </div>
 
@@ -183,7 +203,7 @@ export default function ShopPage() {
               data-stagger="0.08"
               className="grid grid-cols-2 gap-4 sm:gap-6 lg:grid-cols-4"
             >
-              {list.map((product) => (
+              {pageItems.map((product) => (
                 <article key={product.id} className="group text-center">
                   <div className="relative overflow-hidden rounded-2xl bg-[#f2f2f2]">
                     <ProductBadge label={product.badge} />
@@ -214,6 +234,8 @@ export default function ShopPage() {
                       <img
                         src={assetUrl(product.image)}
                         alt={product.name}
+                        loading="lazy"
+                        decoding="async"
                         className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]"
                       />
                     </Link>
@@ -236,6 +258,67 @@ export default function ShopPage() {
               ))}
             </div>
           )}
+
+          {!loading && !error && totalPages > 1 ? (
+            <div
+              data-reveal="up"
+              className="mt-10 flex flex-col items-center justify-between gap-4 sm:flex-row"
+            >
+              <p className="text-sm text-muted">
+                Showing {(currentPage - 1) * PAGE_SIZE + 1}–
+                {Math.min(currentPage * PAGE_SIZE, list.length)} of {list.length}
+              </p>
+              <div className="flex flex-wrap items-center justify-center gap-2">
+                <button
+                  type="button"
+                  disabled={currentPage <= 1}
+                  onClick={() => {
+                    setPage((value) => Math.max(1, value - 1))
+                    window.scrollTo({ top: 0, behavior: 'smooth' })
+                  }}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-black/10 bg-white px-4 py-2 text-sm font-medium text-ink transition hover:bg-fog disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                  Previous
+                </button>
+
+                <div className="flex flex-wrap items-center gap-1.5">
+                  {Array.from({ length: totalPages }, (_, index) => index + 1).map((pageNumber) => (
+                    <button
+                      key={pageNumber}
+                      type="button"
+                      aria-label={`Go to page ${pageNumber}`}
+                      aria-current={pageNumber === currentPage ? 'page' : undefined}
+                      onClick={() => {
+                        setPage(pageNumber)
+                        window.scrollTo({ top: 0, behavior: 'smooth' })
+                      }}
+                      className={`min-w-10 rounded-full px-3 py-2 text-sm font-semibold transition ${
+                        pageNumber === currentPage
+                          ? 'bg-ink text-white'
+                          : 'bg-fog text-muted hover:bg-fog-deep hover:text-ink'
+                      }`}
+                    >
+                      {pageNumber}
+                    </button>
+                  ))}
+                </div>
+
+                <button
+                  type="button"
+                  disabled={currentPage >= totalPages}
+                  onClick={() => {
+                    setPage((value) => Math.min(totalPages, value + 1))
+                    window.scrollTo({ top: 0, behavior: 'smooth' })
+                  }}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-black/10 bg-white px-4 py-2 text-sm font-medium text-ink transition hover:bg-fog disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  Next
+                  <ChevronRight className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+          ) : null}
 
           <div className="mt-14 flex flex-col gap-6 md:mt-16 md:gap-8">
             <VolumePricing />

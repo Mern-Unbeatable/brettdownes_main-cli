@@ -26,6 +26,7 @@ import { useToast } from '../components/Toaster'
 import { lockBodyScroll, unlockBodyScroll } from '../hooks/lockBodyScroll'
 import { api, assetUrl, formatCents, formatPrice } from '../lib/api'
 import { calculateBulkDiscount } from '../utils/discounts'
+import { groupRatesByCarrier } from '../utils/shipping'
 
 const DESCRIPTOR_NOTICE_MS = 3500
 
@@ -142,6 +143,7 @@ export default function CheckoutPage() {
     form.address.trim() && form.city.trim() && form.state.trim() && form.zip.trim().length >= 3
 
   const selectedRate = rates.find((rate) => rate.id === selectedRateId) || null
+  const groupedRates = useMemo(() => groupRatesByCarrier(rates), [rates])
 
   const shippingCents =
     fulfillment === 'PICKUP' ? 0 : selectedRate ? selectedRate.amountCents : 0
@@ -612,41 +614,52 @@ export default function CheckoutPage() {
                                   </span>
                                 </p>
                               ) : null}
-                              <ul className="space-y-2">
-                                {rates.map((rate) => (
-                                  <li key={rate.id}>
-                                    <label
-                                      className={`flex cursor-pointer items-center gap-3 rounded-2xl border px-4 py-3 transition ${
-                                        selectedRateId === rate.id
-                                          ? 'border-cyan bg-white shadow-sm'
-                                          : 'border-transparent bg-white/70 hover:bg-white'
-                                      }`}
-                                    >
-                                      <input
-                                        type="radio"
-                                        name="rate"
-                                        value={rate.id}
-                                        checked={selectedRateId === rate.id}
-                                        onChange={() => setSelectedRateId(rate.id)}
-                                        className="h-4 w-4 accent-[#00c4ab]"
-                                      />
-                                      <span className="min-w-0 flex-1">
-                                        <span className="block text-sm font-semibold text-ink">
-                                          {rate.carrier} {rate.service}
-                                        </span>
-                                        <span className="block text-xs text-muted">
-                                          {rate.deliveryDays
-                                            ? `Approx. ${rate.deliveryDays} business day${rate.deliveryDays === 1 ? '' : 's'}`
-                                            : 'Transit time varies'}
-                                        </span>
-                                      </span>
-                                      <span className="font-display text-base font-bold text-ink">
-                                        {rate.amountCents === 0 ? 'Free' : formatCents(rate.amountCents)}
-                                      </span>
-                                    </label>
-                                  </li>
+                              <div className="space-y-5">
+                                {groupedRates.map((group) => (
+                                  <section key={group.carrier}>
+                                    <p className="mb-2 text-[11px] font-bold tracking-[0.22em] text-muted uppercase">
+                                      {group.carrier}
+                                    </p>
+                                    <ul className="space-y-2">
+                                      {group.rates.map((rate) => (
+                                        <li key={rate.id}>
+                                          <label
+                                            className={`flex cursor-pointer items-center gap-3 rounded-2xl border px-4 py-3 transition ${
+                                              selectedRateId === rate.id
+                                                ? 'border-cyan bg-white shadow-sm'
+                                                : 'border-transparent bg-white/70 hover:bg-white'
+                                            }`}
+                                          >
+                                            <input
+                                              type="radio"
+                                              name="rate"
+                                              value={rate.id}
+                                              checked={selectedRateId === rate.id}
+                                              onChange={() => setSelectedRateId(rate.id)}
+                                              className="h-4 w-4 accent-[#00c4ab]"
+                                            />
+                                            <span className="min-w-0 flex-1">
+                                              <span className="block text-sm font-semibold text-ink">
+                                                {rate.service}
+                                              </span>
+                                              <span className="block text-xs text-muted">
+                                                {rate.deliveryDays
+                                                  ? `Approx. ${rate.deliveryDays} business day${rate.deliveryDays === 1 ? '' : 's'}`
+                                                  : 'Transit time varies'}
+                                              </span>
+                                            </span>
+                                            <span className="font-display text-base font-bold text-ink">
+                                              {rate.amountCents === 0
+                                                ? 'Free'
+                                                : formatCents(rate.amountCents)}
+                                            </span>
+                                          </label>
+                                        </li>
+                                      ))}
+                                    </ul>
+                                  </section>
                                 ))}
-                              </ul>
+                              </div>
                               </>
                             )}
                           </div>
