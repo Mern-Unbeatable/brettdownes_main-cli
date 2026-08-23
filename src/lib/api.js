@@ -1,4 +1,5 @@
 const BASE = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '')
+const TOKEN_KEY = 'peptide_session_token'
 
 export class ApiError extends Error {
   constructor(status, message, details) {
@@ -9,14 +10,40 @@ export class ApiError extends Error {
   }
 }
 
+export function getAuthToken() {
+  try {
+    return sessionStorage.getItem(TOKEN_KEY) || ''
+  } catch {
+    return ''
+  }
+}
+
+export function setAuthToken(token) {
+  try {
+    if (token) sessionStorage.setItem(TOKEN_KEY, token)
+    else sessionStorage.removeItem(TOKEN_KEY)
+  } catch {
+    /* storage unavailable */
+  }
+}
+
+export function clearAuthToken() {
+  setAuthToken('')
+}
+
 async function request(method, path, { body, signal, formData } = {}) {
+  const token = getAuthToken()
+  const headers = {}
+  if (body && !formData) headers['content-type'] = 'application/json'
+  if (token) headers.authorization = `Bearer ${token}`
+
   let response
   try {
     response = await fetch(`${BASE}${path}`, {
       method,
       credentials: 'include',
       signal,
-      headers: body && !formData ? { 'content-type': 'application/json' } : undefined,
+      headers: Object.keys(headers).length ? headers : undefined,
       body: formData ? body : body ? JSON.stringify(body) : undefined,
     })
   } catch (error) {
@@ -37,6 +64,7 @@ async function request(method, path, { body, signal, formData } = {}) {
   }
 
   if (!response.ok) {
+    if (response.status === 401 && path === '/api/auth/me') clearAuthToken()
     throw new ApiError(
       response.status,
       payload?.error || `Request failed (${response.status}).`,

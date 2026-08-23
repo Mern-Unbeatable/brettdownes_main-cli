@@ -38,7 +38,7 @@ export default function Gatekeeper({ onPass }) {
   const panelPxRef = useRef(null)
   const topPadLockedRef = useRef(false)
   const toast = useToast()
-  const { login, register } = useAuth()
+  const { login, registerStart, registerVerify, registerResend } = useAuth()
 
   const [visible, setVisible] = useState(false)
   const [mode, setMode] = useState('verify')
@@ -47,10 +47,18 @@ export default function Gatekeeper({ onPass }) {
   const [showPassword, setShowPassword] = useState(false)
   const [company, setCompany] = useState('')
   const [framework, setFramework] = useState('')
+  const [otp, setOtp] = useState('')
+  const [otpCooldown, setOtpCooldown] = useState(0)
   const [submitted, setSubmitted] = useState(false)
   const [busy, setBusy] = useState(false)
 
   modeRef.current = mode
+
+  useEffect(() => {
+    if (otpCooldown <= 0) return undefined
+    const timer = window.setTimeout(() => setOtpCooldown((n) => n - 1), 1000)
+    return () => window.clearTimeout(timer)
+  }, [otpCooldown])
 
   const pagePadY = () => {
     const w = window.innerWidth
@@ -441,8 +449,8 @@ html[data-gate-locked="1"] #gatekeeper-root {
   const layoutFor = (nextMode) => {
     const narrow = isNarrow()
     const px = narrow ? panelPxRef.current : null
-    // Reset keeps the login panel layout; only register flips panels
-    const loginSide = nextMode !== 'register'
+    // Reset keeps the login panel layout; register + OTP share the flipped layout
+    const loginSide = nextMode !== 'register' && nextMode !== 'otp'
 
     if (narrow && px) {
       if (loginSide) {
@@ -575,8 +583,8 @@ html[data-gate-locked="1"] #gatekeeper-root {
 
     animating.current = true
     const gen = ++animGenRef.current
-    const toRegister = nextMode === 'register'
-    const fromRegister = modeRef.current === 'register'
+    const toRegister = nextMode === 'register' || nextMode === 'otp'
+    const fromRegister = modeRef.current === 'register' || modeRef.current === 'otp'
     const panelsMove = fromRegister !== toRegister
     const toReset = nextMode === 'reset'
     const fromReset = modeRef.current === 'reset'
@@ -745,16 +753,23 @@ html[data-gate-locked="1"] #gatekeeper-root {
     if (next === modeRef.current || animating.current) return
     setSubmitted(false)
     setShowPassword(false)
+    setOtp('')
 
     // Keep locked frame height — only slide panels (no remeasure / no shake)
     applyLayout(next, true, {
       onMid: () => {
+        const prev = modeRef.current
         modeRef.current = next
         if (formRef.current) formRef.current.scrollTop = 0
-        if (next === 'register' || next === 'reset') {
+        if (next === 'register') {
+          // Keep fields when returning from OTP to edit details.
+          if (prev !== 'otp') {
+            setPassword('')
+            setEmail('')
+          }
+        } else if (next === 'reset') {
           setPassword('')
-          if (next === 'register') setEmail('')
-        } else {
+        } else if (next !== 'otp') {
           setPassword('')
         }
         setMode(next)
@@ -831,24 +846,16 @@ html[data-gate-locked="1"] #gatekeeper-root {
 
     setBusy(true)
     try {
-      const result = await register({
+      await registerStart({
         company: company.trim(),
-        email: email.trim(),
+        email: email.trim().toLowerCase(),
         password,
         researchFramework: framework.trim(),
       })
-
-      // Auto-approval signs the researcher straight in; otherwise they wait.
-      if (result.autoApproved) {
-        toast.success('Account approved. Entering portal…', { title: 'Welcome' })
-        onPass?.()
-        return
-      }
-
-      setSubmitted(true)
-      toast.success('Registration received. We will confirm your access shortly.', {
-        title: 'Submitted',
-      })
+      setOtp('')
+      setOtpCooldown(60)
+      toast.success('Enter the 6-digit code we emailed you.', { title: 'Verify email' })
+      swapTo('otp')
     } catch (error) {
       toast.error(error.message || 'Registration failed. Please try again.')
     } finally {
@@ -856,11 +863,62 @@ html[data-gate-locked="1"] #gatekeeper-root {
     }
   }
 
+  const handleOtpVerify = async (e) => {
+    e.preventDefault()
+    if (busy) return
+
+    const code = otp.trim()
+    if (!/^\d{6}$/.test(code)) {
+      toast.error('Enter the 6-digit code from your email.')
+      return
+    }
+
+    setBusy(true)
+    try {
+      const result = await registerVerify({
+        email: email.trim().toLowerCase(),
+        otp: code,
+      })
+
+      if (result.autoApproved) {
+        toast.success('Account approved. Entering portal…', { title: 'Welcome' })
+        onPass?.()
+        return
+      }
+
+      setSubmitted(true)
+      toast.success('Email verified. We will confirm your access shortly.', {
+        title: 'Submitted',
+      })
+    } catch (error) {
+      toast.error(error.message || 'Verification failed. Please try again.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const handleOtpResend = async () => {
+    if (busy || otpCooldown > 0) return
+    setBusy(true)
+    try {
+      await registerResend(email.trim().toLowerCase())
+      setOtpCooldown(60)
+      toast.success('A new code is on its way.', { title: 'Code sent' })
+    } catch (error) {
+      toast.error(error.message || 'Could not resend the code.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
   const welcomeCopy =
-    mode === 'register'
+    mode === 'register' || mode === 'otp'
       ? {
-          title: 'Join the network',
-          text: 'Create a verified research account to request compounds.',
+          title: mode === 'otp' ? 'Verify email' : 'Join the network',
+          text:
+            mode === 'otp'
+              ? 'Enter the one-time code we sent to confirm your address.'
+              : 'Create a verified research account to request compounds.',
         }
       : mode === 'reset'
         ? {
@@ -906,7 +964,7 @@ html[data-gate-locked="1"] #gatekeeper-root {
     <div
       data-gate-content
       className={`mx-auto box-border flex h-full w-full min-w-0 max-w-xl flex-col justify-center overflow-hidden px-4 text-left sm:max-w-none sm:px-6 md:px-8 xl:px-10 ${
-        mode === 'register'
+        mode === 'register' || mode === 'otp'
           ? 'pt-2.5 pb-2.5 sm:py-4 md:py-5'
           : 'pt-2 pb-2 sm:py-4 md:py-5'
       }`}
@@ -1086,6 +1144,91 @@ html[data-gate-locked="1"] #gatekeeper-root {
             </form>
           )}
         </>
+      ) : mode === 'otp' ? (
+        <>
+          <p
+            data-gate-enter
+            className="font-display text-[7px] font-bold tracking-[0.16em] text-white uppercase sm:text-[8px] md:text-[11px]"
+          >
+            Email Verification
+          </p>
+          <h1
+            data-gate-enter
+            className="mt-0.5 font-display text-[13px] font-bold tracking-tight text-white uppercase whitespace-nowrap sm:text-[15px] md:mt-1.5 md:text-[20px] xl:text-[22px]"
+          >
+            Enter OTP Code
+          </h1>
+          <p data-gate-enter className="mt-0.5 max-w-md text-[9px] leading-snug text-white/80 sm:text-[10px] md:mt-1 md:text-[12px]">
+            We sent a 6-digit code to{' '}
+            <span className="font-semibold text-white">{email.trim() || 'your inbox'}</span>.
+          </p>
+
+          {submitted ? (
+            <div
+              data-gate-enter
+              className="mt-3 w-full rounded-2xl border border-white/25 bg-white/5 p-3 text-left md:mt-8 md:p-5"
+            >
+              <ShieldCheck className="h-5 w-5 text-white sm:h-6 sm:w-6 md:h-8 md:w-8" />
+              <p className="mt-2 font-display text-xs font-bold text-white uppercase sm:text-sm md:mt-3 md:text-lg">
+                Registration received
+              </p>
+              <p className="mt-1.5 text-[10px] text-white sm:text-[11px] md:text-sm">
+                Your email is verified. We will confirm portal access shortly.
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  setSubmitted(false)
+                  swapTo('verify')
+                }}
+                className="mt-3 w-full rounded-xl border border-white/35 bg-transparent px-4 py-1.5 text-[10px] font-semibold tracking-[0.06em] text-white uppercase transition hover:border-white hover:bg-white/10 sm:py-2 sm:text-[11px] md:mt-5 md:py-3 md:text-sm"
+              >
+                Return to Login
+              </button>
+            </div>
+          ) : (
+            <form data-gate-enter onSubmit={handleOtpVerify} className="mt-1.5 w-full space-y-1.5 md:mt-3 md:space-y-2">
+              <label className="block">
+                <span className="mb-0.5 block text-[7px] font-bold tracking-[0.16em] text-white uppercase sm:text-[8px] md:mb-1 md:text-[10px]">
+                  Verification Code
+                </span>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  maxLength={6}
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  placeholder="6-digit code"
+                  className="gate-input w-full rounded-lg border border-white/20 bg-white/[0.06] px-2.5 py-1.5 text-center text-[16px] tracking-[0.35em] outline-none transition placeholder:tracking-normal placeholder:text-white/40 focus:border-white/50 sm:px-3 sm:py-2 md:px-3.5 md:text-[18px]"
+                />
+              </label>
+              <button
+                type="submit"
+                disabled={busy}
+                className="flex w-full items-center justify-center gap-1.5 rounded-xl bg-cyan px-4 py-2 text-[11px] font-bold tracking-[0.08em] text-navy uppercase transition hover:brightness-110 disabled:opacity-60 sm:gap-2 sm:text-[12px] md:text-[13px]"
+              >
+                <ShieldCheck className="h-3.5 w-3.5 sm:h-4 sm:w-4" strokeWidth={2.2} />
+                {busy ? 'Verifying…' : 'Verify & Continue'}
+              </button>
+              <button
+                type="button"
+                disabled={busy || otpCooldown > 0}
+                onClick={handleOtpResend}
+                className="w-full rounded-xl border border-white/35 bg-transparent px-4 py-2 text-[11px] font-semibold tracking-[0.06em] text-white uppercase transition hover:border-white hover:bg-white/10 disabled:opacity-50 sm:text-[12px] md:text-[13px]"
+              >
+                {otpCooldown > 0 ? `Resend in ${otpCooldown}s` : 'Resend Code'}
+              </button>
+              <button
+                type="button"
+                onClick={() => swapTo('register')}
+                className="mt-1 w-full text-center text-[11px] font-semibold tracking-[0.04em] text-white/75 underline underline-offset-2 transition hover:text-white sm:text-[12px]"
+              >
+                Edit registration details
+              </button>
+            </form>
+          )}
+        </>
       ) : (
         <>
           <p
@@ -1101,7 +1244,7 @@ html[data-gate-locked="1"] #gatekeeper-root {
             Account Registration
           </h1>
           <p data-gate-enter className="mt-0.5 max-w-md text-[9px] leading-snug text-white/80 sm:text-[10px] md:mt-1 md:text-[12px]">
-            Submit your credentials for same-day verification review.
+            We email a one-time code to verify your address, then apply access settings.
           </p>
 
           {submitted ? (
