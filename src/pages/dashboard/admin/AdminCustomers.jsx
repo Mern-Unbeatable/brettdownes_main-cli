@@ -4,6 +4,7 @@ import {
   Check,
   ChevronLeft,
   ChevronRight,
+  Download,
   ExternalLink,
   Eye,
   Search,
@@ -72,6 +73,7 @@ export default function AdminCustomers() {
   const [busyId, setBusyId] = useState(null)
   const [manageUser, setManageUser] = useState(null)
   const [pendingDelete, setPendingDelete] = useState(null)
+  const [exporting, setExporting] = useState(false)
 
   const status = params.get('status') || ''
   const page = Number(params.get('page') || 1)
@@ -112,6 +114,43 @@ export default function AdminCustomers() {
   }, [params, status, page])
 
   useEffect(load, [load])
+
+  const exportCsv = async () => {
+    setExporting(true)
+    try {
+      const query = new URLSearchParams()
+      if (params.get('search')) query.set('search', params.get('search'))
+      if (status) query.set('status', status)
+
+      const base = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '')
+      const response = await fetch(
+        `${base}/api/admin/users/export${query.toString() ? `?${query}` : ''}`,
+        { credentials: 'include' },
+      )
+      if (!response.ok) {
+        const payload = await response.json().catch(() => null)
+        throw new Error(payload?.error || 'Could not export member emails.')
+      }
+
+      const blob = await response.blob()
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      const stamp = new Date().toISOString().slice(0, 10)
+      link.href = url
+      link.download = `peptide-ops-members-${stamp}.csv`
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      URL.revokeObjectURL(url)
+      toast.success('CSV downloaded — ready for Mailchimp or similar tools.', {
+        title: 'Export ready',
+      })
+    } catch (err) {
+      toast.error(err.message || 'Export failed.')
+    } finally {
+      setExporting(false)
+    }
+  }
 
   const changeStatus = async (customer, nextStatus) => {
     const previous = customer.status
@@ -178,6 +217,12 @@ export default function AdminCustomers() {
       <PageHeading
         title="Customers"
         subtitle={data ? `${data.total} account${data.total === 1 ? '' : 's'}` : 'Loading…'}
+        actions={
+          <Button type="button" variant="outline" disabled={exporting} onClick={exportCsv}>
+            <Download className="h-4 w-4" />
+            {exporting ? 'Exporting…' : 'Export emails (CSV)'}
+          </Button>
+        }
       />
 
       <Reveal className="mb-5 grid gap-4 sm:grid-cols-3">
