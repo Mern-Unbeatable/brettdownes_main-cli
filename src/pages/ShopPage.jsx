@@ -10,7 +10,10 @@ import { useCart } from '../context/CartContext'
 import { useGsapReveal } from '../hooks/useGsapReveal'
 import { lowestPrice, useCatalog } from '../context/CatalogContext'
 import { assetUrl, formatPrice } from '../lib/api'
-import ProductBadge from '../components/ProductBadge'
+import ProductBadge, {
+  firstInStockVariant,
+  isProductOutOfStock,
+} from '../components/ProductBadge'
 import { PRODUCT_CATEGORIES, normalizeCategory } from '../data/categories'
 
 const filters = ['All', ...PRODUCT_CATEGORIES]
@@ -227,32 +230,37 @@ export default function ShopPage() {
               data-stagger="0.08"
               className="scroll-mt-28 grid grid-cols-2 gap-4 sm:gap-6 lg:grid-cols-4"
             >
-              {pageItems.map((product) => (
+              {pageItems.map((product) => {
+                const outOfStock = isProductOutOfStock(product)
+                return (
                 <article key={product.id} className="group text-center">
                   <div className="relative overflow-hidden rounded-2xl bg-[#f2f2f2]">
-                    <ProductBadge label={product.badge} />
-                    <div className="absolute top-3.5 right-3.5 z-10 flex -translate-y-1 flex-col gap-2 opacity-0 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
-                      <button
-                        type="button"
-                        aria-label={`Add ${product.name} to cart`}
-                        onClick={() => {
-                          const v = product.variants[0]
-                          addItem({
-                            productId: product.id,
-                            variantId: v.id,
-                            name: product.name,
-                            dose: v.dose,
-                            price: v.price,
-                            image: v.image || product.image,
-                            slug: product.slug,
-                            qty: 1,
-                          })
-                        }}
-                        className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full bg-ink text-white shadow-md transition hover:scale-105 hover:bg-cyan hover:text-ink"
-                      >
-                        <ShoppingCart className="h-4 w-4" strokeWidth={2.2} />
-                      </button>
-                    </div>
+                    <ProductBadge label={product.badge} outOfStock={outOfStock} />
+                    {!outOfStock ? (
+                      <div className="absolute top-3.5 right-3.5 z-10 flex -translate-y-1 flex-col gap-2 opacity-0 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
+                        <button
+                          type="button"
+                          aria-label={`Add ${product.name} to cart`}
+                          onClick={() => {
+                            const v = firstInStockVariant(product)
+                            if (!v) return
+                            addItem({
+                              productId: product.id,
+                              variantId: v.id,
+                              name: product.name,
+                              dose: v.dose,
+                              price: v.price,
+                              image: v.image || product.image,
+                              slug: product.slug,
+                              qty: 1,
+                            })
+                          }}
+                          className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full bg-ink text-white shadow-md transition hover:scale-105 hover:bg-cyan hover:text-ink"
+                        >
+                          <ShoppingCart className="h-4 w-4" strokeWidth={2.2} />
+                        </button>
+                      </div>
+                    ) : null}
 
                     <Link to={`/shop/${product.slug}`} className="block aspect-[3/4] w-full">
                       <img
@@ -260,14 +268,16 @@ export default function ShopPage() {
                         alt={product.name}
                         loading="lazy"
                         decoding="async"
-                        className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]"
+                        className={`h-full w-full object-cover transition duration-500 group-hover:scale-[1.03] ${
+                          outOfStock ? 'opacity-70' : ''
+                        }`}
                       />
                     </Link>
                   </div>
 
                   <div className="mt-4">
                     <p className="text-[11px] font-medium tracking-[0.18em] text-muted uppercase">
-                      {product.variants.length} versions
+                      {outOfStock ? 'Out of stock' : `${product.variants.length} versions`}
                     </p>
                     <Link to={`/shop/${product.slug}`}>
                       <h3 className="mt-1 font-display text-base font-bold tracking-tight text-ink transition hover:text-cyan-dim">
@@ -279,7 +289,8 @@ export default function ShopPage() {
                     </p>
                   </div>
                 </article>
-              ))}
+                )
+              })}
             </div>
           )}
 

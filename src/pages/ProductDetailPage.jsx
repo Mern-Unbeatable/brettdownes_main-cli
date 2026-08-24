@@ -5,9 +5,13 @@ import PageHeader from '../components/PageHeader'
 import PageTransition from '../components/PageTransition'
 import Footer from '../components/Footer'
 import RuoNotice from '../components/RuoNotice'
-import ProductBadge from '../components/ProductBadge'
+import ProductBadge, {
+  firstInStockVariant,
+  isProductOutOfStock,
+  isVariantOutOfStock,
+} from '../components/ProductBadge'
 import { useCart } from '../context/CartContext'
-import { useCatalog } from '../context/CatalogContext'
+import { lowestPrice, useCatalog } from '../context/CatalogContext'
 import { assetUrl, formatPrice } from '../lib/api'
 import { normalizeCategory } from '../data/categories'
 
@@ -25,9 +29,10 @@ export default function ProductDetailPage() {
 
   useEffect(() => {
     if (!product?.variants?.length) return
-    setVariantId(product.variants[0].id)
+    const preferred = firstInStockVariant(product) || product.variants[0]
+    setVariantId(preferred.id)
     setQty(1)
-    setActiveImage(product.image || product.variants[0].image)
+    setActiveImage(product.image || preferred.image)
   }, [slug, product])
 
   const variant = useMemo(
@@ -55,6 +60,7 @@ export default function ProductDetailPage() {
 
   const selectVariant = (id) => {
     setVariantId(id)
+    setQty(1)
     const next = product.variants.find((v) => v.id === id)
     if (next?.image) setActiveImage(next.image)
   }
@@ -82,6 +88,11 @@ export default function ProductDetailPage() {
   const related = products
     .filter((p) => p.id !== product.id && normalizeCategory(p.category) === normalizeCategory(product.category))
     .slice(0, 4)
+
+  const productOutOfStock = isProductOutOfStock(product)
+  const variantOutOfStock = isVariantOutOfStock(variant)
+  const stockLeft = Math.max(0, Number(variant.stock ?? variant.quantity ?? 0))
+  const maxQty = Math.max(1, stockLeft)
 
   return (
     <PageTransition>
@@ -133,12 +144,14 @@ export default function ProductDetailPage() {
               </div>
 
               <div className="relative min-w-0 flex-1 overflow-hidden rounded-[24px] bg-[#f2f2f2]">
-                <ProductBadge label={product.badge} />
+                <ProductBadge label={product.badge} outOfStock={productOutOfStock || variantOutOfStock} />
                 <img
                   key={activeImage}
                   src={assetUrl(activeImage)}
                   alt={product.name}
-                  className="aspect-[3/4] w-full object-cover"
+                  className={`aspect-[3/4] w-full object-cover ${
+                    productOutOfStock || variantOutOfStock ? 'opacity-70' : ''
+                  }`}
                 />
               </div>
             </div>
@@ -168,6 +181,7 @@ export default function ProductDetailPage() {
                 <div className="flex flex-wrap gap-2">
                   {product.variants.map((v) => {
                     const active = v.id === variant.id
+                    const soldOut = isVariantOutOfStock(v)
                     return (
                       <button
                         key={v.id}
@@ -177,9 +191,10 @@ export default function ProductDetailPage() {
                           active
                             ? 'bg-ink text-white'
                             : 'bg-fog text-muted hover:bg-fog-deep hover:text-ink'
-                        }`}
+                        } ${soldOut ? 'opacity-55' : ''}`}
                       >
                         {v.dose}
+                        {soldOut ? ' · Out of stock' : ''}
                       </button>
                     )
                   })}
@@ -194,8 +209,9 @@ export default function ProductDetailPage() {
                   <button
                     type="button"
                     aria-label="Decrease quantity"
+                    disabled={variantOutOfStock}
                     onClick={() => setQty((q) => Math.max(1, q - 1))}
-                    className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-ink transition hover:bg-fog-deep"
+                    className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-ink transition hover:bg-fog-deep disabled:cursor-not-allowed disabled:opacity-40"
                   >
                     <Minus className="h-4 w-4" />
                   </button>
@@ -203,8 +219,9 @@ export default function ProductDetailPage() {
                   <button
                     type="button"
                     aria-label="Increase quantity"
-                    onClick={() => setQty((q) => q + 1)}
-                    className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-ink transition hover:bg-fog-deep"
+                    disabled={variantOutOfStock || qty >= maxQty}
+                    onClick={() => setQty((q) => Math.min(maxQty, q + 1))}
+                    className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-ink transition hover:bg-fog-deep disabled:cursor-not-allowed disabled:opacity-40"
                   >
                     <Plus className="h-4 w-4" />
                   </button>
@@ -215,9 +232,19 @@ export default function ProductDetailPage() {
                 </p>
               </div>
 
+              {variantOutOfStock ? (
+                <p className="mt-4 text-sm font-medium text-rose-600">
+                  This version is out of stock and cannot be ordered.
+                </p>
+              ) : stockLeft <= 5 ? (
+                <p className="mt-4 text-sm text-muted">Only {stockLeft} left in stock.</p>
+              ) : null}
+
               <button
                 type="button"
-                onClick={() =>
+                disabled={variantOutOfStock}
+                onClick={() => {
+                  if (variantOutOfStock) return
                   addItem({
                     productId: product.id,
                     variantId: variant.id,
@@ -227,13 +254,13 @@ export default function ProductDetailPage() {
                     price: variant.price,
                     image: variant.image || product.image,
                     slug: product.slug,
-                    qty,
+                    qty: Math.min(qty, maxQty),
                   })
-                }
-                className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-cyan px-6 py-4 text-sm font-semibold text-ink transition hover:bg-cyan-dim sm:w-auto"
+                }}
+                className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-cyan px-6 py-4 text-sm font-semibold text-ink transition hover:bg-cyan-dim disabled:cursor-not-allowed disabled:bg-fog disabled:text-muted sm:w-auto"
               >
                 <ShoppingCart className="h-4 w-4" strokeWidth={2.2} />
-                Add {variant.dose} to cart
+                {variantOutOfStock ? 'Out of stock' : `Add ${variant.dose} to cart`}
               </button>
 
               <ul className="mt-8 space-y-2.5">
@@ -266,22 +293,27 @@ export default function ProductDetailPage() {
                 data-stagger="0.1"
                 className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-4"
               >
-                {related.map((item) => (
-                  <Link key={item.id} to={`/shop/${item.slug}`} className="group text-center">
-                    <div className="relative overflow-hidden rounded-2xl bg-[#f2f2f2]">
-                      <ProductBadge label={item.badge} />
-                      <img
-                        src={assetUrl(item.image)}
-                        alt={item.name}
-                        className="aspect-[3/4] w-full object-cover transition duration-500 group-hover:scale-[1.03]"
-                      />
-                    </div>
-                    <h4 className="mt-4 font-display text-base font-bold text-ink">{item.name}</h4>
-                    <p className="mt-0.5 text-sm text-muted">
-                      From {formatPrice(Math.min(...item.variants.map((v) => v.price)))}
-                    </p>
-                  </Link>
-                ))}
+                {related.map((item) => {
+                  const relatedOut = isProductOutOfStock(item)
+                  return (
+                    <Link key={item.id} to={`/shop/${item.slug}`} className="group text-center">
+                      <div className="relative overflow-hidden rounded-2xl bg-[#f2f2f2]">
+                        <ProductBadge label={item.badge} outOfStock={relatedOut} />
+                        <img
+                          src={assetUrl(item.image)}
+                          alt={item.name}
+                          className={`aspect-[3/4] w-full object-cover transition duration-500 group-hover:scale-[1.03] ${
+                            relatedOut ? 'opacity-70' : ''
+                          }`}
+                        />
+                      </div>
+                      <h4 className="mt-4 font-display text-base font-bold text-ink">{item.name}</h4>
+                      <p className="mt-0.5 text-sm text-muted">
+                        {relatedOut ? 'Out of stock' : `From ${formatPrice(lowestPrice(item))}`}
+                      </p>
+                    </Link>
+                  )
+                })}
               </div>
             </section>
           ) : null}

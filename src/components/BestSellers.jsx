@@ -4,7 +4,10 @@ import { Component, ShoppingCart } from 'lucide-react'
 import { useCart } from '../context/CartContext'
 import { lowestPrice } from '../context/CatalogContext'
 import { api, assetUrl, formatPrice } from '../lib/api'
-import ProductBadge from './ProductBadge'
+import ProductBadge, {
+  firstInStockVariant,
+  isProductOutOfStock,
+} from './ProductBadge'
 
 export default function BestSellers() {
   const { addItem } = useCart()
@@ -69,39 +72,45 @@ export default function BestSellers() {
             data-stagger="0.12"
             className="grid grid-cols-2 gap-4 sm:gap-6 lg:grid-cols-4"
           >
-            {products.map((product) => (
+            {products.map((product) => {
+              const outOfStock = isProductOutOfStock(product)
+              return (
               <article key={product.id} className="group text-center">
                 <div className="relative overflow-hidden rounded-2xl bg-[#f2f2f2]">
-                  <ProductBadge label={product.badge} />
-                  <div className="absolute top-3.5 right-3.5 z-10 flex -translate-y-1 flex-col gap-2 opacity-0 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
-                    <button
-                      type="button"
-                      aria-label={`Add ${product.name} to cart`}
-                      onClick={() => {
-                        const v = product.variants[0]
-                        if (!v) return
-                        addItem({
-                          productId: product.id,
-                          variantId: v.id,
-                          name: product.name,
-                          dose: v.dose,
-                          price: v.price,
-                          image: product.image || v.image,
-                          slug: product.slug,
-                          qty: 1,
-                        })
-                      }}
-                      className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full bg-ink text-white shadow-md transition hover:scale-105 hover:bg-cyan hover:text-ink"
-                    >
-                      <ShoppingCart className="h-4 w-4" strokeWidth={2.2} />
-                    </button>
-                  </div>
+                  <ProductBadge label={product.badge} outOfStock={outOfStock} />
+                  {!outOfStock ? (
+                    <div className="absolute top-3.5 right-3.5 z-10 flex -translate-y-1 flex-col gap-2 opacity-0 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
+                      <button
+                        type="button"
+                        aria-label={`Add ${product.name} to cart`}
+                        onClick={() => {
+                          const v = firstInStockVariant(product)
+                          if (!v) return
+                          addItem({
+                            productId: product.id,
+                            variantId: v.id,
+                            name: product.name,
+                            dose: v.dose,
+                            price: v.price,
+                            image: product.image || v.image,
+                            slug: product.slug,
+                            qty: 1,
+                          })
+                        }}
+                        className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full bg-ink text-white shadow-md transition hover:scale-105 hover:bg-cyan hover:text-ink"
+                      >
+                        <ShoppingCart className="h-4 w-4" strokeWidth={2.2} />
+                      </button>
+                    </div>
+                  ) : null}
 
                   <Link to={`/shop/${product.slug}`} className="block aspect-[3/4] w-full">
                     <img
                       src={assetUrl(product.image)}
                       alt={product.name}
-                      className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]"
+                      className={`h-full w-full object-cover transition duration-500 group-hover:scale-[1.03] ${
+                        outOfStock ? 'opacity-70' : ''
+                      }`}
                     />
                   </Link>
                 </div>
@@ -113,11 +122,12 @@ export default function BestSellers() {
                     </h3>
                   </Link>
                   <p className="mt-0.5 text-sm text-muted">
-                    From {formatPrice(lowestPrice(product))}
+                    {outOfStock ? 'Out of stock' : `From ${formatPrice(lowestPrice(product))}`}
                   </p>
                 </div>
               </article>
-            ))}
+              )
+            })}
           </div>
         )}
 
