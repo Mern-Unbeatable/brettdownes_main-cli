@@ -6,6 +6,8 @@ import PageTransition from '../components/PageTransition'
 import Footer from '../components/Footer'
 import { useCart } from '../context/CartContext'
 import { api, formatCents } from '../lib/api'
+import Seo from '../components/Seo'
+import { pageSeo } from '../data/seo'
 
 export default function CheckoutSuccessPage() {
   const [params] = useSearchParams()
@@ -59,6 +61,7 @@ export default function CheckoutSuccessPage() {
 
   return (
     <PageTransition>
+      <Seo {...pageSeo.checkoutSuccess} />
       <PageHeader />
       <main className="bg-white py-16 md:py-24">
         <div className="mx-auto max-w-xl px-5 text-center md:px-8">

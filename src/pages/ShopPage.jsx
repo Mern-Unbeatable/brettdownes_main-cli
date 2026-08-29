@@ -15,6 +15,8 @@ import ProductBadge, {
   isProductOutOfStock,
 } from '../components/ProductBadge'
 import { PRODUCT_CATEGORIES, normalizeCategory } from '../data/categories'
+import Seo from '../components/Seo'
+import { pageSeo } from '../data/seo'
 
 const filters = ['All', ...PRODUCT_CATEGORIES]
 const PAGE_SIZE = 12
@@ -84,6 +86,7 @@ export default function ShopPage() {
 
   return (
     <PageTransition>
+      <Seo {...pageSeo.shop} />
       <PageHeader
         title="Shop"
         subtitle="Research-grade lyophilized peptides with verified purity and certificates of analysis."

@@ -19,6 +19,8 @@ import { siteContact } from '../data/site'
 import { api, assetUrl } from '../lib/api'
 import { isImageDocument, pdfViewerUrl } from '../utils/coaFiles'
 import { lockBodyScroll, unlockBodyScroll } from '../hooks/lockBodyScroll'
+import Seo from '../components/Seo'
+import { pageSeo } from '../data/seo'
 
 const pillars = [
   {
@@ -86,6 +88,7 @@ export default function CoaPage() {
 
   return (
     <PageTransition>
+      <Seo {...pageSeo.coa} />
       <PageHeader />
 
       <main className="bg-white py-14 md:py-20">
@@ -141,7 +144,7 @@ export default function CoaPage() {
                     <div className="mb-3 flex items-center gap-3">
                       <img
                         src={assetUrl(product?.image)}
-                        alt=""
+                        alt={product?.name ? `${product.name} product` : 'Product'}
                         className="h-11 w-11 rounded-xl bg-fog object-cover"
                       />
                       <div>

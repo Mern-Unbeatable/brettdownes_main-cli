@@ -1,0 +1,19 @@
+# Peptide Ops — research portal
+User-agent: *
+Allow: /
+Allow: /shop
+Allow: /faq
+Allow: /contact
+Allow: /coa
+Allow: /terms
+Allow: /privacy
+
+Disallow: /checkout
+Disallow: /checkout/
+Disallow: /dashboard
+Disallow: /dashboard/
+Disallow: /admin
+Disallow: /admin/
+Disallow: /reset-password
+
+Sitemap: /sitemap.xml

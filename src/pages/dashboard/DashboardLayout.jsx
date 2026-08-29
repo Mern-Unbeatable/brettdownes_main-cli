@@ -19,6 +19,8 @@ import {
 import { useAuth } from '../../context/AuthContext'
 import { useToast } from '../../components/Toaster'
 import { lockBodyScroll, unlockBodyScroll } from '../../hooks/lockBodyScroll'
+import Seo from '../../components/Seo'
+import { pageSeo } from '../../data/seo'
 
 const NAV = {
   user: [
@@ -189,6 +191,7 @@ export default function DashboardLayout({ scope = 'user' }) {
 
   return (
     <div className="min-h-screen bg-fog">
+      <Seo {...(scope === 'admin' ? pageSeo.admin : pageSeo.dashboard)} />
       <aside
         className={`fixed inset-y-0 left-0 z-40 hidden shrink-0 border-r border-white/8 bg-navy transition-[width] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] lg:block ${
           collapsed ? 'w-[76px]' : 'w-[248px]'

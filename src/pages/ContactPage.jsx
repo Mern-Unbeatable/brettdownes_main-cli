@@ -4,6 +4,8 @@ import PageHeader from '../components/PageHeader'
 import PageTransition from '../components/PageTransition'
 import Footer from '../components/Footer'
 import { siteContact } from '../data/site'
+import Seo from '../components/Seo'
+import { pageSeo } from '../data/seo'
 
 export default function ContactPage() {
   const [sent, setSent] = useState(false)
@@ -15,6 +17,7 @@ export default function ContactPage() {
 
   return (
     <PageTransition>
+      <Seo {...pageSeo.contact} />
       <PageHeader
         title="Contact"
         subtitle="Reach Peptide Ops Logistics for institutional orders, certificates, tracking, and research compound sourcing."

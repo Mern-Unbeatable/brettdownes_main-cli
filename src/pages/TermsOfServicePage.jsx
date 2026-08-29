@@ -2,6 +2,8 @@ import PageHeader from '../components/PageHeader'
 import PageTransition from '../components/PageTransition'
 import Footer from '../components/Footer'
 import { siteContact } from '../data/site'
+import Seo from '../components/Seo'
+import { pageSeo } from '../data/seo'
 
 const sections = [
   {
@@ -53,6 +55,7 @@ const sections = [
 export default function TermsOfServicePage() {
   return (
     <PageTransition>
+      <Seo {...pageSeo.terms} />
       <PageHeader />
 
       <main className="bg-white py-14 md:py-20">

@@ -14,6 +14,8 @@ import { useCart } from '../context/CartContext'
 import { lowestPrice, useCatalog } from '../context/CatalogContext'
 import { assetUrl, formatPrice } from '../lib/api'
 import { normalizeCategory } from '../data/categories'
+import Seo from '../components/Seo'
+import { absoluteUrl, productSeo } from '../data/seo'
 
 export default function ProductDetailPage() {
   const { slug } = useParams()
@@ -93,9 +95,30 @@ export default function ProductDetailPage() {
   const variantOutOfStock = isVariantOutOfStock(variant)
   const stockLeft = Math.max(0, Number(variant.stock ?? variant.quantity ?? 0))
   const maxQty = Math.max(1, stockLeft)
+  const seo = productSeo(product)
+  const productJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Product',
+    name: product.name,
+    description: seo.description,
+    image: absoluteUrl(seo.image),
+    sku: variant.barcode || variant.id,
+    brand: { '@type': 'Brand', name: 'Peptide Ops' },
+    category: product.category || 'Research peptides',
+    offers: {
+      '@type': 'Offer',
+      priceCurrency: 'USD',
+      price: Number(variant.price ?? 0).toFixed(2),
+      availability: productOutOfStock
+        ? 'https://schema.org/OutOfStock'
+        : 'https://schema.org/InStock',
+      url: absoluteUrl(seo.path),
+    },
+  }
 
   return (
     <PageTransition>
+      <Seo {...seo} jsonLd={productJsonLd} />
       <PageHeader
         title={product.name}
         subtitle={product.summary}

@@ -3,6 +3,8 @@ import { XCircle } from 'lucide-react'
 import PageHeader from '../components/PageHeader'
 import PageTransition from '../components/PageTransition'
 import Footer from '../components/Footer'
+import Seo from '../components/Seo'
+import { pageSeo } from '../data/seo'
 
 export default function CheckoutCancelPage() {
   const [params] = useSearchParams()
@@ -10,6 +12,7 @@ export default function CheckoutCancelPage() {
 
   return (
     <PageTransition>
+      <Seo {...pageSeo.checkoutCancel} />
       <PageHeader />
       <main className="bg-white py-16 md:py-24">
         <div className="mx-auto max-w-xl px-5 text-center md:px-8">

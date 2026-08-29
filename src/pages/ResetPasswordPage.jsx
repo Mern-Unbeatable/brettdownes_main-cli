@@ -4,6 +4,8 @@ import gsap from 'gsap'
 import { Eye, EyeOff, KeyRound, ShieldCheck } from 'lucide-react'
 import { api } from '../lib/api'
 import { useToast } from '../components/Toaster'
+import Seo from '../components/Seo'
+import { pageSeo } from '../data/seo'
 
 export default function ResetPasswordPage() {
   const [params] = useSearchParams()
@@ -68,6 +70,7 @@ export default function ResetPasswordPage() {
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-[#141A22] px-4 py-10">
+      <Seo {...pageSeo.resetPassword} />
       <div
         ref={cardRef}
         className="w-full max-w-md rounded-[28px] border border-white/15 bg-white/[0.06] p-6 shadow-[0_24px_80px_rgba(0,0,0,0.35)] backdrop-blur-2xl sm:p-8"

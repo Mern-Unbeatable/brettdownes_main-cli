@@ -16,6 +16,8 @@ import Footer from '../components/Footer'
 import FaqCategoryDock from '../components/FaqCategoryDock'
 import { faqCategories } from '../data/faqs'
 import { siteContact } from '../data/site'
+import Seo from '../components/Seo'
+import { pageSeo } from '../data/seo'
 
 const categoryIcons = {
   'custom-sourcing': PackageSearch,
@@ -274,6 +276,23 @@ export default function FaqPage() {
 
   return (
     <PageTransition>
+      <Seo
+        {...pageSeo.faq}
+        jsonLd={{
+          '@context': 'https://schema.org',
+          '@type': 'FAQPage',
+          mainEntity: faqCategories.flatMap((category) =>
+            category.items.map((item) => ({
+              '@type': 'Question',
+              name: item.question,
+              acceptedAnswer: {
+                '@type': 'Answer',
+                text: item.answer,
+              },
+            })),
+          ),
+        }}
+      />
       <PageHeader
         image="/images/faq-hero-peptides.webp"
       />
@@ -287,9 +306,9 @@ export default function FaqPage() {
                 Help center
               </span>
             </div>
-            <h2 className="mt-4 max-w-2xl font-display text-2xl font-bold tracking-tight text-ink md:text-3xl">
+            <h1 className="mt-4 max-w-2xl font-display text-2xl font-bold tracking-tight text-ink md:text-3xl">
               Frequently asked questions
-            </h2>
+            </h1>
             <p className="mt-3 max-w-xl text-sm leading-relaxed text-muted sm:text-[15px]">
               Clear guidance for researchers ordering lyophilized reference compounds. Still need
               help? Reach our support team anytime.

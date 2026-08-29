@@ -6,6 +6,7 @@ import {
   useNavigationType,
 } from 'react-router-dom'
 import { lazy, Suspense, useEffect, useLayoutEffect, useState } from 'react'
+import { HelmetProvider } from 'react-helmet-async'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import gsap from 'gsap'
 import HomePage from './pages/HomePage'
@@ -20,6 +21,7 @@ import ResetPasswordPage from './pages/ResetPasswordPage'
 import CartDrawer from './components/CartDrawer'
 import PromoModal from './components/PromoModal'
 import Gatekeeper from './components/Gatekeeper'
+import Analytics from './components/Analytics'
 import { ToastProvider } from './components/Toaster'
 import { CartProvider } from './context/CartContext'
 import { AuthProvider, useAuth } from './context/AuthContext'
@@ -166,6 +168,7 @@ function AppShell() {
   return (
     <>
       <RouteEffects />
+      <Analytics />
       <div
         id="app-shell"
         {...(gateOpen ? { inert: true } : {})}
@@ -230,18 +233,20 @@ function AppShell() {
 
 export default function App() {
   return (
-    <BrowserRouter>
-      <ToastProvider>
-        <AuthProvider>
-          <SettingsProvider>
-            <CatalogProvider>
-              <CartProvider>
-                <AppShell />
-              </CartProvider>
-            </CatalogProvider>
-          </SettingsProvider>
-        </AuthProvider>
-      </ToastProvider>
-    </BrowserRouter>
+    <HelmetProvider>
+      <BrowserRouter>
+        <ToastProvider>
+          <AuthProvider>
+            <SettingsProvider>
+              <CatalogProvider>
+                <CartProvider>
+                  <AppShell />
+                </CartProvider>
+              </CatalogProvider>
+            </SettingsProvider>
+          </AuthProvider>
+        </ToastProvider>
+      </BrowserRouter>
+    </HelmetProvider>
   )
 }

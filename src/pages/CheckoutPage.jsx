@@ -27,6 +27,8 @@ import { lockBodyScroll, unlockBodyScroll } from '../hooks/lockBodyScroll'
 import { api, assetUrl, formatCents, formatPrice } from '../lib/api'
 import { calculateBulkDiscount } from '../utils/discounts'
 import { groupRatesByCarrier } from '../utils/shipping'
+import Seo from '../components/Seo'
+import { pageSeo } from '../data/seo'
 
 const DESCRIPTOR_NOTICE_MS = 3500
 
@@ -352,6 +354,7 @@ export default function CheckoutPage() {
 
     return (
       <PageTransition>
+        <Seo {...pageSeo.checkout} />
         <PageHeader
           title="Order placed"
           subtitle="Thanks — we received your research order."
@@ -405,6 +408,7 @@ export default function CheckoutPage() {
 
   return (
     <PageTransition>
+      <Seo {...pageSeo.checkout} />
       <PageHeader
         title="Checkout"
         subtitle="Complete your order details, delivery preference, and payment method."
