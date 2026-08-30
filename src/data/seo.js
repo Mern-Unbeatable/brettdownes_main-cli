@@ -8,14 +8,12 @@ export const DEFAULT_DESCRIPTION =
 export const DEFAULT_OG_IMAGE = '/images/logo.png'
 export const TWITTER_HANDLE = ''
 
-/** Absolute site origin when set; otherwise runtime origin is used. */
+/** Production site origin — hardcoded for static hosting (no VITE_SITE_URL needed). */
+export const SITE_ORIGIN = 'https://peptideopslogistics.com'
+
+/** Absolute site origin for canonicals / Open Graph. */
 export function siteOrigin() {
-  const fromEnv = (import.meta.env.VITE_SITE_URL || '').replace(/\/$/, '')
-  if (fromEnv) return fromEnv
-  if (typeof window !== 'undefined' && window.location?.origin) {
-    return window.location.origin
-  }
-  return ''
+  return SITE_ORIGIN
 }
 
 export function absoluteUrl(path = '/') {
