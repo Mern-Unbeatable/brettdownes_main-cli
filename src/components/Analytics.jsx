@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { useLocation } from 'react-router-dom'
 
-const GA_ID = import.meta.env.VITE_GA_MEASUREMENT_ID || 'G-QFN9YZKM9G'
+const GA_ID = import.meta.env.VITE_GA_MEASUREMENT_ID || 'G-Y9PLBJT49R'
 
 function ensureGtag() {
   if (typeof window === 'undefined') return
