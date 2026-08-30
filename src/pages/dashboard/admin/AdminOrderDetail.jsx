@@ -258,6 +258,9 @@ export default function AdminOrderDetail() {
                         src={assetUrl(item.image)}
                         alt=""
                         className="h-full w-full object-cover"
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none'
+                        }}
                       />
                     ) : null}
                   </div>
