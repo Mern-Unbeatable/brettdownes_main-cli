@@ -26,7 +26,7 @@ export default function ProductDetailPage() {
   const [variantId, setVariantId] = useState(() => product?.variants[0]?.id)
   const [qty, setQty] = useState(1)
   const [activeImage, setActiveImage] = useState(
-    () => product?.image || product?.variants[0]?.image,
+    () => product?.variants[0]?.image || product?.image,
   )
 
   useEffect(() => {
@@ -34,7 +34,8 @@ export default function ProductDetailPage() {
     const preferred = firstInStockVariant(product) || product.variants[0]
     setVariantId(preferred.id)
     setQty(1)
-    setActiveImage(product.image || preferred.image)
+    // Detail view uses variant images only; main product image is for listings.
+    setActiveImage(preferred.image || product.image)
   }, [slug, product])
 
   const variant = useMemo(
@@ -46,17 +47,26 @@ export default function ProductDetailPage() {
     if (!product) return []
     const seen = new Set()
     const list = []
-    if (product.image) {
-      seen.add(product.image)
-      list.push({ src: product.image, variantId: null, dose: 'Main' })
-    }
+
+    // Product detail gallery = variant images only.
+    // Main product.image is for shop/home cards — do not add it here, or the
+    // same photo (often under a different /uploads/ path) shows as a 2nd thumb.
     for (const v of product.variants) {
-      const src = v.image || product.image
-      if (src && !seen.has(src)) {
-        seen.add(src)
-        list.push({ src, variantId: v.id, dose: v.dose })
-      }
+      const src = v.image
+      if (!src || seen.has(src)) continue
+      seen.add(src)
+      list.push({ src, variantId: v.id, dose: v.dose })
     }
+
+    // Fallback when no variant has its own image.
+    if (list.length === 0 && product.image) {
+      list.push({
+        src: product.image,
+        variantId: product.variants[0]?.id ?? null,
+        dose: product.variants[0]?.dose || 'Main',
+      })
+    }
+
     return list
   }, [product])
 
@@ -141,30 +151,32 @@ export default function ProductDetailPage() {
               data-reveal="left"
               className="mx-auto flex w-full max-w-[480px] gap-3 lg:mx-0"
             >
-              <div className="flex w-[72px] shrink-0 flex-col gap-2.5 sm:w-[84px]">
-                {gallery.map((item) => {
-                  const active = item.src === activeImage
-                  return (
-                    <button
-                      key={`${item.variantId}-${item.src}`}
-                      type="button"
-                      onClick={() => selectImage(item)}
-                      className={`overflow-hidden rounded-xl bg-[#f2f2f2] transition ${
-                        active
-                          ? 'ring-2 ring-cyan ring-offset-2'
-                          : 'opacity-80 hover:opacity-100'
-                      }`}
-                      aria-label={`Show ${item.dose} image`}
-                    >
-                      <img
-                        src={assetUrl(item.src)}
-                        alt={`${product.name} ${item.dose}`}
-                        className="aspect-square w-full object-cover"
-                      />
-                    </button>
-                  )
-                })}
-              </div>
+              {gallery.length > 1 ? (
+                <div className="flex w-[72px] shrink-0 flex-col gap-2.5 sm:w-[84px]">
+                  {gallery.map((item) => {
+                    const active = item.src === activeImage
+                    return (
+                      <button
+                        key={`${item.variantId}-${item.src}`}
+                        type="button"
+                        onClick={() => selectImage(item)}
+                        className={`overflow-hidden rounded-xl bg-[#f2f2f2] transition ${
+                          active
+                            ? 'ring-2 ring-cyan ring-offset-2'
+                            : 'opacity-80 hover:opacity-100'
+                        }`}
+                        aria-label={`Show ${item.dose} image`}
+                      >
+                        <img
+                          src={assetUrl(item.src)}
+                          alt={`${product.name} ${item.dose}`}
+                          className="aspect-square w-full object-cover"
+                        />
+                      </button>
+                    )
+                  })}
+                </div>
+              ) : null}
 
               <div className="relative min-w-0 flex-1 overflow-hidden rounded-[24px] bg-[#f2f2f2]">
                 <ProductBadge label={product.badge} outOfStock={productOutOfStock || variantOutOfStock} />
