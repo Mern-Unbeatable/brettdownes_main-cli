@@ -145,14 +145,22 @@ export default function AdminProducts() {
         const extra = notFound.length > 8 ? ` (+${notFound.length - 8} more)` : ''
         const message =
           summary.variantsUpdated > 0
-            ? `These barcodes were not found on the site, so quantity was not updated: ${preview}${extra}. Add the barcode on the product page first.`
-            : `No quantities were updated. Barcode not found: ${preview}${extra}. Add each barcode on the product page first, then upload again.`
+            ? `These barcodes were not found on the site, so quantity was not updated: ${preview}${extra}. Use Admin → Products → Download template (Item barcode), not the old SKU file.`
+            : `No quantities were updated. Barcode not found: ${preview}${extra}. Download a fresh template from Admin → Products (Item barcode like bpc5), then upload again.`
 
         toast.warning(message, {
           title: 'Barcode not found',
-          duration: 12000,
+          duration: 14000,
         })
-      } else if (summary.variantsUpdated === 0) {
+      }
+
+      const rowErrors = summary.rowErrors || []
+      if (rowErrors.length) {
+        toast.warning(rowErrors.slice(0, 3).join(' '), {
+          title: 'Some rows skipped',
+          duration: 10000,
+        })
+      } else if (!notFound.length && summary.variantsUpdated === 0) {
         toast.info('No rows to update in that file.', { title: 'Import complete' })
       }
 
