@@ -253,11 +253,13 @@ export default function AdminOrderDetail() {
               {order.items.map((item) => (
                 <li key={item.id} className="flex items-center gap-4 px-5 py-4">
                   <div className="h-[88px] w-[88px] shrink-0 overflow-hidden rounded-2xl bg-[#f2f2f2]">
-                    <img
-                      src={assetUrl(item.image)}
-                      alt=""
-                      className="h-full w-full object-cover"
-                    />
+                    {item.image ? (
+                      <img
+                        src={assetUrl(item.image)}
+                        alt=""
+                        className="h-full w-full object-cover"
+                      />
+                    ) : null}
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-display text-[15px] font-bold text-ink">

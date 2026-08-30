@@ -112,11 +112,15 @@ export default function UserOrderDetail() {
             <ul className="divide-y divide-black/5">
               {order.items.map((item) => (
                 <li key={item.id} className="flex items-center gap-3 px-5 py-4">
-                  <img
-                    src={assetUrl(item.image)}
-                    alt=""
-                    className="h-14 w-14 rounded-xl bg-fog object-cover"
-                  />
+                  {item.image ? (
+                    <img
+                      src={assetUrl(item.image)}
+                      alt=""
+                      className="h-14 w-14 rounded-xl bg-fog object-cover"
+                    />
+                  ) : (
+                    <div className="h-14 w-14 shrink-0 rounded-xl bg-fog" />
+                  )}
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-[13px] font-semibold text-ink">
                       {item.productName}
