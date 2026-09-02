@@ -36,7 +36,7 @@ export default function CheckoutPage() {
   const navigate = useNavigate()
   const toast = useToast()
   const { items, subtotal, clearCart, count } = useCart()
-  const { user } = useAuth()
+  const { user, refresh } = useAuth()
   const settings = useSettings()
 
   const [fulfillment, setFulfillment] = useState('DELIVERY')
@@ -71,6 +71,7 @@ export default function CheckoutPage() {
   const [couponCode, setCouponCode] = useState('')
   const [appliedCoupon, setAppliedCoupon] = useState(null)
   const [couponLoading, setCouponLoading] = useState(false)
+  const [applyCredit, setApplyCredit] = useState(true)
 
   useEffect(() => {
     api
@@ -159,7 +160,11 @@ export default function CheckoutPage() {
     appliedCoupon?.cartSignature === cartSignature ? appliedCoupon : null
   const couponDiscountCents = currentCoupon?.discountCents || 0
   const discountCents = Math.min(subtotalCents, bulkDiscountCents + couponDiscountCents)
-  const totalCents = Math.max(0, subtotalCents - discountCents + shippingCents)
+  const merchandiseCents = Math.max(0, subtotalCents - discountCents)
+  const availableCreditCents = Math.max(0, user?.creditCents || 0)
+  const creditEligibleCents = Math.min(availableCreditCents, merchandiseCents)
+  const creditCents = applyCredit ? creditEligibleCents : 0
+  const totalCents = Math.max(0, merchandiseCents + shippingCents - creditCents)
 
   const applyCoupon = async () => {
     const code = couponCode.trim()
@@ -290,15 +295,18 @@ export default function CheckoutPage() {
             }),
         notes: form.notes.trim(),
         couponCode: currentCoupon?.code || '',
+        applyCredit: applyCredit && creditEligibleCents > 0,
       })
 
-      if (order.paymentMethod === 'PICKUP') {
+      if (order.paymentMethod === 'PICKUP' || (order.paymentStatus === 'PAID' && order.totalCents === 0)) {
+        if (order.creditCents > 0) refresh().catch(() => {})
         clearCart()
         setPlacedOrder(order)
         return
       }
 
       // Delivery orders: statement-descriptor notice, then Stripe Checkout (hosted).
+      if (order.creditCents > 0) refresh().catch(() => {})
       setDescriptorNotice({ order })
       setNoticeProgress(0)
     } catch (err) {
@@ -858,6 +866,32 @@ export default function CheckoutPage() {
                   ) : null}
                 </div>
 
+                {availableCreditCents > 0 ? (
+                  <div className="mt-3 rounded-2xl border border-cyan/25 bg-cyan/5 p-3.5">
+                    <label className="flex cursor-pointer items-start gap-3">
+                      <input
+                        type="checkbox"
+                        checked={applyCredit}
+                        onChange={(event) => setApplyCredit(event.target.checked)}
+                        className="mt-0.5 h-4 w-4 rounded border-black/20 text-cyan accent-cyan"
+                      />
+                      <span className="min-w-0">
+                        <span className="flex items-center gap-1.5 text-[12px] font-semibold text-ink">
+                          <Wallet className="h-3.5 w-3.5 text-cyan-dim" />
+                          Use account credit
+                        </span>
+                        <span className="mt-0.5 block text-[11px] leading-snug text-muted">
+                          {formatCents(availableCreditCents)} available · applies to products only,
+                          not shipping
+                          {applyCredit && creditEligibleCents > 0
+                            ? ` · −${formatCents(creditEligibleCents)} on this order`
+                            : ''}
+                        </span>
+                      </span>
+                    </label>
+                  </div>
+                ) : null}
+
                 <div className="mt-5 space-y-2 border-t border-black/8 pt-4 text-sm">
                   <Row label="Subtotal" value={formatCents(subtotalCents)} />
                   {bulkDiscountCents > 0 ? (
@@ -871,6 +905,9 @@ export default function CheckoutPage() {
                       label={`Coupon (${currentCoupon.code})`}
                       value={`-${formatCents(couponDiscountCents)}`}
                     />
+                  ) : null}
+                  {creditCents > 0 ? (
+                    <Row label="Account credit" value={`-${formatCents(creditCents)}`} />
                   ) : null}
                   <Row
                     label={fulfillment === 'PICKUP' ? 'Pickup' : 'Shipping'}

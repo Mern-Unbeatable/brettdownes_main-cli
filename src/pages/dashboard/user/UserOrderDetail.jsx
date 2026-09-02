@@ -153,6 +153,12 @@ export default function UserOrderDetail() {
                   </span>
                 </div>
               ) : null}
+              {order.creditCents > 0 ? (
+                <div className="flex justify-between">
+                  <span className="text-muted">Account credit used</span>
+                  <span className="text-emerald-600">-{formatCents(order.creditCents)}</span>
+                </div>
+              ) : null}
               <div className="flex justify-between">
                 <span className="text-muted">
                   {order.fulfillment === 'PICKUP' ? 'Warehouse pickup' : 'Shipping'}

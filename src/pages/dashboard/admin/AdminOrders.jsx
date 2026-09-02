@@ -188,6 +188,11 @@ export default function AdminOrders() {
                       </td>
                       <td className="px-5 py-3.5 text-right text-[13px] font-semibold text-ink">
                         {formatCents(order.totalCents)}
+                        {order.creditCents > 0 ? (
+                          <p className="mt-0.5 text-[11px] font-medium text-emerald-600">
+                            −{formatCents(order.creditCents)} credit
+                          </p>
+                        ) : null}
                       </td>
                       <td className="px-5 py-3.5 text-right">
                         <Link

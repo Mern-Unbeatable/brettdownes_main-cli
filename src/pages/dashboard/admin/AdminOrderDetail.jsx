@@ -121,6 +121,29 @@ export default function AdminOrderDetail() {
     }
   }
 
+  const syncTracking = async () => {
+    setBusy(true)
+    try {
+      const data = await api.post(`/api/admin/orders/${id}/tracking/sync`)
+      setOrder(data.order)
+      if (data.applied?.updated) {
+        toast.success(
+          `Tracking ${data.tracker?.status || 'updated'} → ${data.applied.to.toLowerCase()}.`,
+          { title: 'Synced from carrier' },
+        )
+      } else {
+        toast.success(
+          `Carrier status: ${data.tracker?.status || 'unknown'}. No order change needed.`,
+          { title: 'Tracking checked' },
+        )
+      }
+    } catch (err) {
+      toast.error(err.message)
+    } finally {
+      setBusy(false)
+    }
+  }
+
   if (loading && !order) {
     return showLoader ? (
       <LoadingBlock label="Loading order" />
@@ -297,6 +320,14 @@ export default function AdminOrderDetail() {
                   </span>
                 </div>
               ) : null}
+              {order.creditCents > 0 ? (
+                <div className="flex justify-between">
+                  <span className="text-muted">Account credit used</span>
+                  <span className="font-medium text-emerald-600">
+                    -{formatCents(order.creditCents)}
+                  </span>
+                </div>
+              ) : null}
               <div className="flex justify-between">
                 <span className="text-muted">{isPickup ? 'Warehouse pickup' : 'Shipping'}</span>
                 <span className="font-medium text-ink">
@@ -361,6 +392,13 @@ export default function AdminOrderDetail() {
 
               {autoFulfillment ? (
                 <div className="flex flex-col gap-2">
+                  {order.trackingCode &&
+                  (order.status === 'SHIPPED' || order.status === 'PROCESSING') ? (
+                    <Button variant="outline" disabled={busy} onClick={syncTracking}>
+                      <RefreshCw className="h-3.5 w-3.5" />
+                      Sync tracking
+                    </Button>
+                  ) : null}
                   {order.status === 'SHIPPED' ? (
                     <Button
                       variant="outline"

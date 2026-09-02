@@ -46,6 +46,7 @@ export default function Gatekeeper({ onPass }) {
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [company, setCompany] = useState('')
+  const [heardAboutUs, setHeardAboutUs] = useState('')
   const [framework, setFramework] = useState('')
   const [otp, setOtp] = useState('')
   const [otpCooldown, setOtpCooldown] = useState(0)
@@ -850,6 +851,7 @@ html[data-gate-locked="1"] #gatekeeper-root {
         company: company.trim(),
         email: email.trim().toLowerCase(),
         password,
+        ...(heardAboutUs.trim() ? { heardAboutUs: heardAboutUs.trim() } : {}),
         researchFramework: framework.trim(),
       })
       setOtp('')
@@ -1298,6 +1300,22 @@ html[data-gate-locked="1"] #gatekeeper-root {
               </label>
               <label className="block">
                 <span className="mb-0.5 block text-[7px] font-bold tracking-[0.16em] text-white uppercase sm:text-[8px] md:mb-1 md:text-[10px]">
+                  How did you hear about us?{' '}
+                  <span className="font-medium tracking-normal text-white/45 normal-case">
+                    (optional)
+                  </span>
+                </span>
+                <input
+                  type="text"
+                  value={heardAboutUs}
+                  onChange={(e) => setHeardAboutUs(e.target.value)}
+                  placeholder="Referral, search, social, event…"
+                  maxLength={120}
+                  className="gate-input w-full rounded-lg border border-white/20 bg-white/[0.06] px-2.5 py-1 text-[11px] outline-none transition placeholder:text-white/40 focus:border-white/50 sm:px-3 sm:py-1.5 sm:text-[12px] md:px-3.5 md:py-2 md:text-[13px]"
+                />
+              </label>
+              <label className="block">
+                <span className="mb-0.5 block text-[7px] font-bold tracking-[0.16em] text-white uppercase sm:text-[8px] md:mb-1 md:text-[10px]">
                   Password
                 </span>
                 <div className="relative">
@@ -1332,7 +1350,7 @@ html[data-gate-locked="1"] #gatekeeper-root {
                   value={framework}
                   onChange={(e) => setFramework(e.target.value)}
                   placeholder="Briefly describe your research protocol or intended use."
-                  className="gate-input min-h-[56px] max-h-[72px] w-full resize-none rounded-lg border border-white/20 bg-white/[0.06] px-2.5 py-1.5 text-[11px] outline-none transition placeholder:text-white/40 focus:border-white/50 sm:min-h-[56px] sm:max-h-[64px] sm:px-3 sm:py-1.5 sm:text-[12px] md:min-h-[52px] md:max-h-[56px] md:px-3.5 md:py-2 md:text-[13px]"
+                  className="gate-input min-h-[48px] max-h-[64px] w-full resize-none rounded-lg border border-white/20 bg-white/[0.06] px-2.5 py-1.5 text-[11px] outline-none transition placeholder:text-white/40 focus:border-white/50 sm:min-h-[48px] sm:max-h-[56px] sm:px-3 sm:py-1.5 sm:text-[12px] md:min-h-[44px] md:max-h-[52px] md:px-3.5 md:py-2 md:text-[13px]"
                 />
               </label>
               <button
@@ -1346,7 +1364,7 @@ html[data-gate-locked="1"] #gatekeeper-root {
               <button
                 type="button"
                 onClick={() => swapTo('verify')}
-                className="mt-3 flex w-full items-center justify-center rounded-xl border border-white/35 bg-transparent px-4 py-2 text-[11px] font-bold tracking-[0.08em] text-white uppercase transition hover:border-white hover:bg-white/10 sm:mt-4 sm:text-[12px] md:mt-4 md:text-[13px]"
+                className="mt-2 flex w-full items-center justify-center rounded-xl border border-white/35 bg-transparent px-4 py-1.5 text-[11px] font-bold tracking-[0.08em] text-white uppercase transition hover:border-white hover:bg-white/10 sm:mt-3 sm:py-2 sm:text-[12px] md:mt-3 md:text-[13px]"
               >
                 Return to Login
               </button>

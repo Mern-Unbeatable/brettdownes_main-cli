@@ -8,9 +8,10 @@ import {
   ExternalLink,
   Eye,
   Search,
+  Settings2,
   Trash2,
 } from 'lucide-react'
-import { api } from '../../../lib/api'
+import { api, formatCents } from '../../../lib/api'
 import { useAuth } from '../../../context/AuthContext'
 import { useToast } from '../../../components/Toaster'
 import {
@@ -72,6 +73,9 @@ export default function AdminCustomers() {
   const [search, setSearch] = useState(params.get('search') || '')
   const [busyId, setBusyId] = useState(null)
   const [manageUser, setManageUser] = useState(null)
+  const [creditUser, setCreditUser] = useState(null)
+  const [creditDollars, setCreditDollars] = useState('')
+  const [creditBusy, setCreditBusy] = useState(false)
   const [pendingDelete, setPendingDelete] = useState(null)
   const [exporting, setExporting] = useState(false)
 
@@ -95,6 +99,67 @@ export default function AdminCustomers() {
       }
     })
     setManageUser((prev) => (prev?.id === id ? { ...prev, ...patch } : prev))
+    setCreditUser((prev) => (prev?.id === id ? { ...prev, ...patch } : prev))
+  }
+
+  const openCreditManage = async (customer) => {
+    setCreditUser(customer)
+    const dollars = ((customer.creditCents || 0) / 100).toFixed(2)
+    setCreditDollars(dollars === '0.00' ? '' : dollars)
+
+    try {
+      const data = await api.get(`/api/admin/users/${customer.id}`)
+      const fresh = data.user
+      patchLocal(customer.id, {
+        creditCents: fresh.creditCents || 0,
+        creditUsedCents: fresh.creditUsedCents || 0,
+      })
+      setCreditUser((prev) =>
+        prev?.id === customer.id
+          ? {
+              ...prev,
+              ...fresh,
+              creditCents: fresh.creditCents || 0,
+              creditUsedCents: fresh.creditUsedCents || 0,
+            }
+          : prev,
+      )
+      const nextDollars = ((fresh.creditCents || 0) / 100).toFixed(2)
+      setCreditDollars(nextDollars === '0.00' ? '' : nextDollars)
+    } catch {
+      // Keep list values if refresh fails.
+    }
+  }
+
+  const saveCredit = async () => {
+    if (!creditUser) return
+    const parsed = Number(creditDollars)
+    if (!Number.isFinite(parsed) || parsed < 0) {
+      toast.error('Enter a valid credit amount (0 or more).')
+      return
+    }
+
+    setCreditBusy(true)
+    try {
+      const data = await api.patch(`/api/admin/users/${creditUser.id}/credit`, {
+        creditDollars: parsed,
+      })
+      patchLocal(creditUser.id, {
+        creditCents: data.user.creditCents,
+        creditUsedCents: data.user.creditUsedCents || 0,
+      })
+      toast.success(
+        data.user.creditCents > 0
+          ? `Available credit set to ${formatCents(data.user.creditCents)}.`
+          : 'Available credit cleared.',
+        { title: 'Credit updated' },
+      )
+      setCreditUser(null)
+    } catch (err) {
+      toast.error(err.message)
+    } finally {
+      setCreditBusy(false)
+    }
   }
 
   const load = useCallback(() => {
@@ -192,6 +257,7 @@ export default function AdminCustomers() {
     const customer = pendingDelete
     setPendingDelete(null)
     setManageUser(null)
+    setCreditUser(null)
     try {
       await api.delete(`/api/admin/users/${customer.id}`)
       toast.success(`${customer.name} deleted.`)
@@ -289,6 +355,19 @@ export default function AdminCustomers() {
                         <p className="mt-0.5 truncate text-[12px] text-muted">{customer.email}</p>
                       </div>
 
+                      <div className="min-w-[7.5rem] shrink-0 text-right sm:text-left">
+                        <p className="text-[10px] font-bold tracking-[0.12em] text-muted uppercase">
+                          Credit
+                        </p>
+                        <p className="mt-0.5 text-[12px] font-semibold text-ink">
+                          {formatCents(customer.creditCents || 0)}{' '}
+                          <span className="font-medium text-muted">left</span>
+                        </p>
+                        <p className="text-[11px] text-muted">
+                          {formatCents(customer.creditUsedCents || 0)} used
+                        </p>
+                      </div>
+
                       <div className="flex shrink-0 items-center gap-3">
                         {isPending && !isSelf ? (
                           <Button
@@ -323,6 +402,10 @@ export default function AdminCustomers() {
                         <Button size="sm" variant="outline" onClick={() => setManageUser(customer)}>
                           <Eye className="h-3.5 w-3.5" />
                           View
+                        </Button>
+                        <Button size="sm" variant="outline" onClick={() => openCreditManage(customer)}>
+                          <Settings2 className="h-3.5 w-3.5" />
+                          Manage
                         </Button>
                       </div>
                     </div>
@@ -411,6 +494,21 @@ export default function AdminCustomers() {
                   'Not provided'
                 )}
               </DetailRow>
+              <DetailRow label="How did you hear about us?">
+                {manageUser.heardAboutUs || 'Not provided'}
+              </DetailRow>
+              <DetailRow label="Account credit">
+                <div className="flex flex-wrap gap-x-4 gap-y-1">
+                  <span>
+                    <span className="text-muted">Left </span>
+                    {formatCents(manageUser.creditCents || 0)}
+                  </span>
+                  <span>
+                    <span className="text-muted">Used </span>
+                    {formatCents(manageUser.creditUsedCents || 0)}
+                  </span>
+                </div>
+              </DetailRow>
             </div>
 
             <div className="grid gap-3 sm:grid-cols-2">
@@ -447,6 +545,77 @@ export default function AdminCustomers() {
               </div>
               <ExternalLink className="h-4 w-4 shrink-0 text-cyan-dim" />
             </Link>
+          </div>
+        ) : null}
+      </Modal>
+
+      <Modal
+        open={Boolean(creditUser)}
+        onClose={() => !creditBusy && setCreditUser(null)}
+        title="Manage account credit"
+        size="sm"
+        footer={
+          <>
+            <Button variant="ghost" disabled={creditBusy} onClick={() => setCreditUser(null)}>
+              Cancel
+            </Button>
+            <Button variant="primary" disabled={creditBusy} onClick={saveCredit}>
+              {creditBusy ? 'Saving…' : 'Save credit'}
+            </Button>
+          </>
+        }
+      >
+        {creditUser ? (
+          <div className="space-y-4">
+            <div>
+              <p className="text-[13px] font-semibold text-ink">{creditUser.name}</p>
+              <p className="mt-0.5 text-[12px] text-muted">{creditUser.email}</p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              <div className="rounded-2xl bg-fog px-3.5 py-3">
+                <p className="text-[10px] font-bold tracking-[0.12em] text-muted uppercase">
+                  Left
+                </p>
+                <p className="mt-1 text-[16px] font-semibold text-ink">
+                  {formatCents(creditUser.creditCents || 0)}
+                </p>
+              </div>
+              <div className="rounded-2xl bg-fog px-3.5 py-3">
+                <p className="text-[10px] font-bold tracking-[0.12em] text-muted uppercase">
+                  Used
+                </p>
+                <p className="mt-1 text-[16px] font-semibold text-ink">
+                  {formatCents(creditUser.creditUsedCents || 0)}
+                </p>
+              </div>
+            </div>
+
+            <p className="text-[12px] leading-relaxed text-muted">
+              Set the available balance they can still spend. Checkout deducts from this
+              automatically — e.g. allow $2 and use $2 → left becomes $0.
+            </p>
+            <label className="block">
+              <span className="mb-1.5 block text-[10px] font-bold tracking-[0.14em] text-muted uppercase">
+                Available balance (USD)
+              </span>
+              <div className="relative">
+                <span className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-[13px] text-muted">
+                  $
+                </span>
+                <Input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  inputMode="decimal"
+                  value={creditDollars}
+                  onChange={(event) => setCreditDollars(event.target.value)}
+                  placeholder="0.00"
+                  className="pl-7"
+                  autoFocus
+                />
+              </div>
+            </label>
           </div>
         ) : null}
       </Modal>

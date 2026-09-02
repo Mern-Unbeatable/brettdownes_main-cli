@@ -156,7 +156,7 @@ export default function UserOrders() {
                     'Tracking appears once the label is created'
                   )}
                 </div>
-                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2">
                   {order.trackingUrl ? (
                     <Button
                       as="a"
@@ -173,9 +173,16 @@ export default function UserOrders() {
                   <Button as={Link} to={`/dashboard/orders/${order.id}`} variant="primary" size="sm">
                     Details
                   </Button>
-                  <p className="font-display text-[16px] font-bold text-ink">
-                    {formatCents(order.totalCents)}
-                  </p>
+                  <div className="text-right">
+                    <p className="font-display text-[16px] font-bold text-ink">
+                      {formatCents(order.totalCents)}
+                    </p>
+                    {order.creditCents > 0 ? (
+                      <p className="text-[11px] font-medium text-emerald-600">
+                        −{formatCents(order.creditCents)} credit used
+                      </p>
+                    ) : null}
+                  </div>
                 </div>
               </div>
             </Card>
