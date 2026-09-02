@@ -873,20 +873,21 @@ export default function CheckoutPage() {
                         type="checkbox"
                         checked={applyCredit}
                         onChange={(event) => setApplyCredit(event.target.checked)}
-                        className="mt-0.5 h-4 w-4 rounded border-black/20 text-cyan accent-cyan"
+                        className="mt-1 h-4 w-4 rounded border-black/20 text-cyan accent-cyan"
                       />
                       <span className="min-w-0">
-                        <span className="flex items-center gap-1.5 text-[12px] font-semibold text-ink">
-                          <Wallet className="h-3.5 w-3.5 text-cyan-dim" />
+                        <span className="flex items-center gap-2 text-[13px] font-semibold text-ink sm:text-sm">
+                          <Wallet className="h-4 w-4 text-cyan-dim" />
                           Use account credit
                         </span>
-                        <span className="mt-0.5 block text-[11px] leading-snug text-muted">
-                          {formatCents(availableCreditCents)} available · applies to products only,
-                          not shipping
-                          {applyCredit && creditEligibleCents > 0
-                            ? ` · −${formatCents(creditEligibleCents)} on this order`
-                            : ''}
+                        <span className="mt-1 block text-[12px] leading-snug text-muted">
+                          {formatCents(availableCreditCents)} available · products only, not shipping
                         </span>
+                        {applyCredit && creditEligibleCents > 0 ? (
+                          <span className="mt-1 block text-[12px] font-semibold text-emerald-700">
+                            −{formatCents(creditEligibleCents)} on this order
+                          </span>
+                        ) : null}
                       </span>
                     </label>
                   </div>
