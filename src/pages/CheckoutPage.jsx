@@ -883,11 +883,6 @@ export default function CheckoutPage() {
                         <span className="mt-1 block text-[12px] leading-snug text-muted">
                           {formatCents(availableCreditCents)} available · products only, not shipping
                         </span>
-                        {applyCredit && creditEligibleCents > 0 ? (
-                          <span className="mt-1 block text-[12px] font-semibold text-emerald-700">
-                            −{formatCents(creditEligibleCents)} on this order
-                          </span>
-                        ) : null}
                       </span>
                     </label>
                   </div>
