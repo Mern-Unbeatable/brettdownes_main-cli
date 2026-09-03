@@ -76,6 +76,8 @@ export default function AdminCustomers() {
   const [creditUser, setCreditUser] = useState(null)
   const [creditDollars, setCreditDollars] = useState('')
   const [creditBusy, setCreditBusy] = useState(false)
+  const [heardDraft, setHeardDraft] = useState('')
+  const [heardBusy, setHeardBusy] = useState(false)
   const [pendingDelete, setPendingDelete] = useState(null)
   const [exporting, setExporting] = useState(false)
 
@@ -100,6 +102,40 @@ export default function AdminCustomers() {
     })
     setManageUser((prev) => (prev?.id === id ? { ...prev, ...patch } : prev))
     setCreditUser((prev) => (prev?.id === id ? { ...prev, ...patch } : prev))
+  }
+
+  const openCustomerView = (customer) => {
+    setManageUser(customer)
+    setHeardDraft(customer.heardAboutUs || '')
+  }
+
+  const saveHeardAbout = async () => {
+    if (!manageUser) return
+    const next = heardDraft.trim()
+    const current = String(manageUser.heardAboutUs || '').trim()
+    if (next === current) {
+      toast.success('No changes to save.')
+      return
+    }
+
+    setHeardBusy(true)
+    try {
+      const data = await api.patch(`/api/admin/users/${manageUser.id}/heard-about`, {
+        heardAboutUs: next,
+      })
+      patchLocal(manageUser.id, { heardAboutUs: data.user.heardAboutUs || null })
+      setHeardDraft(data.user.heardAboutUs || '')
+      toast.success(
+        data.user.heardAboutUs
+          ? '“How did you hear about us?” updated.'
+          : '“How did you hear about us?” cleared.',
+        { title: 'Saved' },
+      )
+    } catch (err) {
+      toast.error(err.message)
+    } finally {
+      setHeardBusy(false)
+    }
   }
 
   const openCreditManage = async (customer) => {
@@ -399,7 +435,7 @@ export default function AdminCustomers() {
                           </div>
                         ) : null}
 
-                        <Button size="sm" variant="outline" onClick={() => setManageUser(customer)}>
+                        <Button size="sm" variant="outline" onClick={() => openCustomerView(customer)}>
                           <Eye className="h-3.5 w-3.5" />
                           View
                         </Button>
@@ -495,7 +531,24 @@ export default function AdminCustomers() {
                 )}
               </DetailRow>
               <DetailRow label="How did you hear about us?">
-                {manageUser.heardAboutUs || 'Not provided'}
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                  <Input
+                    value={heardDraft}
+                    onChange={(event) => setHeardDraft(event.target.value)}
+                    placeholder="Referral, search, social, event…"
+                    maxLength={120}
+                    className="flex-1"
+                  />
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={heardBusy}
+                    onClick={saveHeardAbout}
+                    className="shrink-0"
+                  >
+                    {heardBusy ? 'Saving…' : 'Save'}
+                  </Button>
+                </div>
               </DetailRow>
               <DetailRow label="Account credit">
                 <div className="flex flex-wrap gap-x-4 gap-y-1">
