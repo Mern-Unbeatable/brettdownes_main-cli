@@ -40,6 +40,7 @@ export default function CheckoutPage() {
   const settings = useSettings()
 
   const [fulfillment, setFulfillment] = useState('DELIVERY')
+  const [international, setInternational] = useState(false)
   const [pickupLocationId, setPickupLocationId] = useState('')
   const [form, setForm] = useState({
     fullName: '',
@@ -50,6 +51,7 @@ export default function CheckoutPage() {
     city: '',
     state: '',
     zip: '',
+    country: 'US',
     notes: '',
   })
   const [saveAddress, setSaveAddress] = useState(false)
@@ -108,8 +110,12 @@ export default function CheckoutPage() {
                 city: preferred.city,
                 state: preferred.state,
                 zip: preferred.zip,
+                country: preferred.country || 'US',
               },
         )
+        if (preferred.country && preferred.country !== 'US') {
+          setInternational(true)
+        }
       })
       .catch(() => {})
     return () => {
@@ -142,8 +148,16 @@ export default function CheckoutPage() {
 
   const selectedPickup = pickupLocations.find((loc) => loc.id === pickupLocationId) || null
 
+  const shipCountry = international
+    ? String(form.country || '').trim().toUpperCase() || 'US'
+    : 'US'
   const addressComplete =
-    form.address.trim() && form.city.trim() && form.state.trim() && form.zip.trim().length >= 3
+    form.address.trim() &&
+    form.city.trim() &&
+    form.state.trim() &&
+    form.zip.trim().length >= (international ? 2 : 3) &&
+    shipCountry.length === 2 &&
+    (!international || shipCountry !== 'US')
 
   const selectedRate = rates.find((rate) => rate.id === selectedRateId) || null
   const groupedRates = useMemo(() => groupRatesByCarrier(rates), [rates])
@@ -201,7 +215,7 @@ export default function CheckoutPage() {
           city: form.city,
           state: form.state,
           zip: form.zip,
-          country: 'US',
+          country: shipCountry,
           phone: form.phone,
         },
       })
@@ -221,7 +235,17 @@ export default function CheckoutPage() {
       setRatesLoading(false)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- debounced on the address fields below
-  }, [fulfillment, addressComplete, items, form.address, form.address2, form.city, form.state, form.zip])
+  }, [
+    fulfillment,
+    addressComplete,
+    items,
+    form.address,
+    form.address2,
+    form.city,
+    form.state,
+    form.zip,
+    shipCountry,
+  ])
 
   // Re-quote shortly after the address stops changing.
   useEffect(() => {
@@ -284,7 +308,7 @@ export default function CheckoutPage() {
                 city: form.city.trim(),
                 state: form.state.trim(),
                 zip: form.zip.trim(),
-                country: 'US',
+                country: shipCountry,
               },
               shipmentId,
               rateId: selectedRateId,
@@ -524,7 +548,11 @@ export default function CheckoutPage() {
                           onClick={() => setFulfillment('DELIVERY')}
                           icon={Truck}
                           title="Delivery"
-                          text="Live USPS, UPS and FedEx rates"
+                          text={
+                            international
+                              ? 'Live international USPS, UPS and FedEx rates'
+                              : 'Live USPS, UPS and FedEx rates'
+                          }
                         />
                         <OptionCard
                           active={fulfillment === 'PICKUP'}
@@ -537,6 +565,67 @@ export default function CheckoutPage() {
 
                       {fulfillment === 'DELIVERY' ? (
                         <>
+                          <label className="mt-5 flex cursor-pointer items-start gap-3 rounded-2xl border border-black/8 bg-white px-4 py-3.5">
+                            <input
+                              type="checkbox"
+                              checked={international}
+                              onChange={(event) => {
+                                const on = event.target.checked
+                                setInternational(on)
+                                setForm((prev) => ({
+                                  ...prev,
+                                  country: on ? prev.country === 'US' ? '' : prev.country : 'US',
+                                }))
+                                setRates([])
+                                setParcel(null)
+                                setShipmentId(null)
+                                setSelectedRateId('')
+                                setRatesError(null)
+                              }}
+                              className="mt-0.5 h-4 w-4 accent-[#00c4ab]"
+                            />
+                            <span className="min-w-0">
+                              <span className="block text-sm font-semibold text-ink">
+                                International shipping
+                              </span>
+                              <span className="mt-0.5 block text-[12px] text-muted">
+                                Check this for addresses outside the United States. Live carrier
+                                rates will include international options.
+                              </span>
+                            </span>
+                          </label>
+
+                          {international ? (
+                            <div className="mt-4">
+                              <label
+                                htmlFor="ship-country"
+                                className="mb-1.5 block text-sm font-medium text-ink"
+                              >
+                                Country
+                              </label>
+                              <select
+                                id="ship-country"
+                                name="country"
+                                value={form.country === 'US' ? '' : form.country}
+                                onChange={(event) =>
+                                  setForm((prev) => ({
+                                    ...prev,
+                                    country: event.target.value,
+                                  }))
+                                }
+                                required
+                                className="w-full rounded-xl border border-black/8 bg-white px-4 py-3 text-sm text-ink outline-none transition focus:border-cyan"
+                              >
+                                <option value="">Select country</option>
+                                {INTERNATIONAL_COUNTRIES.map((entry) => (
+                                  <option key={entry.code} value={entry.code}>
+                                    {entry.name}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                          ) : null}
+
                           <div className="mt-5 grid gap-4 sm:grid-cols-3">
                             <Field
                               label="Street address"
@@ -555,13 +644,19 @@ export default function CheckoutPage() {
                             />
                             <Field label="City" name="city" value={form.city} onChange={onChange} required />
                             <Field
-                              label="State"
+                              label={international ? 'State / province' : 'State'}
                               name="state"
                               value={form.state}
                               onChange={onChange}
                               required
                             />
-                            <Field label="ZIP" name="zip" value={form.zip} onChange={onChange} required />
+                            <Field
+                              label={international ? 'Postal code' : 'ZIP'}
+                              name="zip"
+                              value={form.zip}
+                              onChange={onChange}
+                              required
+                            />
                           </div>
 
                           <label className="mt-4 flex items-center gap-2">
@@ -1049,6 +1144,46 @@ function Field({ label, name, value, onChange, type = 'text', required, classNam
     </div>
   )
 }
+
+const INTERNATIONAL_COUNTRIES = [
+  { code: 'CA', name: 'Canada' },
+  { code: 'GB', name: 'United Kingdom' },
+  { code: 'AU', name: 'Australia' },
+  { code: 'NZ', name: 'New Zealand' },
+  { code: 'IE', name: 'Ireland' },
+  { code: 'DE', name: 'Germany' },
+  { code: 'FR', name: 'France' },
+  { code: 'NL', name: 'Netherlands' },
+  { code: 'BE', name: 'Belgium' },
+  { code: 'SE', name: 'Sweden' },
+  { code: 'NO', name: 'Norway' },
+  { code: 'DK', name: 'Denmark' },
+  { code: 'FI', name: 'Finland' },
+  { code: 'CH', name: 'Switzerland' },
+  { code: 'AT', name: 'Austria' },
+  { code: 'ES', name: 'Spain' },
+  { code: 'IT', name: 'Italy' },
+  { code: 'PT', name: 'Portugal' },
+  { code: 'PL', name: 'Poland' },
+  { code: 'CZ', name: 'Czechia' },
+  { code: 'MX', name: 'Mexico' },
+  { code: 'BR', name: 'Brazil' },
+  { code: 'AR', name: 'Argentina' },
+  { code: 'CL', name: 'Chile' },
+  { code: 'JP', name: 'Japan' },
+  { code: 'KR', name: 'South Korea' },
+  { code: 'SG', name: 'Singapore' },
+  { code: 'HK', name: 'Hong Kong' },
+  { code: 'TW', name: 'Taiwan' },
+  { code: 'IN', name: 'India' },
+  { code: 'PH', name: 'Philippines' },
+  { code: 'MY', name: 'Malaysia' },
+  { code: 'TH', name: 'Thailand' },
+  { code: 'AE', name: 'United Arab Emirates' },
+  { code: 'SA', name: 'Saudi Arabia' },
+  { code: 'IL', name: 'Israel' },
+  { code: 'ZA', name: 'South Africa' },
+]
 
 function OptionCard({ active, onClick, icon: Icon, title, text }) {
   return (
