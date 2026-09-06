@@ -257,7 +257,9 @@ export default function AdminDiscounts() {
                     }
                   >
                     <option value="ORDER">Entire order</option>
-                    <option value="KIT">Full kit (qty 10+ of one item)</option>
+                    <option value="KIT">
+                      Full kit (Peptides & Blends only; qty 10+ or kit-labeled)
+                    </option>
                   </Select>
                 </Field>
                 <Field label="Minimum order ($)">

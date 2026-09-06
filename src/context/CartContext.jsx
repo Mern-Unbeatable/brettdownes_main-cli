@@ -121,7 +121,11 @@ export function CartProvider({ children }) {
       if (existing) {
         return prev.map((p) =>
           `${p.productId}-${p.variantId}` === key
-            ? { ...p, qty: p.qty + (item.qty || 1) }
+            ? {
+                ...p,
+                ...item,
+                qty: p.qty + (item.qty || 1),
+              }
             : p,
         )
       }

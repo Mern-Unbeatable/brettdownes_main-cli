@@ -284,6 +284,7 @@ export default function ProductDetailPage() {
                     productId: product.id,
                     variantId: variant.id,
                     name: product.name,
+                    category: product.category,
                     dose: variant.dose,
                     barcode: variant.barcode,
                     price: variant.price,

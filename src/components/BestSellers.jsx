@@ -90,6 +90,7 @@ export default function BestSellers() {
                             productId: product.id,
                             variantId: v.id,
                             name: product.name,
+                            category: product.category,
                             dose: v.dose,
                             price: v.price,
                             image: product.image || v.image,

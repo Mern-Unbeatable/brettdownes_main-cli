@@ -16,7 +16,7 @@ export const siteContact = {
 export const bulkRewards = [
   { save: '10%', detail: 'On all orders over $200', accent: 'cyan' },
   { save: '20%', detail: 'On all orders over $300', accent: 'cyan-dim' },
-  { save: '25%', detail: 'On full kits', accent: 'white' },
+  { save: '25%', detail: 'On full kits (Peptides & Blends)', accent: 'white' },
 ]
 
 export const RUO_CAUTION =

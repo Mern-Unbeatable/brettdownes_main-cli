@@ -1,5 +1,12 @@
-/** A full kit is qty 10+ of one cart line, or any line explicitly labeled as a kit. */
+import { isKitDiscountCategory } from '../data/categories'
+
+/** Explicit kit label, or qty 10+ of one cart line — Peptides & Blends only. */
 function isKit(item) {
+  if (!isKitDiscountCategory(item.category)) return false
+  // Safety net: bacteriostatic water never gets kit pricing even if miscategorized.
+  if (/bacteriostatic/i.test(`${item.name || ''} ${item.dose || ''} ${item.barcode || ''}`)) {
+    return false
+  }
   if (Number(item.qty) >= 10) return true
   return /\bkit\b/i.test(`${item.name || ''} ${item.dose || ''} ${item.barcode || ''}`)
 }

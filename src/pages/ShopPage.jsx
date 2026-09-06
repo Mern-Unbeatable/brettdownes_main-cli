@@ -251,6 +251,7 @@ export default function ShopPage() {
                               productId: product.id,
                               variantId: v.id,
                               name: product.name,
+                              category: product.category,
                               dose: v.dose,
                               price: v.price,
                               image: v.image || product.image,
