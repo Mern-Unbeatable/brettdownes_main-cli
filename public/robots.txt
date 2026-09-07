@@ -16,4 +16,4 @@ Disallow: /admin
 Disallow: /admin/
 Disallow: /reset-password
 
-Sitemap: https://peptideopslogistics.com/sitemap.xml
+Sitemap: https://www.peptideopslogistics.com/sitemap.xml

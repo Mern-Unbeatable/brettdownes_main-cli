@@ -18,6 +18,7 @@ import TermsOfServicePage from './pages/TermsOfServicePage'
 import PrivacyPolicyPage from './pages/PrivacyPolicyPage'
 import ProductDetailPage from './pages/ProductDetailPage'
 import ResetPasswordPage from './pages/ResetPasswordPage'
+import NotFoundPage from './pages/NotFoundPage'
 import CartDrawer from './components/CartDrawer'
 import PromoModal from './components/PromoModal'
 import Gatekeeper from './components/Gatekeeper'
@@ -215,6 +216,8 @@ function AppShell() {
                 <Route path="profile" element={<AdminProfile />} />
               </Route>
             </Route>
+
+            <Route path="*" element={<NotFoundPage />} />
           </Routes>
         </Suspense>
       </div>

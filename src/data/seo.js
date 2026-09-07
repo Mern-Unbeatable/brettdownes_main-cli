@@ -9,7 +9,7 @@ export const DEFAULT_OG_IMAGE = '/images/logo.png'
 export const TWITTER_HANDLE = ''
 
 /** Production site origin — hardcoded for static hosting (no VITE_SITE_URL needed). */
-export const SITE_ORIGIN = 'https://peptideopslogistics.com'
+export const SITE_ORIGIN = 'https://www.peptideopslogistics.com'
 
 /** Absolute site origin for canonicals / Open Graph. */
 export function siteOrigin() {
@@ -107,6 +107,11 @@ export const pageSeo = {
     title: 'Admin',
     description: 'Peptide Ops admin console.',
     path: '/admin',
+    noIndex: true,
+  },
+  notFound: {
+    title: 'Page Not Found',
+    description: 'The page you requested could not be found on Peptide Ops.',
     noIndex: true,
   },
 }

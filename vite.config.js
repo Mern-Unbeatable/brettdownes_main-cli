@@ -32,7 +32,7 @@ function absoluteSitemapPlugin(siteUrl) {
   }
 }
 
-const SITE_ORIGIN = 'https://peptideopslogistics.com'
+const SITE_ORIGIN = 'https://www.peptideopslogistics.com'
 
 export default defineConfig(() => {
   return {
