@@ -81,7 +81,12 @@ export default function AccountMenu({ onBeforeNavigate, align = 'right', tone = 
   }
 
   const onTrigger = () => {
-    if (!ready || !user) return
+    if (!ready) return
+    if (!user) {
+      onBeforeNavigate?.()
+      navigate('/shop')
+      return
+    }
     setOpen((value) => !value)
   }
 
@@ -127,10 +132,10 @@ export default function AccountMenu({ onBeforeNavigate, align = 'right', tone = 
       <button
         type="button"
         onClick={onTrigger}
-        disabled={!ready || !user}
-        aria-haspopup="menu"
-        aria-expanded={open}
-        aria-label="Account menu"
+        disabled={!ready}
+        aria-haspopup={user ? 'menu' : undefined}
+        aria-expanded={user ? open : undefined}
+        aria-label={user ? 'Account menu' : 'Sign in'}
         className={`relative inline-flex h-11 w-11 items-center justify-center rounded-[12px] shadow-sm transition disabled:cursor-default ${chipClass}`}
       >
         <User className="h-[18px] w-[18px]" strokeWidth={1.7} />

@@ -4,6 +4,7 @@ import {
   Route,
   useLocation,
   useNavigationType,
+  useSearchParams,
 } from 'react-router-dom'
 import { lazy, Suspense, useEffect, useLayoutEffect, useState } from 'react'
 import { HelmetProvider } from 'react-helmet-async'
@@ -149,12 +150,14 @@ function RouteEffects() {
 function AppShell() {
   const { ready, isAuthenticated } = useAuth()
   const { pathname } = useLocation()
+  const [searchParams] = useSearchParams()
   const [gateMountKey, setGateMountKey] = useState(0)
 
   const isPortalRoute = pathname.startsWith('/dashboard') || pathname.startsWith('/admin')
   // Hold the gate closed until the session check finishes so it never flashes
   // for an already-signed-in researcher. Info pages stay open for SEO.
   const gateOpen = ready && !isAuthenticated && requiresGatekeeper(pathname)
+  const gateInitialMode = searchParams.get('auth') === 'register' ? 'register' : 'verify'
 
   // If someone removes/hides the gate via DevTools, remount it until verified
   useEffect(() => {
@@ -233,7 +236,9 @@ function AppShell() {
         </>
       ) : null}
 
-      {gateOpen ? <Gatekeeper key={gateMountKey} /> : null}
+      {gateOpen ? (
+        <Gatekeeper key={`${gateMountKey}-${gateInitialMode}`} initialMode={gateInitialMode} />
+      ) : null}
     </>
   )
 }

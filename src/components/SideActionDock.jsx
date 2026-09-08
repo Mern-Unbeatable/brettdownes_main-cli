@@ -36,10 +36,14 @@ export default function SideActionDock({ visible, cartCount = 0, onCart, onMenu 
 
         <button
           type="button"
-          aria-label="Open dashboard"
-          disabled={!ready || !user}
+          aria-label={user ? 'Open dashboard' : 'Sign in'}
+          disabled={!ready}
           onClick={() => {
-            if (!user) return
+            if (!ready) return
+            if (!user) {
+              navigate('/shop')
+              return
+            }
             navigate(isAdmin ? '/admin' : '/dashboard')
           }}
           className="relative flex h-11 w-11 items-center justify-center rounded-[12px] bg-white text-[#111] shadow-sm transition hover:scale-105 hover:bg-cyan disabled:cursor-default disabled:hover:scale-100 disabled:hover:bg-white"

@@ -23,7 +23,7 @@ const notices = [
   },
 ]
 
-export default function Gatekeeper({ onPass }) {
+export default function Gatekeeper({ onPass, initialMode = 'verify' }) {
   const rootRef = useRef(null)
   const modalRef = useRef(null)
   const artRef = useRef(null)
@@ -32,7 +32,8 @@ export default function Gatekeeper({ onPass }) {
   const animating = useRef(false)
   const layoutTlRef = useRef(null)
   const animGenRef = useRef(0)
-  const modeRef = useRef('verify')
+  const startMode = initialMode === 'register' ? 'register' : 'verify'
+  const modeRef = useRef(startMode)
   const frameHRef = useRef(0)
   const frameWRef = useRef(0)
   const panelPxRef = useRef(null)
@@ -41,7 +42,7 @@ export default function Gatekeeper({ onPass }) {
   const { login, registerStart, registerVerify, registerResend } = useAuth()
 
   const [visible, setVisible] = useState(false)
-  const [mode, setMode] = useState('verify')
+  const [mode, setMode] = useState(startMode)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
