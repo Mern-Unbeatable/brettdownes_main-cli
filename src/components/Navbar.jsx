@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { Link, useLocation } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
@@ -10,6 +10,7 @@ import MenuDrawer from './MenuDrawer'
 import SideActionDock from './SideActionDock'
 import AccountMenu from './AccountMenu'
 import { useCart } from '../context/CartContext'
+import { useAuth } from '../context/AuthContext'
 import { navLinks } from '../data/site'
 import { activeFromPath } from '../utils/nav'
 
@@ -89,12 +90,23 @@ function NavPill({ navRef, active, className, showPill = true }) {
 
 export default function Navbar() {
   const location = useLocation()
+  const navigate = useNavigate()
   const active = activeFromPath(location.pathname)
+  const { isAuthenticated } = useAuth()
   const { count, openCart, cartOpen } = useCart()
   const [menuOpen, setMenuOpen] = useState(false)
   const [isSticky, setIsSticky] = useState(false)
   const heroNavRef = useRef(null)
   const stickyNavRef = useRef(null)
+
+  const handleCart = () => {
+    setMenuOpen(false)
+    if (!isAuthenticated) {
+      navigate('/shop')
+      return
+    }
+    openCart()
+  }
 
   useLayoutEffect(() => {
     setIsSticky(false)
@@ -137,10 +149,7 @@ export default function Navbar() {
             <button
               type="button"
               aria-label="Cart"
-              onClick={() => {
-                setMenuOpen(false)
-                openCart()
-              }}
+              onClick={handleCart}
               className="relative inline-flex h-11 w-11 items-center justify-center rounded-[12px] bg-white text-[#111] shadow-sm transition hover:bg-white/90"
             >
               <ShoppingBag className="h-[18px] w-[18px]" strokeWidth={1.7} />
@@ -191,10 +200,7 @@ export default function Navbar() {
         <SideActionDock
           visible={isSticky && !cartOpen && !menuOpen}
           cartCount={count}
-          onCart={() => {
-            setMenuOpen(false)
-            openCart()
-          }}
+          onCart={handleCart}
           onMenu={() => setMenuOpen(true)}
         />,
         document.body,

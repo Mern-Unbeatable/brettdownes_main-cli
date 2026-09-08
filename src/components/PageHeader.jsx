@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { Link, useLocation } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
@@ -10,6 +10,7 @@ import MenuDrawer from './MenuDrawer'
 import SideActionDock from './SideActionDock'
 import AccountMenu from './AccountMenu'
 import { useCart } from '../context/CartContext'
+import { useAuth } from '../context/AuthContext'
 import { navLinks } from '../data/site'
 import { activeFromPath } from '../utils/nav'
 
@@ -97,7 +98,9 @@ function NavPill({ navRef, active, className, showPill = true, light = false }) 
 
 export default function PageHeader({ title, subtitle, image }) {
   const location = useLocation()
+  const navigate = useNavigate()
   const active = activeFromPath(location.pathname)
+  const { isAuthenticated } = useAuth()
   const { count, openCart, cartOpen } = useCart()
   const [menuOpen, setMenuOpen] = useState(false)
   const [isSticky, setIsSticky] = useState(false)
@@ -105,6 +108,15 @@ export default function PageHeader({ title, subtitle, image }) {
   const headerNavRef = useRef(null)
   const stickyNavRef = useRef(null)
   const light = !image && !title && !subtitle
+
+  const handleCart = () => {
+    setMenuOpen(false)
+    if (!isAuthenticated) {
+      navigate('/shop')
+      return
+    }
+    openCart()
+  }
 
   useLayoutEffect(() => {
     setIsSticky(false)
@@ -168,10 +180,7 @@ export default function PageHeader({ title, subtitle, image }) {
             <button
               type="button"
               aria-label="Cart"
-              onClick={() => {
-                setMenuOpen(false)
-                openCart()
-              }}
+              onClick={handleCart}
               className={`relative inline-flex h-11 w-11 items-center justify-center rounded-[12px] shadow-sm transition ${
                 light
                   ? 'bg-ink text-white hover:bg-ink/90'
@@ -261,10 +270,7 @@ export default function PageHeader({ title, subtitle, image }) {
         <SideActionDock
           visible={isSticky && !cartOpen && !menuOpen}
           cartCount={count}
-          onCart={() => {
-            setMenuOpen(false)
-            openCart()
-          }}
+          onCart={handleCart}
           onMenu={() => setMenuOpen(true)}
         />,
         document.body,

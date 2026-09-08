@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { Component, ShoppingCart } from 'lucide-react'
+import { useAuth } from '../context/AuthContext'
 import { useCart } from '../context/CartContext'
 import { lowestPrice } from '../context/CatalogContext'
 import { api, assetUrl, formatPrice } from '../lib/api'
@@ -10,6 +11,8 @@ import ProductBadge, {
 } from './ProductBadge'
 
 export default function BestSellers() {
+  const navigate = useNavigate()
+  const { isAuthenticated } = useAuth()
   const { addItem } = useCart()
   const [products, setProducts] = useState([])
   const [source, setSource] = useState('featured')
@@ -84,6 +87,10 @@ export default function BestSellers() {
                         type="button"
                         aria-label={`Add ${product.name} to cart`}
                         onClick={() => {
+                          if (!isAuthenticated) {
+                            navigate('/shop')
+                            return
+                          }
                           const v = firstInStockVariant(product)
                           if (!v) return
                           addItem({

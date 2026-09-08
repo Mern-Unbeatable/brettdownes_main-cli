@@ -54,8 +54,13 @@ const AdminCoa = lazy(() => import('./pages/dashboard/admin/AdminCoa'))
 
 gsap.registerPlugin(ScrollTrigger)
 
-/** Routes that must stay reachable without a portal session. */
-const PUBLIC_PATHS = ['/reset-password']
+/** Shop + checkout stay behind the research portal gate. */
+function requiresGatekeeper(pathname) {
+  if (!pathname) return false
+  if (pathname === '/shop' || pathname.startsWith('/shop/')) return true
+  if (pathname === '/checkout' || pathname.startsWith('/checkout/')) return true
+  return false
+}
 
 function scrollToTopInstant() {
   const html = document.documentElement
@@ -146,11 +151,10 @@ function AppShell() {
   const { pathname } = useLocation()
   const [gateMountKey, setGateMountKey] = useState(0)
 
-  const isPublicRoute = PUBLIC_PATHS.some((path) => pathname.startsWith(path))
   const isPortalRoute = pathname.startsWith('/dashboard') || pathname.startsWith('/admin')
   // Hold the gate closed until the session check finishes so it never flashes
-  // for an already-signed-in researcher.
-  const gateOpen = ready && !isAuthenticated && !isPublicRoute
+  // for an already-signed-in researcher. Info pages stay open for SEO.
+  const gateOpen = ready && !isAuthenticated && requiresGatekeeper(pathname)
 
   // If someone removes/hides the gate via DevTools, remount it until verified
   useEffect(() => {
@@ -222,7 +226,7 @@ function AppShell() {
         </Suspense>
       </div>
 
-      {!gateOpen && !isPortalRoute ? (
+      {isAuthenticated && !isPortalRoute ? (
         <>
           <CartDrawer />
           <PromoModal />

@@ -42,6 +42,7 @@ export const pageSeo = {
     description:
       'Browse research-grade lyophilized peptides and blends with verified purity. Shop Peptide Ops catalogue for institutional research use only.',
     path: '/shop',
+    noIndex: true,
   },
   faq: {
     title: 'FAQ — Shipping, Quality & Access',
@@ -138,5 +139,6 @@ export function productSeo(product) {
     path: `/shop/${product.slug}`,
     image: product.image || product.variants?.[0]?.image || DEFAULT_OG_IMAGE,
     type: 'product',
+    noIndex: true,
   }
 }

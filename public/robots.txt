@@ -1,13 +1,14 @@
-# Peptide Ops — research portal
+# Peptide Ops — public info pages are open; shop stays behind research gate
 User-agent: *
 Allow: /
-Allow: /shop
 Allow: /faq
 Allow: /contact
 Allow: /coa
 Allow: /terms
 Allow: /privacy
 
+Disallow: /shop
+Disallow: /shop/
 Disallow: /checkout
 Disallow: /checkout/
 Disallow: /dashboard

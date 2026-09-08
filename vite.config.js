@@ -6,7 +6,14 @@ import tailwindcss from '@tailwindcss/vite'
 
 const API_TARGET = process.env.VITE_API_PROXY || 'http://localhost:4000'
 
-const SITEMAP_PATHS = ['/', '/shop', '/faq', '/contact', '/coa', '/terms', '/privacy']
+const SITEMAP_PATHS = [
+  { path: '/', changefreq: 'weekly', priority: '1.0' },
+  { path: '/faq', changefreq: 'monthly', priority: '0.7' },
+  { path: '/contact', changefreq: 'monthly', priority: '0.7' },
+  { path: '/coa', changefreq: 'weekly', priority: '0.6' },
+  { path: '/terms', changefreq: 'yearly', priority: '0.3' },
+  { path: '/privacy', changefreq: 'yearly', priority: '0.3' },
+]
 
 function absoluteSitemapPlugin(siteUrl) {
   const origin = String(siteUrl || '').replace(/\/$/, '')
@@ -15,10 +22,9 @@ function absoluteSitemapPlugin(siteUrl) {
   return {
     name: 'absolute-sitemap',
     closeBundle() {
-      const urls = SITEMAP_PATHS.map((route) => {
+      const urls = SITEMAP_PATHS.map(({ path: route, changefreq, priority }) => {
         const loc = route === '/' ? `${origin}/` : `${origin}${route}`
-        const priority = route === '/' ? '1.0' : route === '/shop' ? '0.9' : '0.6'
-        return `  <url>\n    <loc>${loc}</loc>\n    <changefreq>weekly</changefreq>\n    <priority>${priority}</priority>\n  </url>`
+        return `  <url>\n    <loc>${loc}</loc>\n    <changefreq>${changefreq}</changefreq>\n    <priority>${priority}</priority>\n  </url>`
       }).join('\n')
 
       const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>\n`
@@ -26,7 +32,7 @@ function absoluteSitemapPlugin(siteUrl) {
       fs.mkdirSync(outDir, { recursive: true })
       fs.writeFileSync(path.join(outDir, 'sitemap.xml'), xml)
 
-      const robots = `User-agent: *\nAllow: /\nAllow: /shop\nAllow: /faq\nAllow: /contact\nAllow: /coa\nAllow: /terms\nAllow: /privacy\n\nDisallow: /checkout\nDisallow: /checkout/\nDisallow: /dashboard\nDisallow: /dashboard/\nDisallow: /admin\nDisallow: /admin/\nDisallow: /reset-password\n\nSitemap: ${origin}/sitemap.xml\n`
+      const robots = `User-agent: *\nAllow: /\nAllow: /faq\nAllow: /contact\nAllow: /coa\nAllow: /terms\nAllow: /privacy\n\nDisallow: /shop\nDisallow: /shop/\nDisallow: /checkout\nDisallow: /checkout/\nDisallow: /dashboard\nDisallow: /dashboard/\nDisallow: /admin\nDisallow: /admin/\nDisallow: /reset-password\n\nSitemap: ${origin}/sitemap.xml\n`
       fs.writeFileSync(path.join(outDir, 'robots.txt'), robots)
     },
   }
