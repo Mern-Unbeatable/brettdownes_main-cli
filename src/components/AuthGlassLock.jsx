@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext'
 
 /**
  * Glass overlay for guest-locked catalogue sections on open pages.
- * Login → shop gate (verify). Sign up → shop gate in register mode.
+ * Featured products stay visible underneath; Login / Sign up sit on top.
  */
 export default function AuthGlassLock({
   title = 'Member access required',
@@ -22,9 +22,9 @@ export default function AuthGlassLock({
     >
       <div
         aria-hidden
-        className="absolute inset-0 rounded-2xl bg-white/45 backdrop-blur-[10px]"
+        className="absolute inset-0 rounded-2xl bg-white/30 backdrop-blur-[6px] sm:backdrop-blur-[8px]"
       />
-      <div className="relative w-full max-w-sm rounded-2xl border border-white/50 bg-white/55 p-6 text-center shadow-[0_18px_50px_rgba(17,24,39,0.12)] backdrop-blur-xl sm:p-7">
+      <div className="relative w-full max-w-sm rounded-2xl border border-white/60 bg-white/70 p-6 text-center shadow-[0_18px_50px_rgba(17,24,39,0.18)] backdrop-blur-xl sm:p-7">
         <span className="mx-auto mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-ink text-cyan">
           <Lock className="h-5 w-5" strokeWidth={2} />
         </span>

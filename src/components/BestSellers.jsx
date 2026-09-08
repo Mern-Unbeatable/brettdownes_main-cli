@@ -79,7 +79,10 @@ export default function BestSellers() {
             <div
               data-reveal-stagger
               data-stagger="0.12"
-              className="grid grid-cols-2 gap-4 sm:gap-6 lg:grid-cols-4"
+              aria-hidden={ready && !isAuthenticated ? true : undefined}
+              className={`grid grid-cols-2 gap-4 sm:gap-6 lg:grid-cols-4 ${
+                ready && !isAuthenticated ? 'pointer-events-none select-none' : ''
+              }`}
             >
               {products.map((product) => {
                 const outOfStock = isProductOutOfStock(product)
