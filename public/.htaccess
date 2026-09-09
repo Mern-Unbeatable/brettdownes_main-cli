@@ -1,0 +1,13 @@
+# Peptide Ops Logistics — SPA host rules (Apache / Hostinger)
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+
+  # Serve existing files and route folders (unique SEO shells) as-is
+  RewriteCond %{REQUEST_FILENAME} -f [OR]
+  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteRule ^ - [L]
+
+  # Client-side routes fall back to the app shell
+  RewriteRule ^ index.html [L]
+</IfModule>

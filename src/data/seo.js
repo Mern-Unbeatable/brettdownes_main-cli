@@ -47,31 +47,31 @@ export const pageSeo = {
   faq: {
     title: 'FAQ — Shipping, Quality & Access',
     description:
-      'Answers about Peptide Ops access, shipping, storage, certificates of analysis, custom sourcing, and research-use compliance.',
+      'Peptide Ops Logistics FAQ covering portal access, shipping timelines, cold-chain storage, certificates of analysis, custom sourcing, and research-use-only compliance.',
     path: '/faq',
   },
   contact: {
-    title: 'Contact',
+    title: 'Contact Us',
     description:
-      'Contact Peptide Ops Logistics for institutional orders, COAs, tracking, and research compound sourcing. Keizer, OR.',
+      'Contact Peptide Ops Logistics for institutional peptide orders, COAs, tracking, and research compound sourcing. Phone, email, and inquiry form available.',
     path: '/contact',
   },
   coa: {
     title: 'Certificates of Analysis (COA)',
     description:
-      'View certificates of analysis for Peptide Ops research peptides — HPLC and mass spectrometry documentation from qualified manufacturing partners.',
+      'Browse Peptide Ops Logistics certificates of analysis for research peptides — HPLC and mass spectrometry documentation from qualified manufacturing partners.',
     path: '/coa',
   },
   terms: {
     title: 'Terms of Service',
     description:
-      'Peptide Ops terms of service for research-use-only peptide ordering, eligibility, payment, shipping, and liability.',
+      'Peptide Ops Logistics terms of service for research-use-only peptide ordering, eligibility, payment, shipping, returns, and liability on peptideopslogistics.com.',
     path: '/terms',
   },
   privacy: {
     title: 'Privacy Policy',
     description:
-      'How Peptide Ops collects, uses, and protects account, order, and analytics data for the research portal.',
+      'How Peptide Ops Logistics collects, uses, and protects account, order, and analytics data for the research portal at peptideopslogistics.com.',
     path: '/privacy',
   },
   checkout: {

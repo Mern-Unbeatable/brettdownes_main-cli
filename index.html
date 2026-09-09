@@ -20,7 +20,7 @@
     <meta property="og:title" content="Peptide Ops Logistics — Precision. Purity. Performance." />
     <meta
       property="og:description"
-      content="Research-grade lyophilized peptides with verified purity and certificates of analysis. For Research Use Only."
+      content="Peptide Ops Logistics (peptideopslogistics.com) supplies research-grade lyophilized peptides with verified purity and certificates of analysis. Institutional access for qualified researchers. For Research Use Only."
     />
     <meta property="og:image" content="https://www.peptideopslogistics.com/images/logo.png" />
     <meta property="og:locale" content="en_US" />
@@ -30,7 +30,7 @@
     <meta name="twitter:title" content="Peptide Ops Logistics — Precision. Purity. Performance." />
     <meta
       name="twitter:description"
-      content="Research-grade lyophilized peptides with verified purity and certificates of analysis. For Research Use Only."
+      content="Peptide Ops Logistics (peptideopslogistics.com) supplies research-grade lyophilized peptides with verified purity and certificates of analysis. Institutional access for qualified researchers. For Research Use Only."
     />
     <meta name="twitter:image" content="https://www.peptideopslogistics.com/images/logo.png" />
 
@@ -78,10 +78,9 @@
     </script>
   </head>
   <body>
-    <div id="root"></div>
-    <!-- Crawl fallback when JS is not executed (many SEO audit tools). -->
-    <noscript>
-      <main style="max-width: 720px; margin: 2rem auto; padding: 0 1.25rem; font-family: system-ui, sans-serif; line-height: 1.6; color: #111">
+    <!-- Crawlable homepage shell (replaced per-route at build). Removed when the app boots. -->
+    <div id="seo-static" style="position:absolute;left:-10000px;top:auto;width:1px;height:1px;overflow:hidden">
+      <main>
         <h1>Peptide Ops Logistics — research-grade peptides</h1>
         <p>
           Peptide Ops Logistics (peptideopslogistics.com) supplies research-grade lyophilized
@@ -89,15 +88,14 @@
           institutional researchers. Products are for research use only and are not for human
           consumption.
         </p>
-        <h2>Precision. Purity. Performance.</h2>
         <p>
           Every lot is documented for identity and purity so laboratories can run controlled
           in vitro protocols with confidence. Explore our FAQ for shipping and storage guidance,
           review certificates of analysis, or contact our team for institutional orders and
           custom sourcing through our partner network.
         </p>
-        <h2>Site pages</h2>
-        <nav>
+        <h2>Precision. Purity. Performance.</h2>
+        <nav aria-label="Site pages">
           <ul>
             <li><a href="https://www.peptideopslogistics.com/">Home</a></li>
             <li><a href="https://www.peptideopslogistics.com/faq">FAQ</a></li>
@@ -108,7 +106,8 @@
           </ul>
         </nav>
       </main>
-    </noscript>
+    </div>
+    <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
