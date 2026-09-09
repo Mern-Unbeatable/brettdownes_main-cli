@@ -97,6 +97,7 @@ export default function Hero() {
           <div className="flex flex-1 items-center">
             <div className="w-full max-w-[min(100%,440px)] lg:max-w-[480px]">
               <h1 className="font-display font-extrabold tracking-[-0.04em] text-white uppercase">
+                <span className="sr-only">Peptide Ops Logistics — </span>
                 <span
                   data-hero-line
                   className="block text-[30px] leading-[1.05] sm:text-[34px] md:text-[40px] lg:text-[44px] xl:text-[50px]"

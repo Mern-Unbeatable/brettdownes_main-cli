@@ -23,7 +23,8 @@ export default function Footer() {
         <div className="flex flex-col items-center text-center sm:col-span-2 lg:col-span-1 lg:items-start lg:text-left">
           <Logo className="h-[150px] w-auto max-w-full" />
           <p className="mt-4 max-w-xs text-sm leading-relaxed text-muted">
-            Precision. Purity. Documentation. Lyophilized research use only.
+            Peptide Ops Logistics — precision, purity, and documentation. Lyophilized research use
+            only.
           </p>
           <div className="mt-6 space-y-1 text-sm text-muted">
             <p className="flex items-center justify-center gap-2.5 lg:justify-start">

@@ -8,6 +8,7 @@ import VolumePricing from '../components/VolumePricing'
 import Footer from '../components/Footer'
 import PageTransition from '../components/PageTransition'
 import Seo from '../components/Seo'
+import HomeBrandSeo from '../components/HomeBrandSeo'
 import { absoluteUrl, pageSeo, siteOrigin } from '../data/seo'
 import { siteContact } from '../data/site'
 
@@ -19,7 +20,8 @@ export default function HomePage() {
     {
       '@context': 'https://schema.org',
       '@type': 'Organization',
-      name: 'Peptide Ops',
+      name: 'Peptide Ops Logistics',
+      alternateName: ['Peptide Ops', 'peptideopslogistics'],
       url: origin || absoluteUrl('/'),
       email: siteContact.email,
       telephone: siteContact.phoneTel,
@@ -29,7 +31,8 @@ export default function HomePage() {
     {
       '@context': 'https://schema.org',
       '@type': 'WebSite',
-      name: 'Peptide Ops',
+      name: 'Peptide Ops Logistics',
+      alternateName: 'Peptide Ops',
       url: origin || absoluteUrl('/'),
       description: seo.description,
     },
@@ -50,6 +53,7 @@ export default function HomePage() {
             <PartnerSourcing />
           </div>
         </div>
+        <HomeBrandSeo />
       </main>
       <Footer />
     </PageTransition>

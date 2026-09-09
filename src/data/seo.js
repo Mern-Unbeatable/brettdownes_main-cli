@@ -1,10 +1,10 @@
 /** Site-wide SEO defaults for Peptide Ops (gated research portal). */
 
-export const SITE_NAME = 'Peptide Ops'
+export const SITE_NAME = 'Peptide Ops Logistics'
 export const SITE_TAGLINE = 'Precision. Purity. Performance.'
 export const DEFAULT_TITLE = `${SITE_NAME} — ${SITE_TAGLINE}`
 export const DEFAULT_DESCRIPTION =
-  'Research-grade lyophilized peptides with verified purity and certificates of analysis. Institutional access for qualified researchers. For Research Use Only.'
+  'Peptide Ops Logistics (peptideopslogistics.com) supplies research-grade lyophilized peptides with verified purity and certificates of analysis. Institutional access for qualified researchers. For Research Use Only.'
 export const DEFAULT_OG_IMAGE = '/images/logo.png'
 export const TWITTER_HANDLE = ''
 
