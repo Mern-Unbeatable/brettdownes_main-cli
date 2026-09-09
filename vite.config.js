@@ -3,6 +3,7 @@ import path from 'node:path'
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
+import { seoRouteShellsPlugin } from './seoRouteShellsPlugin.js'
 
 const API_TARGET = process.env.VITE_API_PROXY || 'http://localhost:4000'
 
@@ -42,7 +43,9 @@ const SITE_ORIGIN = 'https://www.peptideopslogistics.com'
 
 export default defineConfig(() => {
   return {
-    plugins: [react(), tailwindcss(), absoluteSitemapPlugin(SITE_ORIGIN)].filter(Boolean),
+    plugins: [react(), tailwindcss(), absoluteSitemapPlugin(SITE_ORIGIN), seoRouteShellsPlugin()].filter(
+      Boolean,
+    ),
     server: {
       // Proxying keeps the session cookie same-origin during development.
       proxy: {

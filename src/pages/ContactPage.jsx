@@ -19,7 +19,7 @@ export default function ContactPage() {
     <PageTransition>
       <Seo {...pageSeo.contact} />
       <PageHeader
-        title="Contact"
+        title="Contact Us"
         subtitle="Reach Peptide Ops Logistics for institutional orders, certificates, tracking, and research compound sourcing."
         image="/images/contact-hero-peptides.webp"
       />
