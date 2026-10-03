@@ -213,7 +213,11 @@ export default function UserOrderDetail() {
                   </div>
                 ) : null}
                 <p className="leading-relaxed text-muted">
-                  Bring your confirmation email and photo ID; payment is taken on collection.
+                  {order.paymentStatus === 'PAID'
+                    ? 'Bring your confirmation email and photo ID when you collect this order.'
+                    : order.paymentMethod === 'STRIPE'
+                      ? 'Card payment is still due. Use Complete payment to open Stripe Checkout.'
+                      : 'Bring your confirmation email and photo ID; payment is taken on collection.'}
                 </p>
               </div>
             ) : (

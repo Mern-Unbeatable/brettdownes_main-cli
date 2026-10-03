@@ -151,7 +151,11 @@ export default function UserOrders() {
                       <span className="font-semibold text-ink">{order.trackingCode}</span>
                     </span>
                   ) : order.fulfillment === 'PICKUP' ? (
-                    'Warehouse pickup — payment due on collection'
+                    order.paymentStatus === 'PAID'
+                      ? 'Warehouse pickup — paid'
+                      : order.paymentMethod === 'STRIPE'
+                        ? 'Warehouse pickup — card payment still due'
+                        : 'Warehouse pickup — payment due on collection'
                   ) : (
                     'Tracking appears once the label is created'
                   )}

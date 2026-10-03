@@ -42,6 +42,7 @@ export default function CheckoutPage() {
   const [fulfillment, setFulfillment] = useState('DELIVERY')
   const [international, setInternational] = useState(false)
   const [pickupLocationId, setPickupLocationId] = useState('')
+  const [pickupPayment, setPickupPayment] = useState('STRIPE')
   const [form, setForm] = useState({
     fullName: '',
     email: '',
@@ -320,6 +321,7 @@ export default function CheckoutPage() {
         notes: form.notes.trim(),
         couponCode: currentCoupon?.code || '',
         applyCredit: applyCredit && creditEligibleCents > 0,
+        ...(fulfillment === 'PICKUP' ? { paymentMethod: pickupPayment } : {}),
       })
 
       if (order.paymentMethod === 'PICKUP' || (order.paymentStatus === 'PAID' && order.totalCents === 0)) {
@@ -840,27 +842,70 @@ export default function CheckoutPage() {
                     <section className="rounded-3xl bg-fog p-6 md:p-8">
                       <h3 className="font-display text-lg font-bold text-ink">Payment method</h3>
 
-                      <div className="mt-5 flex gap-3 rounded-2xl bg-white p-4">
-                        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-cyan/15 text-cyan">
-                          {fulfillment === 'PICKUP' ? (
-                            <Wallet className="h-5 w-5" strokeWidth={1.8} />
-                          ) : (
-                            <CreditCard className="h-5 w-5" strokeWidth={1.8} />
-                          )}
-                        </span>
-                        <div className="min-w-0">
-                          <p className="text-sm font-semibold text-ink">
-                            {fulfillment === 'PICKUP'
-                              ? 'Manual payment at the warehouse'
-                              : 'Secure card payment'}
-                          </p>
-                          <p className="mt-0.5 text-xs leading-relaxed text-muted">
-                            {fulfillment === 'PICKUP'
-                              ? 'No card is charged online. Settle up when you collect your order.'
-                              : 'Card details are handled by Stripe and never touch our servers.'}
-                          </p>
+                      {fulfillment === 'PICKUP' ? (
+                        <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                          <label
+                            className={`flex cursor-pointer gap-3 rounded-2xl border p-4 transition ${
+                              pickupPayment === 'STRIPE'
+                                ? 'border-cyan bg-white shadow-sm'
+                                : 'border-transparent bg-white hover:border-black/10'
+                            }`}
+                          >
+                            <input
+                              type="radio"
+                              name="pickupPayment"
+                              className="mt-1 h-4 w-4 accent-[#00c4ab]"
+                              checked={pickupPayment === 'STRIPE'}
+                              onChange={() => setPickupPayment('STRIPE')}
+                            />
+                            <span className="min-w-0">
+                              <span className="flex items-center gap-2 text-sm font-semibold text-ink">
+                                <CreditCard className="h-4 w-4 text-cyan-dim" />
+                                Pay with card
+                              </span>
+                              <span className="mt-1 block text-xs leading-relaxed text-muted">
+                                Stripe Checkout now, or finish the payment later from your dashboard.
+                              </span>
+                            </span>
+                          </label>
+                          <label
+                            className={`flex cursor-pointer gap-3 rounded-2xl border p-4 transition ${
+                              pickupPayment === 'PICKUP'
+                                ? 'border-cyan bg-white shadow-sm'
+                                : 'border-transparent bg-white hover:border-black/10'
+                            }`}
+                          >
+                            <input
+                              type="radio"
+                              name="pickupPayment"
+                              className="mt-1 h-4 w-4 accent-[#00c4ab]"
+                              checked={pickupPayment === 'PICKUP'}
+                              onChange={() => setPickupPayment('PICKUP')}
+                            />
+                            <span className="min-w-0">
+                              <span className="flex items-center gap-2 text-sm font-semibold text-ink">
+                                <Wallet className="h-4 w-4 text-cyan-dim" />
+                                Pay in person
+                              </span>
+                              <span className="mt-1 block text-xs leading-relaxed text-muted">
+                                No card is charged online. Settle up when you collect your order.
+                              </span>
+                            </span>
+                          </label>
                         </div>
-                      </div>
+                      ) : (
+                        <div className="mt-5 flex gap-3 rounded-2xl bg-white p-4">
+                          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-cyan/15 text-cyan">
+                            <CreditCard className="h-5 w-5" strokeWidth={1.8} />
+                          </span>
+                          <div className="min-w-0">
+                            <p className="text-sm font-semibold text-ink">Secure card payment</p>
+                            <p className="mt-0.5 text-xs leading-relaxed text-muted">
+                              Card details are handled by Stripe and never touch our servers.
+                            </p>
+                          </div>
+                        </div>
+                      )}
 
                       {fulfillment === 'DELIVERY' && settings.paymentDescriptorNote ? (
                         <p className="mt-3 rounded-2xl bg-white px-4 py-3 text-[12px] leading-relaxed text-muted">
@@ -1023,7 +1068,7 @@ export default function CheckoutPage() {
                   >
                     {placing
                       ? 'Placing order…'
-                      : fulfillment === 'PICKUP'
+                      : fulfillment === 'PICKUP' && pickupPayment === 'PICKUP'
                         ? 'Place pickup order'
                         : 'Continue to payment'}
                   </button>
