@@ -38,6 +38,19 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+button:not(:disabled),
+[role='button']:not(:disabled),
+summary,
+label:has(input),
+select {
+  cursor: pointer;
+}
+
+button:disabled,
+[disabled] {
+  cursor: not-allowed;
+}
+
 body.drawer-open {
   overflow: hidden;
 }

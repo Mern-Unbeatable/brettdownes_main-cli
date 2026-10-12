@@ -8,11 +8,11 @@ import {
   Eye,
   MapPin,
   Package,
-  RefreshCw,
   Truck,
   User,
   Warehouse,
 } from 'lucide-react'
+import ShipFields from './ShipFields'
 import { api, assetUrl, formatCents } from '../../../lib/api'
 import { useToast } from '../../../components/Toaster'
 import { isImageDocument, pdfViewerUrl } from '../../../utils/coaFiles'
@@ -21,6 +21,7 @@ import {
   Button,
   Card,
   ErrorBlock,
+  Input,
   LoadingBlock,
   Modal,
   Select,
@@ -29,6 +30,28 @@ import {
 } from '../ui'
 
 const STATUSES = ['PENDING', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED', 'REFUNDED']
+
+function carrierTrackName(order) {
+  const token = `${order?.carrier || ''} ${order?.service || ''}`.toLowerCase()
+  const code = String(order?.trackingCode || '').trim()
+  if (token.includes('usps') || token.includes('postal') || /^(94|93|92|91)\d{18,}$/.test(code)) {
+    return 'USPS'
+  }
+  if (/^1Z/i.test(code) || token.includes('ups')) return 'UPS'
+  if (token.includes('fedex')) return 'FedEx'
+  return 'carrier'
+}
+
+function carrierTrackUrl(order) {
+  const code = String(order?.trackingCode || '').trim()
+  if (!code) return null
+  const encoded = encodeURIComponent(code)
+  const name = carrierTrackName(order)
+  if (name === 'USPS') return `https://tools.usps.com/go/TrackConfirmAction?tLabels=${encoded}`
+  if (name === 'UPS') return `https://www.ups.com/track?loc=en_US&tracknum=${encoded}`
+  if (name === 'FedEx') return `https://www.fedex.com/fedextrack/?trknbr=${encoded}`
+  return order?.trackingUrl || null
+}
 
 export default function AdminOrderDetail() {
   const { id } = useParams()
@@ -40,7 +63,9 @@ export default function AdminOrderDetail() {
   const [showLoader, setShowLoader] = useState(false)
   const [error, setError] = useState(null)
   const [busy, setBusy] = useState(false)
+  const [trackingCode, setTrackingCode] = useState('')
   const [labelPreview, setLabelPreview] = useState(false)
+  const [confirmDelete, setConfirmDelete] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -77,6 +102,23 @@ export default function AdminOrderDetail() {
       window.clearTimeout(timer)
     }
   }, [id])
+
+  useEffect(() => {
+    if (!order?.trackingCode) return undefined
+    if (['DELIVERED', 'CANCELLED', 'REFUNDED'].includes(order.status)) return undefined
+    const pull = () => {
+      api
+        .get(`/api/admin/orders/${id}`)
+        .then((data) => setOrder(data.order))
+        .catch(() => {})
+    }
+    const first = window.setTimeout(pull, 15000)
+    const timer = window.setInterval(pull, 60000)
+    return () => {
+      window.clearTimeout(first)
+      window.clearInterval(timer)
+    }
+  }, [id, order?.trackingCode, order?.status])
 
   const load = () => {
     setLoading(true)
@@ -121,29 +163,6 @@ export default function AdminOrderDetail() {
     }
   }
 
-  const syncTracking = async () => {
-    setBusy(true)
-    try {
-      const data = await api.post(`/api/admin/orders/${id}/tracking/sync`)
-      setOrder(data.order)
-      if (data.applied?.updated) {
-        toast.success(
-          `Tracking ${data.tracker?.status || 'updated'} → ${data.applied.to.toLowerCase()}.`,
-          { title: 'Synced from carrier' },
-        )
-      } else {
-        toast.success(
-          `Carrier status: ${data.tracker?.status || 'unknown'}. No order change needed.`,
-          { title: 'Tracking checked' },
-        )
-      }
-    } catch (err) {
-      toast.error(err.message)
-    } finally {
-      setBusy(false)
-    }
-  }
-
   if (loading && !order) {
     return showLoader ? (
       <LoadingBlock label="Loading order" />
@@ -157,19 +176,33 @@ export default function AdminOrderDetail() {
   const isPickup = order.fulfillment === 'PICKUP'
   const isManualPayment = order.paymentMethod === 'PICKUP'
   const autoFulfillment = !isPickup && !isManualPayment
-  const canRetryLabel =
-    !isPickup && order.paymentStatus === 'PAID' && !order.labelUrl
+  const trackUrl = carrierTrackUrl(order)
 
-  const retryLabel = async () => {
+  const saveTracking = async (event) => {
+    event.preventDefault()
+    const code = trackingCode.trim()
+    if (!code) return
     setBusy(true)
     try {
-      const data = await api.post(`/api/admin/orders/${id}/label/retry`)
+      const data = await api.post(`/api/admin/orders/${id}/tracking`, { trackingCode: code })
       setOrder(data.order)
-      toast.success('Label purchased. Order marked shipped.', { title: 'Shipped' })
+      setTrackingCode('')
+      toast.success('Tracking saved. The customer was emailed.', { title: 'Shipped' })
     } catch (err) {
       toast.error(err.message)
-      load()
     } finally {
+      setBusy(false)
+    }
+  }
+
+  const deleteOrder = async () => {
+    setBusy(true)
+    try {
+      await api.delete(`/api/admin/orders/${id}`)
+      toast.success(`${order.orderNumber} was deleted.`, { title: 'Deleted' })
+      navigate('/admin/orders')
+    } catch (err) {
+      toast.error(err.message)
       setBusy(false)
     }
   }
@@ -216,7 +249,7 @@ export default function AdminOrderDetail() {
       </button>
 
       <div className="relative mb-5 overflow-hidden rounded-3xl bg-navy text-white shadow-sm">
-        {busy ? (
+        {busy && !confirmDelete ? (
           <div className="absolute inset-0 z-10 grid place-items-center bg-navy/40 backdrop-blur-[1px]">
             <Spinner className="h-6 w-6 border-white/20 border-t-cyan" />
           </div>
@@ -361,6 +394,18 @@ export default function AdminOrderDetail() {
             ) : (
               <p className="text-[13px] text-muted">No events yet.</p>
             )}
+            {trackUrl ? (
+              <div className="mt-5 border-t border-black/6 pt-4">
+                <p className="mb-3 text-[12px] leading-relaxed text-muted">
+                  {carrierTrackName(order)} scans are checked every minute and added here. The
+                  order is marked delivered when the carrier says it was delivered.
+                </p>
+                <Button as="a" href={trackUrl} target="_blank" rel="noreferrer" variant="outline" className="w-full">
+                  Track shipment
+                  <ExternalLink className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+            ) : null}
           </Card>
         </div>
 
@@ -392,13 +437,6 @@ export default function AdminOrderDetail() {
 
               {autoFulfillment ? (
                 <div className="flex flex-col gap-2">
-                  {order.trackingCode &&
-                  (order.status === 'SHIPPED' || order.status === 'PROCESSING') ? (
-                    <Button variant="outline" disabled={busy} onClick={syncTracking}>
-                      <RefreshCw className="h-3.5 w-3.5" />
-                      Sync tracking
-                    </Button>
-                  ) : null}
                   {order.status === 'SHIPPED' ? (
                     <Button
                       variant="outline"
@@ -419,6 +457,10 @@ export default function AdminOrderDetail() {
                   ) : null}
                 </div>
               ) : null}
+
+              <Button variant="danger" className="w-full" disabled={busy} onClick={() => setConfirmDelete(true)}>
+                Delete order
+              </Button>
 
               <div className="block">
                 <span className="mb-1.5 flex items-center gap-1.5 text-[12px] font-semibold text-ink">
@@ -443,10 +485,66 @@ export default function AdminOrderDetail() {
                 )}
               </div>
 
+              {!isPickup && order.paymentStatus === 'PAID' && !order.trackingCode ? (
+                <form
+                  onSubmit={saveTracking}
+                  className="rounded-2xl border border-cyan/30 bg-cyan/5 p-3.5"
+                >
+                  <label
+                    htmlFor="tracking-code"
+                    className="mb-1 flex items-center gap-1.5 text-[12px] font-semibold text-ink"
+                  >
+                    <Truck className="h-3.5 w-3.5 text-cyan-dim" />
+                    Tracking number
+                  </label>
+                  <p className="mb-3 text-[12px] leading-relaxed text-muted">
+                    Buy this method in Pirate Ship, then paste the tracking number.
+                  </p>
+                  <Input
+                    id="tracking-code"
+                    value={trackingCode}
+                    onChange={(event) => setTrackingCode(event.target.value)}
+                    placeholder="1Z… or 9400…"
+                    autoComplete="off"
+                    spellCheck={false}
+                  />
+                  <Button
+                    type="submit"
+                    className="mt-2.5 w-full"
+                    disabled={busy || trackingCode.trim().length < 4}
+                  >
+                    {busy ? 'Saving…' : 'Save tracking'}
+                  </Button>
+                </form>
+              ) : !isPickup && order.trackingCode ? (
+                <div className="rounded-2xl border border-black/6 bg-fog px-3.5 py-3">
+                  <p className="text-[11px] font-bold tracking-[0.08em] text-muted uppercase">
+                    Tracking
+                  </p>
+                  <p className="mt-1 font-mono text-[13px] font-semibold break-all text-ink">
+                    {order.trackingCode}
+                  </p>
+                  {trackUrl ? (
+                    <Button
+                      as="a"
+                      href={trackUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      variant="outline"
+                      className="mt-3 w-full"
+                    >
+                      Track shipment
+                      <ExternalLink className="h-3.5 w-3.5" />
+                    </Button>
+                  ) : null}
+                </div>
+              ) : null}
+
               {autoFulfillment ? (
                 <p className="rounded-2xl border border-black/6 bg-fog px-3.5 py-3 text-[12px] leading-relaxed text-muted">
-                  Status updates automatically — Processing after Stripe payment, Shipped when the
-                  EasyPost label is bought. You can mark Delivered or Cancel here.
+                  Processing after Stripe payment. Shipped when you paste a USPS or UPS tracking
+                  number. Scans are checked every minute. Delivered is set when the carrier
+                  confirms it.
                 </p>
               ) : !isManualPayment ? (
                 <p className="rounded-2xl border border-black/6 bg-fog px-3.5 py-3 text-[12px] leading-relaxed text-muted">
@@ -468,7 +566,7 @@ export default function AdminOrderDetail() {
               ) : (
                 <Truck className="h-4 w-4 text-cyan-dim" />
               )}
-              {isPickup ? 'Pickup' : 'Shipping label'}
+              {isPickup ? 'Pickup' : 'Shipping'}
             </h2>
 
             {isPickup ? (
@@ -519,10 +617,10 @@ export default function AdminOrderDetail() {
                     <Download className="h-4 w-4" />
                     {busy ? 'Downloading…' : 'Download label'}
                   </Button>
-                  {order.trackingUrl ? (
+                  {trackUrl ? (
                     <Button
                       as="a"
-                      href={order.trackingUrl}
+                      href={trackUrl}
                       target="_blank"
                       rel="noreferrer"
                       variant="outline"
@@ -535,31 +633,7 @@ export default function AdminOrderDetail() {
               </div>
             ) : (
               <div className="space-y-3 text-[13px]">
-                <div className="space-y-2 rounded-2xl bg-fog px-4 py-3">
-                  <div className="flex justify-between gap-3">
-                    <span className="text-muted">Service chosen by customer</span>
-                    <span className="text-right font-semibold text-ink">
-                      {order.carrier ? `${order.carrier} ${order.service || ''}` : 'Not selected'}
-                    </span>
-                  </div>
-                  <div className="flex justify-between gap-3">
-                    <span className="text-muted">Shipping paid</span>
-                    <span className="text-right font-semibold text-ink">
-                      {formatCents(order.shippingCents)}
-                    </span>
-                  </div>
-                </div>
-                <p className="leading-relaxed text-muted">
-                  {order.paymentStatus === 'PAID'
-                    ? 'This paid order still needs its EasyPost label. Retry uses the exact service the customer paid for — no rate picking.'
-                    : 'The label is purchased automatically once the payment is confirmed.'}
-                </p>
-                {canRetryLabel ? (
-                  <Button variant="primary" onClick={retryLabel} disabled={busy}>
-                    <RefreshCw className={`h-4 w-4 ${busy ? 'animate-spin' : ''}`} />
-                    {busy ? 'Buying label…' : 'Retry automatic label'}
-                  </Button>
-                ) : null}
+                <ShipFields order={order} />
               </div>
             )}
           </Card>
@@ -608,6 +682,33 @@ export default function AdminOrderDetail() {
           </Card>
         </div>
       </div>
+
+      <Modal
+        open={confirmDelete}
+        onClose={() => {
+          if (!busy) setConfirmDelete(false)
+        }}
+        title="Delete this order?"
+        size="sm"
+        footer={
+          <>
+            <Button variant="outline" disabled={busy} onClick={() => setConfirmDelete(false)}>
+              Keep order
+            </Button>
+            <Button variant="danger" disabled={busy} onClick={deleteOrder}>
+              {busy ? 'Deleting…' : 'Delete order'}
+            </Button>
+          </>
+        }
+      >
+        <p className="text-[14px] leading-relaxed text-ink">
+          <span className="font-semibold">{order.orderNumber}</span> will be removed from the admin
+          list. Stock and store credit are returned.
+        </p>
+        <p className="mt-3 text-[13px] leading-relaxed text-muted">
+          A Stripe card charge is not refunded from here.
+        </p>
+      </Modal>
 
       <Modal
         open={labelPreview}
