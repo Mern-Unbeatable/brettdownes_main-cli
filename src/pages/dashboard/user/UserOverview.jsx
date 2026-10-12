@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowRight, Package, ShoppingBag, Truck, Wallet } from 'lucide-react'
+import { ArrowRight, Coins, Package, ShoppingBag, Truck, Wallet } from 'lucide-react'
 import { api, assetUrl, formatCents } from '../../../lib/api'
 import { useAuth } from '../../../context/AuthContext'
 import {
@@ -53,16 +53,22 @@ export default function UserOverview() {
         }
       />
 
-      <Reveal className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <Reveal className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
         <StatCard label="Total orders" value={stats.total ?? 0} icon={Package} tone="cyan" />
         <StatCard label="In transit" value={stats.inTransit ?? 0} icon={Truck} tone="navy" />
         <StatCard label="Delivered" value={stats.delivered ?? 0} icon={ShoppingBag} />
+        <StatCard
+          label="Account credit"
+          value={formatCents(stats.creditCents ?? 0)}
+          hint="Products only, not shipping"
+          icon={Coins}
+          tone="cyan"
+        />
         <StatCard
           label="Total spent"
           value={formatCents(stats.spentCents ?? 0)}
           hint="Across paid orders"
           icon={Wallet}
-          tone="cyan"
         />
       </Reveal>
 
