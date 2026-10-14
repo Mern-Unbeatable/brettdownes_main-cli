@@ -198,7 +198,7 @@ function AppShell() {
             <Route path="/terms" element={<TermsOfServicePage />} />
             <Route path="/privacy" element={<PrivacyPolicyPage />} />
             <Route path="/contact" element={<ContactPage />} />
-            <Route path="/wholesale" element={<WholesalePage />} />
+            <Route path="/other" element={<WholesalePage />} />
             <Route path="/reset-password" element={<ResetPasswordPage />} />
 
             <Route element={<RequireAuth />}>

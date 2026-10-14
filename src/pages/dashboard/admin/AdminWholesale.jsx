@@ -236,7 +236,7 @@ export default function AdminWholesale() {
         title="Secret page"
         subtitle="Manage the private wholesale price list, its categories and access password."
         actions={
-          <Button as="a" href="/wholesale" target="_blank" rel="noreferrer" variant="outline" size="sm">
+          <Button as="a" href="/other" target="_blank" rel="noreferrer" variant="outline" size="sm">
             <ExternalLink className="h-4 w-4" />
             Open secret page
           </Button>
@@ -252,7 +252,7 @@ export default function AdminWholesale() {
           <div>
             <h2 className="font-display text-[15px] font-bold text-ink">Access password</h2>
             <p className="text-[12px] text-muted">
-              This is the password visitors enter to view the price list at /wholesale.
+              This is the password visitors enter to view the price list at /other.
             </p>
           </div>
         </div>

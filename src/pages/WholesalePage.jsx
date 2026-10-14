@@ -883,7 +883,7 @@ export default function WholesalePage() {
     setCategories(null)
   }
 
-  const seo = <Seo title="Wholesale Prices" path="/wholesale" noIndex />
+  const seo = <Seo title="Wholesale Prices" path="/other" noIndex />
 
   if (checking) {
     return (
