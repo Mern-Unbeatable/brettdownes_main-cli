@@ -107,6 +107,7 @@ function LockScreen({ onUnlock }) {
   const [show, setShow] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+  const [keyboardOpen, setKeyboardOpen] = useState(false)
 
   const submit = async (event) => {
     event.preventDefault()
@@ -135,11 +136,19 @@ function LockScreen({ onUnlock }) {
         <FloatingCapsules />
       </div>
 
-      <div className="relative flex min-h-dvh items-start justify-center px-5 py-8 sm:items-center sm:py-16">
+      <div
+        className={`relative flex min-h-dvh items-start justify-center px-5 py-8 sm:items-center sm:py-16 ${
+          keyboardOpen ? 'max-sm:pb-[55vh]' : ''
+        }`}
+      >
         <motion.div
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+          onFocus={() => setKeyboardOpen(true)}
+          onBlur={(event) => {
+            if (!event.currentTarget.contains(event.relatedTarget)) setKeyboardOpen(false)
+          }}
           className="w-full max-w-md"
         >
           <div className="flex flex-col items-center text-center">
