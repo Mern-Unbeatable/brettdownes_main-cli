@@ -33,6 +33,7 @@ import { RequireAdmin, RequireAuth } from './components/RouteGuards'
 
 // Checkout pulls in Stripe.js and the dashboards are only for signed-in staff and
 // researchers, so neither belongs in the storefront's first-load bundle.
+const WholesalePage = lazy(() => import('./pages/WholesalePage'))
 const CheckoutPage = lazy(() => import('./pages/CheckoutPage'))
 const CheckoutSuccessPage = lazy(() => import('./pages/CheckoutSuccessPage'))
 const CheckoutCancelPage = lazy(() => import('./pages/CheckoutCancelPage'))
@@ -52,6 +53,7 @@ const AdminCustomers = lazy(() => import('./pages/dashboard/admin/AdminCustomers
 const AdminSettings = lazy(() => import('./pages/dashboard/admin/AdminSettings'))
 const AdminDiscounts = lazy(() => import('./pages/dashboard/admin/AdminDiscounts'))
 const AdminCoa = lazy(() => import('./pages/dashboard/admin/AdminCoa'))
+const AdminWholesale = lazy(() => import('./pages/dashboard/admin/AdminWholesale'))
 
 gsap.registerPlugin(ScrollTrigger)
 
@@ -196,6 +198,7 @@ function AppShell() {
             <Route path="/terms" element={<TermsOfServicePage />} />
             <Route path="/privacy" element={<PrivacyPolicyPage />} />
             <Route path="/contact" element={<ContactPage />} />
+            <Route path="/wholesale" element={<WholesalePage />} />
             <Route path="/reset-password" element={<ResetPasswordPage />} />
 
             <Route element={<RequireAuth />}>
@@ -215,6 +218,7 @@ function AppShell() {
                 <Route path="products/new" element={<AdminProductEditor />} />
                 <Route path="products/:id" element={<AdminProductEditor />} />
                 <Route path="coa" element={<AdminCoa />} />
+                <Route path="wholesale" element={<AdminWholesale />} />
                 <Route path="orders" element={<AdminOrders />} />
                 <Route path="orders/:id" element={<AdminOrderDetail />} />
                 <Route path="customers" element={<AdminCustomers />} />
