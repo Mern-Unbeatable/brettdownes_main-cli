@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import {
   CheckCircle2,
@@ -107,11 +107,6 @@ function LockScreen({ onUnlock }) {
   const [show, setShow] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
-  const inputRef = useRef(null)
-
-  useEffect(() => {
-    inputRef.current?.focus()
-  }, [])
 
   const submit = async (event) => {
     event.preventDefault()
@@ -132,7 +127,7 @@ function LockScreen({ onUnlock }) {
   }
 
   return (
-    <div className="relative min-h-screen bg-navy text-white">
+    <div className="relative min-h-dvh bg-navy text-white">
       {/* Decorative layer is fixed so it never adds page scroll or covers inputs on mobile. */}
       <div className="pointer-events-none fixed inset-0 overflow-hidden">
         <div className="absolute -top-40 left-1/2 h-[520px] w-[520px] -translate-x-1/2 rounded-full bg-cyan/15 blur-[120px]" />
@@ -140,7 +135,7 @@ function LockScreen({ onUnlock }) {
         <FloatingCapsules />
       </div>
 
-      <div className="relative flex min-h-screen items-start justify-center px-5 pt-12 pb-28 sm:items-center sm:py-16">
+      <div className="relative flex min-h-dvh items-start justify-center px-5 py-8 sm:items-center sm:py-16">
         <motion.div
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
@@ -151,31 +146,31 @@ function LockScreen({ onUnlock }) {
             <img
               src="/images/logo.png"
               alt="Peptide Ops Logistics"
-              className="h-20 w-auto object-contain"
+              className="h-14 w-auto object-contain sm:h-20"
               draggable={false}
             />
-            <div className="relative mt-7 flex h-20 w-20 items-center justify-center">
+            <div className="relative mt-4 flex h-16 w-16 items-center justify-center sm:mt-6 sm:h-20 sm:w-20">
               <span className="absolute inset-0 rounded-full border border-cyan/30" />
               <motion.span
                 className="absolute inset-[-10px] rounded-full border border-dashed border-cyan/25"
                 animate={{ rotate: 360 }}
                 transition={{ duration: 18, repeat: Infinity, ease: 'linear' }}
               />
-              <span className="flex h-14 w-14 items-center justify-center rounded-full bg-cyan/15 text-cyan ring-1 ring-cyan/40">
-                <Lock className="h-6 w-6" strokeWidth={2} />
+              <span className="flex h-12 w-12 items-center justify-center rounded-full bg-cyan/15 text-cyan ring-1 ring-cyan/40 sm:h-14 sm:w-14">
+                <Lock className="h-5 w-5 sm:h-6 sm:w-6" strokeWidth={2} />
               </span>
             </div>
-            <h1 className="mt-6 font-display text-[30px] font-bold tracking-tight">
+            <h1 className="mt-4 font-display text-[24px] font-bold tracking-tight sm:mt-6 sm:text-[30px]">
               Wholesale Access
             </h1>
-            <p className="mt-2 max-w-xs text-[13px] leading-relaxed text-white/55">
+            <p className="mt-1.5 max-w-xs text-[12px] leading-relaxed text-white/55 sm:mt-2 sm:text-[13px]">
               Enter your access password to view live, trade-only wholesale pricing.
             </p>
           </div>
 
           <form
             onSubmit={submit}
-            className="mt-8 rounded-2xl border border-white/10 bg-white/[0.05] p-6 shadow-[0_24px_70px_rgba(0,0,0,0.45)] backdrop-blur-xl"
+            className="mt-5 rounded-2xl border border-white/10 bg-white/[0.05] p-5 shadow-[0_24px_70px_rgba(0,0,0,0.45)] backdrop-blur-xl sm:mt-8 sm:p-6"
           >
             <label className="block">
               <span className="mb-1.5 block text-[11px] font-bold tracking-[0.16em] text-white/70 uppercase">
@@ -183,7 +178,6 @@ function LockScreen({ onUnlock }) {
               </span>
               <div className="relative">
                 <input
-                  ref={inputRef}
                   type={show ? 'text' : 'password'}
                   value={password}
                   onChange={(event) => {
