@@ -132,13 +132,15 @@ function LockScreen({ onUnlock }) {
   }
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-navy text-white">
-      {/* ambient glows */}
-      <div className="pointer-events-none absolute -top-40 left-1/2 h-[520px] w-[520px] -translate-x-1/2 rounded-full bg-cyan/15 blur-[120px]" />
-      <div className="pointer-events-none absolute -bottom-52 right-0 h-[460px] w-[460px] rounded-full bg-cyan/10 blur-[120px]" />
-      <FloatingCapsules />
+    <div className="relative min-h-screen bg-navy text-white">
+      {/* Decorative layer is fixed so it never adds page scroll or covers inputs on mobile. */}
+      <div className="pointer-events-none fixed inset-0 overflow-hidden">
+        <div className="absolute -top-40 left-1/2 h-[520px] w-[520px] -translate-x-1/2 rounded-full bg-cyan/15 blur-[120px]" />
+        <div className="absolute -bottom-52 right-0 h-[460px] w-[460px] rounded-full bg-cyan/10 blur-[120px]" />
+        <FloatingCapsules />
+      </div>
 
-      <div className="relative grid min-h-screen place-items-center px-5 py-16">
+      <div className="relative flex min-h-screen items-start justify-center px-5 pt-12 pb-28 sm:items-center sm:py-16">
         <motion.div
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
@@ -188,8 +190,17 @@ function LockScreen({ onUnlock }) {
                     setPassword(event.target.value)
                     if (error) setError('')
                   }}
+                  onFocus={(event) => {
+                    // Keep the field above the mobile keyboard once it opens.
+                    const el = event.currentTarget
+                    window.setTimeout(() => {
+                      el.scrollIntoView({ block: 'center', behavior: 'smooth' })
+                    }, 300)
+                  }}
                   placeholder="Enter password"
                   autoComplete="current-password"
+                  name="wholesale-access"
+                  id="wholesale-access"
                   className="w-full rounded-xl border border-white/15 bg-white/[0.06] px-4 py-3 pr-12 text-[14px] text-white outline-none transition placeholder:text-white/35 focus:border-cyan focus:bg-white/[0.08]"
                 />
                 <button
