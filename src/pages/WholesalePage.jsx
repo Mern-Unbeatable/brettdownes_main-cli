@@ -66,6 +66,17 @@ function availableStock(product) {
   return product.inStock ? 9999 : 0
 }
 
+function NoHomeBrewBadge({ className = 'h-20 w-20' }) {
+  return (
+    <img
+      src="/images/no-home-brew.jpeg"
+      alt="Not home brew, pharmacy manufactured"
+      className={`shrink-0 rounded-full object-cover ring-2 ring-white/15 ${className}`}
+      draggable={false}
+    />
+  )
+}
+
 function restockWhatsAppHref(product) {
   const ref = product?.catNo ? `[${product.catNo}] ` : ''
   const name = product?.name || product?.catNo || 'an item'
@@ -161,7 +172,11 @@ function LockScreen({ onUnlock }) {
   }
 
   return (
-    <div className="relative min-h-dvh bg-navy text-white">
+    <div
+      className={`relative bg-navy text-white ${
+        keyboardOpen ? 'min-h-dvh overflow-y-auto' : 'h-dvh overflow-hidden'
+      }`}
+    >
       {/* Decorative layer is fixed so it never adds page scroll or covers inputs on mobile. */}
       <div className="pointer-events-none fixed inset-0 overflow-hidden">
         <div className="absolute -top-40 left-1/2 h-[520px] w-[520px] -translate-x-1/2 rounded-full bg-cyan/15 blur-[120px]" />
@@ -170,8 +185,10 @@ function LockScreen({ onUnlock }) {
       </div>
 
       <div
-        className={`relative flex min-h-dvh items-start justify-center px-5 py-8 sm:items-center sm:py-16 ${
-          keyboardOpen ? 'max-sm:pb-[55vh]' : ''
+        className={`relative flex justify-center px-5 ${
+          keyboardOpen
+            ? 'min-h-dvh items-start py-6 pb-[42vh] sm:items-center sm:py-10 sm:pb-10'
+            : 'h-dvh items-center py-4 sm:py-8'
         }`}
       >
         <motion.div
@@ -188,31 +205,24 @@ function LockScreen({ onUnlock }) {
             <img
               src="/images/logo.png"
               alt="Peptide Ops Logistics"
-              className="h-14 w-auto object-contain sm:h-20"
+              className="h-10 w-auto object-contain sm:h-16"
               draggable={false}
             />
-            <div className="relative mt-4 flex h-16 w-16 items-center justify-center sm:mt-6 sm:h-20 sm:w-20">
-              <span className="absolute inset-0 rounded-full border border-cyan/30" />
-              <motion.span
-                className="absolute inset-[-10px] rounded-full border border-dashed border-cyan/25"
-                animate={{ rotate: 360 }}
-                transition={{ duration: 18, repeat: Infinity, ease: 'linear' }}
-              />
-              <span className="flex h-12 w-12 items-center justify-center rounded-full bg-cyan/15 text-cyan ring-1 ring-cyan/40 sm:h-14 sm:w-14">
-                <Lock className="h-5 w-5 sm:h-6 sm:w-6" strokeWidth={2} />
-              </span>
-            </div>
-            <h1 className="mt-4 font-display text-[24px] font-bold tracking-tight sm:mt-6 sm:text-[30px]">
+            <NoHomeBrewBadge className="mt-2.5 h-[4.5rem] w-[4.5rem] sm:mt-4 sm:h-24 sm:w-24" />
+            <p className="mt-2 max-w-[240px] text-[11px] leading-snug text-white/55 sm:mt-2.5 sm:text-[13px] sm:leading-relaxed">
+              Not home brew. Pharmacy manufactured, not underground labs.
+            </p>
+            <h1 className="mt-3 font-display text-[22px] font-bold tracking-tight sm:mt-5 sm:text-[30px]">
               Private Access
             </h1>
-            <p className="mt-1.5 max-w-xs text-[12px] leading-relaxed text-white/55 sm:mt-2 sm:text-[13px]">
+            <p className="mt-1 max-w-xs text-[11px] leading-snug text-white/55 sm:mt-1.5 sm:text-[13px] sm:leading-relaxed">
               Enter your access password to view the private price list.
             </p>
           </div>
 
           <form
             onSubmit={submit}
-            className="mt-5 rounded-2xl border border-white/10 bg-white/[0.05] p-5 shadow-[0_24px_70px_rgba(0,0,0,0.45)] backdrop-blur-xl sm:mt-8 sm:p-6"
+            className="mt-3.5 rounded-2xl border border-white/10 bg-white/[0.05] p-4 shadow-[0_24px_70px_rgba(0,0,0,0.45)] backdrop-blur-xl sm:mt-6 sm:p-6"
           >
             <label className="block">
               <span className="mb-1.5 block text-[11px] font-bold tracking-[0.16em] text-white/70 uppercase">
@@ -265,7 +275,7 @@ function LockScreen({ onUnlock }) {
             <button
               type="submit"
               disabled={busy}
-              className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-cyan px-4 py-3 text-[13px] font-bold tracking-[0.08em] text-navy uppercase transition hover:brightness-110 disabled:opacity-60"
+              className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-cyan px-4 py-2.5 text-[13px] font-bold tracking-[0.08em] text-navy uppercase transition hover:brightness-110 disabled:opacity-60 sm:mt-5 sm:py-3"
             >
               {busy ? (
                 <Loader2 className="h-4 w-4 animate-spin" strokeWidth={2.2} />
@@ -276,7 +286,7 @@ function LockScreen({ onUnlock }) {
             </button>
           </form>
 
-          <p className="mt-5 flex items-center justify-center gap-2 text-[11px] font-medium tracking-[0.04em] text-white/40">
+          <p className="mt-3 flex items-center justify-center gap-2 text-[10px] font-medium tracking-[0.04em] text-white/40 sm:mt-5 sm:text-[11px]">
             <ShieldCheck className="h-4 w-4 text-cyan/70" />
             Encrypted private portal · authorised partners only
           </p>
@@ -371,6 +381,27 @@ function Catalog({ categories, config, onLogout }) {
 
   return (
     <div className="min-h-screen bg-navy pb-28 text-white">
+      <aside
+        aria-label="Not home brew"
+        className="pointer-events-none fixed top-[5.75rem] bottom-8 left-2 z-20 hidden w-[5.25rem] flex-col items-center xl:flex xl:left-4 xl:w-24"
+      >
+        <div className="sticky top-[5.75rem] flex max-h-[calc(100dvh-7.5rem)] flex-col items-center gap-3 overflow-y-auto">
+          <NoHomeBrewBadge className="h-[4.75rem] w-[4.75rem] xl:h-[5.5rem] xl:w-[5.5rem]" />
+          <p className="flex flex-col items-center gap-1.5 text-center font-display text-[12px] font-bold tracking-[0.18em] text-white/80 xl:text-[13px]">
+            <span>NOT</span>
+            <span>HOME</span>
+            <span>BREW</span>
+          </p>
+          <p className="flex flex-col items-center gap-1 text-center text-[9px] font-semibold leading-tight tracking-[0.12em] text-white/45 xl:text-[10px]">
+            {'Home brew means underground labs with no safety protocol. Everything here comes from a pharmacy manufacturer.'
+              .split(/\s+/)
+              .map((word, index) => (
+                <span key={`${word}-${index}`}>{word.replace(/\.$/, '')}</span>
+              ))}
+          </p>
+        </div>
+      </aside>
+
       {/* Header */}
       <header className="sticky top-0 z-30 border-b border-white/8 bg-navy/85 backdrop-blur-xl">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-5 py-4">
@@ -403,6 +434,19 @@ function Catalog({ categories, config, onLogout }) {
       </header>
 
       <main className="mx-auto max-w-6xl px-5 py-6">
+        <div className="mb-5 flex flex-col items-start gap-3 sm:flex-row sm:items-center xl:hidden">
+          <NoHomeBrewBadge className="h-16 w-16 sm:h-[4.5rem] sm:w-[4.5rem]" />
+          <div className="min-w-0">
+            <p className="font-display text-[15px] font-bold tracking-tight text-white">
+              Not home brew
+            </p>
+            <p className="mt-1 text-[13px] leading-relaxed text-white/65">
+              Home brew means underground labs with no safety protocol. Everything here comes from a
+              pharmacy manufacturer.
+            </p>
+          </div>
+        </div>
+
         {/* Note banner */}
         {config?.note ? (
           <div className="mb-5 flex gap-3 rounded-2xl border border-cyan/25 bg-cyan/[0.06] px-4 py-3.5">
