@@ -8,7 +8,9 @@ function filled(value) {
 }
 
 export function shipRows(order) {
-  const method = [order.carrier, order.service].filter(Boolean).join(' ')
+  const method =
+    [order.carrier, order.service].filter(Boolean).join(' ') ||
+    (order.shippingLabel ? String(order.shippingLabel) : '')
   const parcel = order.parcel
     ? `${order.parcel.length} × ${order.parcel.width} × ${order.parcel.height} in · ${order.parcel.weightOz} oz`
     : ''

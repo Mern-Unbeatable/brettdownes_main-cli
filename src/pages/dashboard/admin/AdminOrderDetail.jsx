@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import {
   ArrowLeft,
   CreditCard,
@@ -31,6 +31,37 @@ import {
 
 const STATUSES = ['PENDING', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED', 'REFUNDED']
 
+/** Maps /other store API payload to the same shape the main order detail UI expects. */
+function normalizeStoreOrder(raw) {
+  if (!raw) return raw
+  return {
+    ...raw,
+    fulfillment: 'DELIVERY',
+    paymentMethod: 'STRIPE',
+    creditCents: raw.creditCents || 0,
+    discountLabel: raw.couponCode || raw.discountLabel,
+    service: raw.service || raw.shippingLabel,
+    address: {
+      line1: raw.addressLine1,
+      line2: raw.addressLine2,
+      city: raw.city,
+      state: raw.state,
+      zip: raw.zip,
+      country: raw.country,
+    },
+    items: (raw.items || []).map((item) => ({
+      ...item,
+      dose: [item.strength, item.vialSize].filter(Boolean).join(' · ') || item.dose || '—',
+      lineTotalCents: item.lineTotalCents ?? item.unitPriceCents * item.qty,
+    })),
+    events: raw.events || [],
+  }
+}
+
+function adaptOrder(raw, isStore) {
+  return isStore ? normalizeStoreOrder(raw) : raw
+}
+
 function carrierTrackName(order) {
   const token = `${order?.carrier || ''} ${order?.service || ''}`.toLowerCase()
   const code = String(order?.trackingCode || '').trim()
@@ -55,8 +86,13 @@ function carrierTrackUrl(order) {
 
 export default function AdminOrderDetail() {
   const { id } = useParams()
+  const location = useLocation()
   const navigate = useNavigate()
   const toast = useToast()
+
+  const isStore = location.pathname.includes('/admin/store-orders')
+  const apiBase = isStore ? '/api/wholesale/admin/orders' : '/api/admin/orders'
+  const listPath = isStore ? '/admin/store-orders' : '/admin/orders'
 
   const [order, setOrder] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -82,9 +118,9 @@ export default function AdminOrderDetail() {
     }, 180)
 
     api
-      .get(`/api/admin/orders/${id}`)
+      .get(`${apiBase}/${id}`)
       .then((data) => {
-        if (!cancelled) setOrder(data.order)
+        if (!cancelled) setOrder(adaptOrder(data.order, isStore))
       })
       .catch((err) => {
         if (!cancelled) setError(err.message)
@@ -101,15 +137,15 @@ export default function AdminOrderDetail() {
       cancelled = true
       window.clearTimeout(timer)
     }
-  }, [id])
+  }, [id, apiBase, isStore])
 
   useEffect(() => {
     if (!order?.trackingCode) return undefined
     if (['DELIVERED', 'CANCELLED', 'REFUNDED'].includes(order.status)) return undefined
     const pull = () => {
       api
-        .get(`/api/admin/orders/${id}`)
-        .then((data) => setOrder(data.order))
+        .get(`${apiBase}/${id}`)
+        .then((data) => setOrder(adaptOrder(data.order, isStore)))
         .catch(() => {})
     }
     const first = window.setTimeout(pull, 15000)
@@ -118,15 +154,15 @@ export default function AdminOrderDetail() {
       window.clearTimeout(first)
       window.clearInterval(timer)
     }
-  }, [id, order?.trackingCode, order?.status])
+  }, [id, apiBase, isStore, order?.trackingCode, order?.status])
 
   const load = () => {
     setLoading(true)
     setShowLoader(true)
     setError(null)
     api
-      .get(`/api/admin/orders/${id}`)
-      .then((data) => setOrder(data.order))
+      .get(`${apiBase}/${id}`)
+      .then((data) => setOrder(adaptOrder(data.order, isStore)))
       .catch((err) => setError(err.message))
       .finally(() => {
         setLoading(false)
@@ -137,11 +173,9 @@ export default function AdminOrderDetail() {
   const changeStatus = async (status) => {
     setBusy(true)
     try {
-      const data = await api.patch(`/api/admin/orders/${id}/status`, {
-        status,
-        notifyCustomer: true,
-      })
-      setOrder(data.order)
+      const body = isStore ? { status } : { status, notifyCustomer: true }
+      const data = await api.patch(`${apiBase}/${id}/status`, body)
+      setOrder(adaptOrder(data.order, isStore))
       toast.success(`Order marked as ${status.toLowerCase()}.`, { title: 'Updated' })
     } catch (err) {
       toast.error(err.message)
@@ -153,8 +187,8 @@ export default function AdminOrderDetail() {
   const changePayment = async (paymentStatus) => {
     setBusy(true)
     try {
-      const data = await api.patch(`/api/admin/orders/${id}/payment`, { paymentStatus })
-      setOrder(data.order)
+      const data = await api.patch(`${apiBase}/${id}/payment`, { paymentStatus })
+      setOrder(adaptOrder(data.order, isStore))
       toast.success(`Payment marked as ${paymentStatus.toLowerCase()}.`, { title: 'Updated' })
     } catch (err) {
       toast.error(err.message)
@@ -184,8 +218,8 @@ export default function AdminOrderDetail() {
     if (!code) return
     setBusy(true)
     try {
-      const data = await api.post(`/api/admin/orders/${id}/tracking`, { trackingCode: code })
-      setOrder(data.order)
+      const data = await api.post(`${apiBase}/${id}/tracking`, { trackingCode: code })
+      setOrder(adaptOrder(data.order, isStore))
       setTrackingCode('')
       toast.success('Tracking saved. The customer was emailed.', { title: 'Shipped' })
     } catch (err) {
@@ -198,9 +232,9 @@ export default function AdminOrderDetail() {
   const deleteOrder = async () => {
     setBusy(true)
     try {
-      await api.delete(`/api/admin/orders/${id}`)
+      await api.delete(`${apiBase}/${id}`)
       toast.success(`${order.orderNumber} was deleted.`, { title: 'Deleted' })
-      navigate('/admin/orders')
+      navigate(listPath)
     } catch (err) {
       toast.error(err.message)
       setBusy(false)
@@ -241,11 +275,11 @@ export default function AdminOrderDetail() {
     <>
       <button
         type="button"
-        onClick={() => navigate('/admin/orders')}
+        onClick={() => navigate(listPath)}
         className="mb-4 inline-flex items-center gap-2 text-[13px] font-medium text-muted transition hover:text-ink"
       >
         <ArrowLeft className="h-4 w-4" />
-        Back to orders
+        {isStore ? 'Back to other orders' : 'Back to orders'}
       </button>
 
       <div className="relative mb-5 overflow-hidden rounded-3xl bg-navy text-white shadow-sm">
@@ -257,7 +291,7 @@ export default function AdminOrderDetail() {
         <div className="flex flex-wrap items-start justify-between gap-4 px-5 py-5 md:px-6 md:py-6">
           <div className="min-w-0">
             <p className="text-[10px] font-bold tracking-[0.2em] text-cyan uppercase">
-              {isPickup ? 'Warehouse pickup' : 'Delivery order'}
+              {isPickup ? 'Warehouse pickup' : isStore ? 'Other store order' : 'Delivery order'}
             </p>
             <h1 className="mt-1 font-display text-2xl font-bold tracking-tight md:text-[28px]">
               {order.orderNumber}
@@ -308,18 +342,18 @@ export default function AdminOrderDetail() {
             <ul className="divide-y divide-black/5">
               {order.items.map((item) => (
                 <li key={item.id} className="flex items-center gap-4 px-5 py-4">
-                  <div className="h-[88px] w-[88px] shrink-0 overflow-hidden rounded-2xl bg-[#f2f2f2]">
-                    {item.image ? (
+                  {item.image ? (
+                    <div className="h-[88px] w-[88px] shrink-0 overflow-hidden rounded-2xl bg-[#f2f2f2]">
                       <img
                         src={assetUrl(item.image)}
                         alt=""
                         className="h-full w-full object-cover"
                         onError={(e) => {
-                          e.currentTarget.style.display = 'none'
+                          e.currentTarget.parentElement?.remove()
                         }}
                       />
-                    ) : null}
-                  </div>
+                    </div>
+                  ) : null}
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-display text-[15px] font-bold text-ink">
                       {item.productName}
@@ -397,8 +431,8 @@ export default function AdminOrderDetail() {
             {trackUrl ? (
               <div className="mt-5 border-t border-black/6 pt-4">
                 <p className="mb-3 text-[12px] leading-relaxed text-muted">
-                  {carrierTrackName(order)} scans are checked every minute and added here. The
-                  order is marked delivered when the carrier says it was delivered.
+                  {carrierTrackName(order)} scans are checked every minute and added here. The order
+                  is marked delivered when the carrier says it was delivered.
                 </p>
                 <Button as="a" href={trackUrl} target="_blank" rel="noreferrer" variant="outline" className="w-full">
                   Track shipment
@@ -703,7 +737,8 @@ export default function AdminOrderDetail() {
       >
         <p className="text-[14px] leading-relaxed text-ink">
           <span className="font-semibold">{order.orderNumber}</span> will be removed from the admin
-          list. Stock and store credit are returned.
+          list.
+          {isStore ? '' : ' Stock and store credit are returned.'}
         </p>
         <p className="mt-3 text-[13px] leading-relaxed text-muted">
           A Stripe card charge is not refunded from here.

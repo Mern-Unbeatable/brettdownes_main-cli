@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import {
   ArrowLeft,
@@ -31,13 +31,52 @@ import Seo from '../components/Seo'
 import { pageSeo } from '../data/seo'
 
 const DESCRIPTOR_NOTICE_MS = 3500
+const OTHER_CHECKOUT_KEY = 'wholesale_checkout'
+
+function readOtherCart() {
+  try {
+    const raw = sessionStorage.getItem(OTHER_CHECKOUT_KEY)
+    const parsed = raw ? JSON.parse(raw) : null
+    return parsed?.items?.length ? parsed : null
+  } catch {
+    return null
+  }
+}
 
 export default function CheckoutPage() {
   const navigate = useNavigate()
   const toast = useToast()
-  const { items, subtotal, clearCart, count } = useCart()
+  const [searchParams] = useSearchParams()
+  const { items: cartItems, subtotal: cartSubtotal, clearCart, count: cartCount } = useCart()
   const { user, refresh } = useAuth()
   const settings = useSettings()
+
+  // "Other" store orders are guest checkouts handed off from /other. They reuse
+  // this page but source their cart and submit endpoint from the private store.
+  const [otherCart] = useState(readOtherCart)
+  const otherMode = searchParams.get('from') === 'other' && Boolean(otherCart)
+
+  const otherItems = useMemo(
+    () =>
+      (otherCart?.items || []).map((entry) => ({
+        productId: entry.product.id,
+        variantId: entry.product.id,
+        name: entry.product.name || entry.product.catNo || 'Item',
+        dose:
+          [entry.product.strength, entry.product.vialSize].filter(Boolean).join(' · ') || '—',
+        price: entry.product.price || 0,
+        qty: entry.qty,
+        image: entry.product.image || '',
+        catNo: entry.product.catNo || '',
+      })),
+    [otherCart],
+  )
+
+  const items = otherMode ? otherItems : cartItems
+  const subtotal = otherMode
+    ? otherItems.reduce((sum, item) => sum + item.price * item.qty, 0)
+    : cartSubtotal
+  const count = otherMode ? otherItems.reduce((sum, item) => sum + item.qty, 0) : cartCount
 
   const [fulfillment, setFulfillment] = useState('DELIVERY')
   const [international, setInternational] = useState(false)
@@ -166,17 +205,16 @@ export default function CheckoutPage() {
   const shippingCents =
     fulfillment === 'PICKUP' ? 0 : selectedRate ? selectedRate.amountCents : 0
   const subtotalCents = Math.round(subtotal * 100)
-  const { discountCents: bulkDiscountCents, discountLabel } = calculateBulkDiscount(
-    items,
-    discountTiers,
-  )
+  const { discountCents: bulkDiscountCents, discountLabel } = otherMode
+    ? { discountCents: 0, discountLabel: '' }
+    : calculateBulkDiscount(items, discountTiers)
   const cartSignature = items.map((item) => `${item.variantId}:${item.qty}`).sort().join('|')
   const currentCoupon =
     appliedCoupon?.cartSignature === cartSignature ? appliedCoupon : null
   const couponDiscountCents = currentCoupon?.discountCents || 0
   const discountCents = Math.min(subtotalCents, bulkDiscountCents + couponDiscountCents)
   const merchandiseCents = Math.max(0, subtotalCents - discountCents)
-  const availableCreditCents = Math.max(0, user?.creditCents || 0)
+  const availableCreditCents = otherMode ? 0 : Math.max(0, user?.creditCents || 0)
   const creditEligibleCents = Math.min(availableCreditCents, merchandiseCents)
   const creditCents = applyCredit ? creditEligibleCents : 0
   const totalCents = Math.max(0, merchandiseCents + shippingCents - creditCents)
@@ -186,10 +224,15 @@ export default function CheckoutPage() {
     if (!code) return
     setCouponLoading(true)
     try {
-      const data = await api.post('/api/discounts/validate-coupon', {
-        code,
-        items: items.map((item) => ({ variantId: item.variantId, qty: item.qty })),
-      })
+      const data = otherMode
+        ? await api.post('/api/wholesale/validate-coupon', {
+            code,
+            items: otherItems.map((item) => ({ id: item.productId, qty: item.qty })),
+          })
+        : await api.post('/api/discounts/validate-coupon', {
+            code,
+            items: items.map((item) => ({ variantId: item.variantId, qty: item.qty })),
+          })
       setAppliedCoupon({ ...data.coupon, cartSignature })
       setCouponCode(data.coupon.code)
       toast.success(`${data.coupon.code} applied.`)
@@ -207,19 +250,34 @@ export default function CheckoutPage() {
     setRatesLoading(true)
     setRatesError(null)
     try {
-      const data = await api.post('/api/shipping/rates', {
-        items: items.map((item) => ({ variantId: item.variantId, qty: item.qty })),
-        address: {
-          name: form.fullName || user?.name,
-          line1: form.address,
-          line2: form.address2,
-          city: form.city,
-          state: form.state,
-          zip: form.zip,
-          country: shipCountry,
-          phone: form.phone,
-        },
-      })
+      const data = otherMode
+        ? await api.post('/api/wholesale/rates', {
+            items: otherItems.map((item) => ({ id: item.productId, qty: item.qty })),
+            address: {
+              name: form.fullName,
+              line1: form.address,
+              line2: form.address2,
+              city: form.city,
+              state: form.state,
+              zip: form.zip,
+              country: shipCountry,
+              phone: form.phone,
+              email: form.email,
+            },
+          })
+        : await api.post('/api/shipping/rates', {
+            items: items.map((item) => ({ variantId: item.variantId, qty: item.qty })),
+            address: {
+              name: form.fullName || user?.name,
+              line1: form.address,
+              line2: form.address2,
+              city: form.city,
+              state: form.state,
+              zip: form.zip,
+              country: shipCountry,
+              phone: form.phone,
+            },
+          })
       setRates(data.rates || [])
       setParcel(data.parcel || null)
       setShipmentId(data.shipmentId)
@@ -237,6 +295,7 @@ export default function CheckoutPage() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- debounced on the address fields below
   }, [
+    otherMode,
     fulfillment,
     addressComplete,
     items,
@@ -260,11 +319,16 @@ export default function CheckoutPage() {
 
     const timer = window.setTimeout(fetchRates, 700)
     return () => window.clearTimeout(timer)
-  }, [fulfillment, addressComplete, fetchRates])
+  }, [otherMode, fulfillment, addressComplete, fetchRates])
 
   const canPlace = useMemo(() => {
     if (items.length === 0 || placing) return false
     if (!form.fullName.trim() || !form.email.trim() || !form.phone.trim()) return false
+    if (otherMode) {
+      if (!addressComplete) return false
+      if (!shipmentId || !selectedRateId) return false
+      return true
+    }
     if (fulfillment === 'DELIVERY') {
       if (!addressComplete) return false
       if (!shipmentId || !selectedRateId) return false
@@ -275,6 +339,7 @@ export default function CheckoutPage() {
     items.length,
     placing,
     form,
+    otherMode,
     fulfillment,
     addressComplete,
     shipmentId,
@@ -287,9 +352,56 @@ export default function CheckoutPage() {
     setForm((prev) => ({ ...prev, [name]: value }))
   }
 
+  // Guest "Other" order: create the order + Stripe session, then redirect. Run
+  // from the statement-descriptor notice so the flow matches the main store.
+  const placeOtherOrder = useCallback(async () => {
+    try {
+      const result = await api.post('/api/wholesale/checkout', {
+        items: otherItems.map((item) => ({ id: item.productId, qty: item.qty })),
+        shipmentId,
+        rateId: selectedRateId,
+        contact: {
+          name: form.fullName.trim(),
+          email: form.email.trim(),
+          phone: form.phone.trim(),
+        },
+        address: {
+          line1: form.address.trim(),
+          line2: form.address2.trim(),
+          city: form.city.trim(),
+          state: form.state.trim(),
+          zip: form.zip.trim(),
+          country: shipCountry,
+        },
+        couponCode: currentCoupon?.code || '',
+        notes: form.notes.trim(),
+      })
+      if (!result?.url) throw new Error('Could not start checkout.')
+      try {
+        sessionStorage.removeItem(OTHER_CHECKOUT_KEY)
+      } catch {
+        /* storage unavailable */
+      }
+      window.location.assign(result.url)
+    } catch (err) {
+      redirectingRef.current = false
+      setRedirecting(false)
+      setDescriptorNotice(null)
+      setPlacing(false)
+      toast.error(err.message)
+    }
+  }, [otherItems, shipmentId, selectedRateId, form, shipCountry, currentCoupon, toast])
+
   const placeOrder = async (event) => {
     event.preventDefault()
     if (!canPlace) return
+
+    if (otherMode) {
+      // Same statement-descriptor notice as the main store, then Stripe.
+      setDescriptorNotice({ other: true })
+      setNoticeProgress(0)
+      return
+    }
 
     setPlacing(true)
     try {
@@ -344,10 +456,17 @@ export default function CheckoutPage() {
 
   const continueToStripe = useCallback(async () => {
     const notice = descriptorNotice
-    if (!notice?.order || redirectingRef.current) return
+    if (!notice || redirectingRef.current) return
+    if (!notice.other && !notice.order) return
 
     redirectingRef.current = true
     setRedirecting(true)
+
+    if (notice.other) {
+      await placeOtherOrder()
+      return
+    }
+
     try {
       const session = await api.post('/api/payments/checkout-session', {
         orderId: notice.order.id,
@@ -360,7 +479,7 @@ export default function CheckoutPage() {
       setDescriptorNotice(null)
       toast.error(err.message)
     }
-  }, [descriptorNotice, toast])
+  }, [descriptorNotice, toast, placeOtherOrder])
 
   useEffect(() => {
     if (!descriptorNotice || redirectingRef.current) return undefined
@@ -453,23 +572,29 @@ export default function CheckoutPage() {
         <div className="mx-auto max-w-10xl px-5 md:px-8">
           <Link
             data-reveal="fade"
-            to="/shop"
+            to={otherMode ? '/other' : '/shop'}
             className="mb-8 inline-flex items-center gap-2 text-sm font-medium text-muted transition hover:text-ink"
           >
             <ArrowLeft className="h-4 w-4" />
-            Back to shop
+            {otherMode ? 'Back to price list' : 'Back to shop'}
           </Link>
 
           {items.length === 0 ? (
             <div data-reveal="scale" className="rounded-3xl bg-fog px-6 py-16 text-center">
-              <p className="font-display text-lg font-semibold text-ink">Your cart is empty</p>
-              <p className="mt-2 text-sm text-muted">Add peptides from the shop before checkout.</p>
+              <p className="font-display text-lg font-semibold text-ink">
+                {otherMode ? 'Your selection is empty' : 'Your cart is empty'}
+              </p>
+              <p className="mt-2 text-sm text-muted">
+                {otherMode
+                  ? 'Add items from the price list before checkout.'
+                  : 'Add peptides from the shop before checkout.'}
+              </p>
               <button
                 type="button"
-                onClick={() => navigate('/shop')}
+                onClick={() => navigate(otherMode ? '/other' : '/shop')}
                 className="mt-5 rounded-xl bg-cyan px-5 py-3 text-sm font-semibold text-navy"
               >
-                Open shop
+                {otherMode ? 'Back to price list' : 'Open shop'}
               </button>
             </div>
           ) : (
@@ -478,6 +603,7 @@ export default function CheckoutPage() {
               className="mx-auto grid max-w-5xl gap-10 lg:grid-cols-[1.2fr_0.8fr] lg:gap-12"
             >
               <div data-reveal-stagger data-stagger="0.12" className="space-y-8">
+                    {!otherMode ? (
                     <section className="relative overflow-hidden rounded-3xl border border-cyan/35 bg-gradient-to-br from-cyan/15 via-fog to-white p-6 shadow-[0_0_0_1px_rgba(0,196,171,0.12)] md:p-8">
                       <div
                         aria-hidden
@@ -512,6 +638,7 @@ export default function CheckoutPage() {
                         </Link>
                       </div>
                     </section>
+                    ) : null}
 
                     <section className="rounded-3xl bg-fog p-6 md:p-8">
                       <h3 className="font-display text-lg font-bold text-ink">Contact info</h3>
@@ -544,6 +671,7 @@ export default function CheckoutPage() {
 
                     <section className="rounded-3xl bg-fog p-6 md:p-8">
                       <h3 className="font-display text-lg font-bold text-ink">Delivery method</h3>
+                      {!otherMode ? (
                       <div className="mt-5 grid gap-3 sm:grid-cols-2">
                         <OptionCard
                           active={fulfillment === 'DELIVERY'}
@@ -564,6 +692,7 @@ export default function CheckoutPage() {
                           text="Pay on collection in Keizer, OR"
                         />
                       </div>
+                      ) : null}
 
                       {fulfillment === 'DELIVERY' ? (
                         <>
@@ -661,6 +790,7 @@ export default function CheckoutPage() {
                             />
                           </div>
 
+                          {!otherMode ? (
                           <label className="mt-4 flex items-center gap-2">
                             <input
                               type="checkbox"
@@ -672,6 +802,7 @@ export default function CheckoutPage() {
                               Save this address for future orders
                             </span>
                           </label>
+                          ) : null}
 
                           <div className="mt-6">
                             <div className="mb-3 flex items-center justify-between">
@@ -939,11 +1070,13 @@ export default function CheckoutPage() {
                 <ul className="mt-5 space-y-4">
                   {items.map((item) => (
                     <li key={`${item.productId}-${item.variantId}`} className="flex gap-3">
-                      <img
-                        src={assetUrl(item.image)}
-                        alt={item.name}
-                        className="h-14 w-14 rounded-xl bg-fog object-cover"
-                      />
+                      {item.image ? (
+                        <img
+                          src={assetUrl(item.image)}
+                          alt={item.name}
+                          className="h-14 w-14 rounded-xl bg-fog object-cover"
+                        />
+                      ) : null}
                       <div className="min-w-0 flex-1">
                         <p className="truncate text-sm font-semibold text-ink">{item.name}</p>
                         <p className="text-xs text-muted">

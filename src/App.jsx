@@ -54,8 +54,20 @@ const AdminSettings = lazy(() => import('./pages/dashboard/admin/AdminSettings')
 const AdminDiscounts = lazy(() => import('./pages/dashboard/admin/AdminDiscounts'))
 const AdminCoa = lazy(() => import('./pages/dashboard/admin/AdminCoa'))
 const AdminWholesale = lazy(() => import('./pages/dashboard/admin/AdminWholesale'))
+const AdminWholesaleOrders = lazy(() => import('./pages/dashboard/admin/AdminWholesaleOrders'))
 
 gsap.registerPlugin(ScrollTrigger)
+
+/** True when a private "Other" store cart is staged for guest checkout. */
+function hasOtherCart() {
+  try {
+    const raw = sessionStorage.getItem('wholesale_checkout')
+    const parsed = raw ? JSON.parse(raw) : null
+    return Boolean(parsed?.items?.length)
+  } catch {
+    return false
+  }
+}
 
 /** Shop + checkout stay behind the research portal gate. */
 function requiresGatekeeper(pathname) {
@@ -158,7 +170,14 @@ function AppShell() {
   const isPortalRoute = pathname.startsWith('/dashboard') || pathname.startsWith('/admin')
   // Hold the gate closed until the session check finishes so it never flashes
   // for an already-signed-in researcher. Info pages stay open for SEO.
-  const gateOpen = ready && !isAuthenticated && requiresGatekeeper(pathname)
+  // Orders coming from the private "Other" store are guest checkouts and must
+  // never hit the research-portal login wall. Only bypass the gate when the
+  // handoff actually carries an "Other" cart, so the flag alone can't be abused
+  // to skip the gate for the main shop.
+  const otherCheckout =
+    pathname === '/checkout' && searchParams.get('from') === 'other' && hasOtherCart()
+  const gateOpen =
+    ready && !isAuthenticated && requiresGatekeeper(pathname) && !otherCheckout
   const gateInitialMode = searchParams.get('auth') === 'register' ? 'register' : 'verify'
 
   // If someone removes/hides the gate via DevTools, remount it until verified
@@ -219,6 +238,8 @@ function AppShell() {
                 <Route path="products/:id" element={<AdminProductEditor />} />
                 <Route path="coa" element={<AdminCoa />} />
                 <Route path="wholesale" element={<AdminWholesale />} />
+                <Route path="store-orders" element={<AdminWholesaleOrders />} />
+                <Route path="store-orders/:id" element={<AdminOrderDetail />} />
                 <Route path="orders" element={<AdminOrders />} />
                 <Route path="orders/:id" element={<AdminOrderDetail />} />
                 <Route path="customers" element={<AdminCustomers />} />

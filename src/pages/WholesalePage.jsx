@@ -1,7 +1,11 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
+import { useNavigate } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import {
+  AlertCircle,
   CheckCircle2,
+  CreditCard,
   Eye,
   EyeOff,
   Loader2,
@@ -10,6 +14,7 @@ import {
   Minus,
   Plus,
   Search,
+  Send,
   ShieldCheck,
   ShoppingCart,
   Trash2,
@@ -21,6 +26,9 @@ import { lockBodyScroll, unlockBodyScroll } from '../hooks/lockBodyScroll'
 import Seo from '../components/Seo'
 
 const STORAGE_KEY = 'wholesale_access_pw'
+const CHECKOUT_KEY = 'wholesale_checkout'
+
+const money = (cents) => formatPrice((Number(cents) || 0) / 100)
 
 function readStoredPassword() {
   try {
@@ -52,8 +60,12 @@ function WhatsAppGlyph({ className = 'h-5 w-5' }) {
   )
 }
 
-function directWhatsAppHref() {
-  const text = 'Hi Peptide Ops — I have a wholesale pricing inquiry.'
+function restockWhatsAppHref(product) {
+  const ref = product?.catNo ? `[${product.catNo}] ` : ''
+  const name = product?.name || product?.catNo || 'an item'
+  const text = `Hi Peptide Ops — I'd like to order ${ref}${name}${
+    product?.strength ? ` (${product.strength})` : ''
+  }, but it's showing out of stock. Can you add it to your next order?`
   return `https://wa.me/${siteContact.whatsapp}?text=${encodeURIComponent(text)}`
 }
 
@@ -95,6 +107,21 @@ function FloatingCapsules() {
         </motion.div>
       ))}
     </div>
+  )
+}
+
+function TelegramButton({ url, className = '' }) {
+  if (!url) return null
+  return (
+    <a
+      href={url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className={`inline-flex items-center gap-2 rounded-xl border border-[#2AABEE]/40 bg-[#2AABEE]/10 px-3.5 py-2 text-[12px] font-semibold text-[#2AABEE] transition hover:bg-[#2AABEE]/20 ${className}`}
+    >
+      <Send className="h-4 w-4" />
+      Telegram
+    </a>
   )
 }
 
@@ -170,10 +197,10 @@ function LockScreen({ onUnlock }) {
               </span>
             </div>
             <h1 className="mt-4 font-display text-[24px] font-bold tracking-tight sm:mt-6 sm:text-[30px]">
-              Wholesale Access
+              Private Access
             </h1>
             <p className="mt-1.5 max-w-xs text-[12px] leading-relaxed text-white/55 sm:mt-2 sm:text-[13px]">
-              Enter your access password to view live, trade-only wholesale pricing.
+              Enter your access password to view the private price list.
             </p>
           </div>
 
@@ -194,7 +221,6 @@ function LockScreen({ onUnlock }) {
                     if (error) setError('')
                   }}
                   onFocus={(event) => {
-                    // Keep the field above the mobile keyboard once it opens.
                     const el = event.currentTarget
                     window.setTimeout(() => {
                       el.scrollIntoView({ block: 'center', behavior: 'smooth' })
@@ -202,8 +228,8 @@ function LockScreen({ onUnlock }) {
                   }}
                   placeholder="Enter password"
                   autoComplete="current-password"
-                  name="wholesale-access"
-                  id="wholesale-access"
+                  name="private-access"
+                  id="private-access"
                   className="w-full rounded-xl border border-white/15 bg-white/[0.06] px-4 py-3 pr-12 text-[14px] text-white outline-none transition placeholder:text-white/35 focus:border-cyan focus:bg-white/[0.08]"
                 />
                 <button
@@ -246,7 +272,7 @@ function LockScreen({ onUnlock }) {
 
           <p className="mt-5 flex items-center justify-center gap-2 text-[11px] font-medium tracking-[0.04em] text-white/40">
             <ShieldCheck className="h-4 w-4 text-cyan/70" />
-            Encrypted wholesale portal · authorised partners only
+            Encrypted private portal · authorised partners only
           </p>
         </motion.div>
       </div>
@@ -255,298 +281,17 @@ function LockScreen({ onUnlock }) {
 }
 
 /* ------------------------------------------------------------------ */
-/* Order modal                                                         */
-/* ------------------------------------------------------------------ */
-
-function orderLineLabel(product) {
-  const bits = [product.name || product.catNo].filter(Boolean)
-  const detail = [product.strength, product.vialSize].filter(Boolean).join(', ')
-  return detail ? `${bits.join(' ')} — ${detail}` : bits.join(' ')
-}
-
-function buildWhatsAppMessage(form, items) {
-  const lines = []
-  lines.push("Hello Peptide Ops Logistics, I'd like to place a wholesale order.")
-  lines.push('')
-  lines.push(`Name: ${form.name}`)
-  lines.push(`Email: ${form.email}`)
-  if (form.phone) lines.push(`Contact: ${form.phone}`)
-  lines.push(`Location: ${form.location}`)
-  lines.push('')
-  lines.push('Items:')
-  let total = 0
-  items.forEach((item, index) => {
-    const lineTotal = (item.product.price || 0) * item.qty
-    total += lineTotal
-    const ref = item.product.catNo ? `[${item.product.catNo}] ` : ''
-    lines.push(
-      `${index + 1}. ${ref}${orderLineLabel(item.product)} × ${item.qty} = ${formatPrice(lineTotal)}`,
-    )
-  })
-  lines.push('')
-  lines.push(`Estimated total: ${formatPrice(total)}`)
-  if (form.message) {
-    lines.push('')
-    lines.push(`Notes: ${form.message}`)
-  }
-  return lines.join('\n')
-}
-
-function OrderModal({ items, onClose, onChangeQty, onRemove, onSent }) {
-  const [form, setForm] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    location: '',
-    message: '',
-  })
-  const [sent, setSent] = useState(false)
-  const [touched, setTouched] = useState(false)
-
-  useEffect(() => {
-    lockBodyScroll()
-    return () => unlockBodyScroll()
-  }, [])
-
-  const total = useMemo(
-    () => items.reduce((sum, item) => sum + (item.product.price || 0) * item.qty, 0),
-    [items],
-  )
-
-  const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())
-  const valid = form.name.trim() && emailValid && form.location.trim() && items.length > 0
-
-  const send = () => {
-    setTouched(true)
-    if (!valid) return
-    const message = buildWhatsAppMessage(
-      {
-        name: form.name.trim(),
-        email: form.email.trim(),
-        phone: form.phone.trim(),
-        location: form.location.trim(),
-        message: form.message.trim(),
-      },
-      items,
-    )
-    const href = `https://wa.me/${siteContact.whatsapp}?text=${encodeURIComponent(message)}`
-    window.open(href, '_blank', 'noopener,noreferrer')
-    setSent(true)
-  }
-
-  const field =
-    'w-full rounded-xl border border-white/12 bg-white/[0.05] px-3.5 py-2.5 text-[13px] text-white outline-none transition placeholder:text-white/35 focus:border-cyan'
-  const labelCls = 'mb-1 block text-[11px] font-bold tracking-[0.12em] text-white/60 uppercase'
-
-  return (
-    <div className="fixed inset-0 z-[100] flex items-end justify-center sm:items-center sm:p-5">
-      <motion.button
-        type="button"
-        aria-label="Close"
-        onClick={onClose}
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        className="absolute inset-0 bg-black/70 backdrop-blur-sm"
-      />
-      <motion.div
-        initial={{ opacity: 0, y: 30 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: 20 }}
-        transition={{ duration: 0.26, ease: [0.22, 1, 0.36, 1] }}
-        className="relative flex max-h-[92vh] w-full max-w-lg flex-col overflow-hidden rounded-t-3xl border border-white/10 bg-navy-soft text-white shadow-2xl sm:rounded-3xl"
-      >
-        {sent ? (
-          <div className="flex flex-col items-center px-6 py-12 text-center">
-            <span className="flex h-16 w-16 items-center justify-center rounded-full bg-[#25D366]/15 text-[#25D366]">
-              <CheckCircle2 className="h-8 w-8" />
-            </span>
-            <h2 className="mt-5 font-display text-xl font-bold">Order sent!</h2>
-            <p className="mt-2 max-w-xs text-[13px] text-white/60">
-              WhatsApp is opening with your order details pre-filled. Just hit send there to reach
-              our team.
-            </p>
-            <button
-              type="button"
-              onClick={onSent}
-              className="mt-6 rounded-xl bg-cyan px-6 py-2.5 text-[13px] font-bold tracking-[0.06em] text-navy uppercase transition hover:brightness-110"
-            >
-              Done
-            </button>
-          </div>
-        ) : (
-          <>
-            <div className="flex shrink-0 items-center justify-between border-b border-white/10 px-5 py-4">
-              <div>
-                <h2 className="font-display text-[16px] font-bold">Review &amp; send order</h2>
-                <p className="text-[12px] text-white/50">We&apos;ll continue on WhatsApp.</p>
-              </div>
-              <button
-                type="button"
-                onClick={onClose}
-                aria-label="Close"
-                className="flex h-9 w-9 items-center justify-center rounded-full bg-white/5 text-white/70 transition hover:bg-white/10 hover:text-white"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-
-            <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-5 py-5">
-              {/* Items */}
-              <div className="space-y-2">
-                <p className="text-[11px] font-bold tracking-[0.14em] text-white/50 uppercase">
-                  Products ({items.length})
-                </p>
-                {items.map((item) => (
-                  <div
-                    key={item.product.id}
-                    className="flex items-center gap-3 rounded-xl border border-white/8 bg-white/[0.03] px-3 py-2.5"
-                  >
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-[13px] font-semibold text-white">
-                        {item.product.catNo ? (
-                          <span className="mr-1.5 font-mono text-[11px] text-cyan">
-                            {item.product.catNo}
-                          </span>
-                        ) : null}
-                        {item.product.name || '—'}
-                      </p>
-                      <p className="truncate text-[11px] text-white/45">
-                        {[item.product.strength, item.product.vialSize].filter(Boolean).join(' · ') ||
-                          'No specs'}
-                        {' · '}
-                        {formatPrice(item.product.price)}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-1 rounded-lg bg-white/5 p-1">
-                      <button
-                        type="button"
-                        aria-label="Decrease"
-                        onClick={() => onChangeQty(item.product.id, item.qty - 1)}
-                        className="flex h-7 w-7 items-center justify-center rounded-md text-white/70 transition hover:bg-white/10"
-                      >
-                        <Minus className="h-3.5 w-3.5" />
-                      </button>
-                      <span className="w-6 text-center text-[13px] font-bold">{item.qty}</span>
-                      <button
-                        type="button"
-                        aria-label="Increase"
-                        onClick={() => onChangeQty(item.product.id, item.qty + 1)}
-                        className="flex h-7 w-7 items-center justify-center rounded-md text-white/70 transition hover:bg-white/10"
-                      >
-                        <Plus className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
-                    <button
-                      type="button"
-                      aria-label="Remove"
-                      onClick={() => onRemove(item.product.id)}
-                      className="flex h-8 w-8 items-center justify-center rounded-lg text-white/40 transition hover:bg-rose-500/15 hover:text-rose-400"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </div>
-                ))}
-                <div className="flex items-center justify-between px-1 pt-1 text-[13px]">
-                  <span className="text-white/55">Estimated total</span>
-                  <span className="font-display text-lg font-bold text-cyan">
-                    {formatPrice(total)}
-                  </span>
-                </div>
-              </div>
-
-              {/* Details */}
-              <div className="grid gap-3 sm:grid-cols-2">
-                <label className="block sm:col-span-2">
-                  <span className={labelCls}>Full name *</span>
-                  <input
-                    className={field}
-                    value={form.name}
-                    onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-                    placeholder="Your name"
-                  />
-                  {touched && !form.name.trim() ? (
-                    <span className="mt-1 block text-[11px] text-rose-400">
-                      Please enter your name.
-                    </span>
-                  ) : null}
-                </label>
-                <label className="block">
-                  <span className={labelCls}>Email *</span>
-                  <input
-                    className={field}
-                    value={form.email}
-                    onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
-                    placeholder="you@email.com"
-                  />
-                  {touched && !emailValid ? (
-                    <span className="mt-1 block text-[11px] text-rose-400">
-                      Enter a valid email.
-                    </span>
-                  ) : null}
-                </label>
-                <label className="block">
-                  <span className={labelCls}>Contact number</span>
-                  <input
-                    className={field}
-                    value={form.phone}
-                    onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
-                    placeholder="Optional"
-                  />
-                </label>
-                <label className="block sm:col-span-2">
-                  <span className={labelCls}>Location *</span>
-                  <input
-                    className={field}
-                    value={form.location}
-                    onChange={(e) => setForm((f) => ({ ...f, location: e.target.value }))}
-                    placeholder="City / country"
-                  />
-                  {touched && !form.location.trim() ? (
-                    <span className="mt-1 block text-[11px] text-rose-400">
-                      Please enter your location.
-                    </span>
-                  ) : null}
-                </label>
-                <label className="block sm:col-span-2">
-                  <span className={labelCls}>Inquiry / message</span>
-                  <textarea
-                    rows={3}
-                    className={`${field} resize-none`}
-                    value={form.message}
-                    onChange={(e) => setForm((f) => ({ ...f, message: e.target.value }))}
-                    placeholder="Anything else we should know? (optional)"
-                  />
-                </label>
-              </div>
-            </div>
-
-            <div className="shrink-0 border-t border-white/10 px-5 py-4">
-              <button
-                type="button"
-                onClick={send}
-                className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#25D366] px-4 py-3 text-[13px] font-bold tracking-[0.06em] text-white uppercase transition hover:bg-[#20bd5a] disabled:opacity-60"
-              >
-                <WhatsAppGlyph className="h-5 w-5" />
-                Send order via WhatsApp
-              </button>
-            </div>
-          </>
-        )}
-      </motion.div>
-    </div>
-  )
-}
-
-/* ------------------------------------------------------------------ */
 /* Catalog                                                             */
 /* ------------------------------------------------------------------ */
 
-function Catalog({ categories, onLogout }) {
+function Catalog({ categories, config, onLogout }) {
+  const navigate = useNavigate()
   const [activeId, setActiveId] = useState(categories[0]?.id || '')
   const [search, setSearch] = useState('')
   const [selected, setSelected] = useState({}) // id -> { product, qty }
-  const [orderOpen, setOrderOpen] = useState(false)
+  const [cartOpen, setCartOpen] = useState(false)
+
+  const telegramUrl = config?.telegramUrl || ''
 
   const active = useMemo(
     () => categories.find((category) => category.id === activeId) || categories[0],
@@ -566,8 +311,13 @@ function Catalog({ categories, onLogout }) {
 
   const selectedItems = useMemo(() => Object.values(selected), [selected])
   const selectedCount = selectedItems.reduce((sum, item) => sum + item.qty, 0)
+  const orderSubtotal = selectedItems.reduce(
+    (sum, item) => sum + (item.product.price || 0) * item.qty,
+    0,
+  )
 
   const addToOrder = (product) => {
+    if (!product.inStock) return
     setSelected((prev) => {
       const current = prev[product.id]
       return { ...prev, [product.id]: { product, qty: current ? current.qty + 1 : 1 } }
@@ -593,6 +343,23 @@ function Catalog({ categories, onLogout }) {
     })
   }
 
+  const goToCheckout = () => {
+    if (selectedItems.length === 0) return
+    try {
+      sessionStorage.setItem(
+        CHECKOUT_KEY,
+        JSON.stringify({
+          items: selectedItems.map((item) => ({ product: item.product, qty: item.qty })),
+        }),
+      )
+    } catch {
+      /* storage unavailable */
+    }
+    navigate('/checkout?from=other')
+  }
+
+  const categoryTagline = categories.map((category) => category.name).join(' · ')
+
   return (
     <div className="min-h-screen bg-navy pb-28 text-white">
       {/* Header */}
@@ -607,21 +374,13 @@ function Catalog({ categories, onLogout }) {
             />
             <div className="hidden sm:block">
               <h1 className="font-display text-[17px] font-bold leading-tight tracking-tight">
-                Wholesale Prices
+                Peptide Ops Logistics
               </h1>
-              <p className="text-[11px] text-white/45">Live trade pricing</p>
+              <p className="text-[11px] text-white/45">{categoryTagline || 'Price list'}</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <a
-              href={directWhatsAppHref()}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hidden items-center gap-2 rounded-xl border border-[#25D366]/40 bg-[#25D366]/10 px-3.5 py-2 text-[12px] font-semibold text-[#25D366] transition hover:bg-[#25D366]/20 sm:inline-flex"
-            >
-              <WhatsAppGlyph className="h-4 w-4" />
-              Chat
-            </a>
+            <TelegramButton url={telegramUrl} className="hidden sm:inline-flex" />
             <button
               type="button"
               onClick={onLogout}
@@ -635,6 +394,27 @@ function Catalog({ categories, onLogout }) {
       </header>
 
       <main className="mx-auto max-w-6xl px-5 py-6">
+        {/* Note banner */}
+        {config?.note ? (
+          <div className="mb-5 flex gap-3 rounded-2xl border border-cyan/25 bg-cyan/[0.06] px-4 py-3.5">
+            <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-cyan" />
+            <div className="min-w-0">
+              <p className="text-[13px] leading-relaxed text-white/80">{config.note}</p>
+              {telegramUrl ? (
+                <a
+                  href={telegramUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-2 inline-flex items-center gap-1.5 text-[12px] font-semibold text-[#2AABEE] transition hover:brightness-110"
+                >
+                  <Send className="h-3.5 w-3.5" />
+                  Join our Telegram for updates
+                </a>
+              ) : null}
+            </div>
+          </div>
+        ) : null}
+
         {/* Category tabs */}
         <div className="flex flex-wrap gap-2">
           {categories.map((category) => (
@@ -696,7 +476,7 @@ function Catalog({ categories, onLogout }) {
                     <th className="px-4 py-3">Strength</th>
                     <th className="px-4 py-3">Vial Size</th>
                     <th className="px-4 py-3 text-right">Price</th>
-                    <th className="px-4 py-3 text-right">Order</th>
+                    <th className="px-4 py-3 text-right">Cart</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/8 text-[13px]">
@@ -707,7 +487,7 @@ function Catalog({ categories, onLogout }) {
                         key={product.id}
                         className={`transition hover:bg-white/[0.04] ${
                           index % 2 ? 'bg-white/[0.012]' : ''
-                        }`}
+                        } ${product.inStock ? '' : 'opacity-60'}`}
                       >
                         <td className="px-4 py-3 font-mono text-[12px] font-semibold text-cyan">
                           {product.catNo || '—'}
@@ -722,18 +502,30 @@ function Catalog({ categories, onLogout }) {
                         </td>
                         <td className="px-4 py-3">
                           <div className="flex justify-end">
-                            <button
-                              type="button"
-                              onClick={() => addToOrder(product)}
-                              className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[12px] font-bold transition ${
-                                chosen
-                                  ? 'bg-cyan/15 text-cyan ring-1 ring-cyan/40'
-                                  : 'bg-cyan text-navy hover:brightness-110'
-                              }`}
-                            >
-                              <ShoppingCart className="h-3.5 w-3.5" />
-                              {chosen ? `Added (${chosen.qty})` : 'Order'}
-                            </button>
+                            {product.inStock ? (
+                              <button
+                                type="button"
+                                onClick={() => addToOrder(product)}
+                                className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[12px] font-bold transition ${
+                                  chosen
+                                    ? 'bg-cyan/15 text-cyan ring-1 ring-cyan/40'
+                                    : 'bg-cyan text-navy hover:brightness-110'
+                                }`}
+                              >
+                                <ShoppingCart className="h-3.5 w-3.5" />
+                                {chosen ? `Added (${chosen.qty})` : 'Add to cart'}
+                              </button>
+                            ) : (
+                              <a
+                                href={restockWhatsAppHref(product)}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1.5 rounded-lg border border-white/15 bg-white/[0.04] px-3 py-1.5 text-[12px] font-semibold text-white/60 transition hover:text-white"
+                              >
+                                <WhatsAppGlyph className="h-3.5 w-3.5" />
+                                Out of stock
+                              </a>
+                            )}
                           </div>
                         </td>
                       </tr>
@@ -750,7 +542,9 @@ function Catalog({ categories, onLogout }) {
                 return (
                   <div
                     key={product.id}
-                    className="rounded-2xl border border-white/10 bg-white/[0.03] p-4"
+                    className={`rounded-2xl border border-white/10 bg-white/[0.03] p-4 ${
+                      product.inStock ? '' : 'opacity-70'
+                    }`}
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
@@ -769,18 +563,30 @@ function Catalog({ categories, onLogout }) {
                         {formatPrice(product.price)}
                       </span>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => addToOrder(product)}
-                      className={`mt-3 flex w-full items-center justify-center gap-2 rounded-xl py-2.5 text-[13px] font-bold transition ${
-                        chosen
-                          ? 'bg-cyan/15 text-cyan ring-1 ring-cyan/40'
-                          : 'bg-cyan text-navy hover:brightness-110'
-                      }`}
-                    >
-                      <ShoppingCart className="h-4 w-4" />
-                      {chosen ? `Added — ${chosen.qty} in order` : 'Add to order'}
-                    </button>
+                    {product.inStock ? (
+                      <button
+                        type="button"
+                        onClick={() => addToOrder(product)}
+                        className={`mt-3 flex w-full items-center justify-center gap-2 rounded-xl py-2.5 text-[13px] font-bold transition ${
+                          chosen
+                            ? 'bg-cyan/15 text-cyan ring-1 ring-cyan/40'
+                            : 'bg-cyan text-navy hover:brightness-110'
+                        }`}
+                      >
+                        <ShoppingCart className="h-4 w-4" />
+                        {chosen ? `Added — ${chosen.qty} in cart` : 'Add to cart'}
+                      </button>
+                    ) : (
+                      <a
+                        href={restockWhatsAppHref(product)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/[0.04] py-2.5 text-[13px] font-semibold text-white/70 transition hover:text-white"
+                      >
+                        <WhatsAppGlyph className="h-4 w-4" />
+                        Out of stock — request via WhatsApp
+                      </a>
+                    )}
                   </div>
                 )
               })}
@@ -789,65 +595,260 @@ function Catalog({ categories, onLogout }) {
         )}
       </main>
 
-      {/* Sticky order bar */}
+      {/* Floating cart button */}
       <AnimatePresence>
-        {selectedItems.length > 0 ? (
-          <motion.div
-            initial={{ y: 80, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: 80, opacity: 0 }}
-            transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-            className="fixed inset-x-0 bottom-0 z-30 border-t border-white/10 bg-navy-soft/95 backdrop-blur-xl"
+        {selectedItems.length > 0 && !cartOpen ? (
+          <motion.button
+            type="button"
+            onClick={() => setCartOpen(true)}
+            aria-label={`Open order — ${selectedCount} item${selectedCount === 1 ? '' : 's'}`}
+            initial={{ scale: 0, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0, opacity: 0 }}
+            transition={{ duration: 0.26, ease: [0.22, 1, 0.36, 1] }}
+            className="fixed right-5 bottom-5 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-cyan text-navy shadow-[0_12px_34px_rgba(0,245,212,0.4)] transition hover:brightness-110 sm:right-7 sm:bottom-7 sm:h-16 sm:w-16"
           >
-            <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-5 py-3.5">
-              <div className="flex items-center gap-3">
-                <span className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-cyan/15 text-cyan">
-                  <ShoppingCart className="h-5 w-5" />
-                  <span className="absolute -top-1.5 -right-1.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-cyan px-1 text-[10px] font-bold text-navy">
-                    {selectedCount}
-                  </span>
+            <ShoppingCart className="h-6 w-6" strokeWidth={2} />
+            <span className="absolute -top-1 -right-1 flex h-6 min-w-6 items-center justify-center rounded-full bg-navy px-1.5 text-[11px] font-bold text-cyan ring-2 ring-cyan">
+              {selectedCount}
+            </span>
+          </motion.button>
+        ) : null}
+      </AnimatePresence>
+
+      <OrderDrawer
+        open={cartOpen}
+        items={selectedItems}
+        subtotal={orderSubtotal}
+        onClose={() => setCartOpen(false)}
+        onChangeQty={changeQty}
+        onRemove={removeFromOrder}
+        onClear={() => {
+          setSelected({})
+          setCartOpen(false)
+        }}
+        onCheckout={goToCheckout}
+      />
+    </div>
+  )
+}
+
+/* ------------------------------------------------------------------ */
+/* Order drawer (slides in from the right, like the main store cart)   */
+/* ------------------------------------------------------------------ */
+
+function OrderDrawer({ open, items, subtotal, onClose, onChangeQty, onRemove, onClear, onCheckout }) {
+  useEffect(() => {
+    if (!open) return undefined
+    lockBodyScroll()
+    const onKey = (event) => {
+      if (event.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => {
+      unlockBodyScroll()
+      window.removeEventListener('keydown', onKey)
+    }
+  }, [open, onClose])
+
+  return createPortal(
+    <AnimatePresence>
+      {open ? (
+        <>
+          <motion.button
+            type="button"
+            aria-label="Close order"
+            onClick={onClose}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+            className="fixed inset-0 z-[10050] min-h-[100dvh] bg-black/60 backdrop-blur-[2px]"
+          />
+          <motion.aside
+            role="dialog"
+            aria-modal="true"
+            aria-label="Your order"
+            initial={{ x: '100%' }}
+            animate={{ x: 0 }}
+            exit={{ x: '100%' }}
+            transition={{ type: 'tween', duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
+            className="fixed inset-y-0 right-0 z-[10060] flex w-[min(100%,42vw)] min-w-[320px] max-w-[460px] flex-col overflow-hidden border-l border-white/10 bg-navy-soft text-white shadow-2xl"
+          >
+            <div className="flex shrink-0 items-center justify-between border-b border-white/10 px-5 py-4">
+              <div className="flex items-center gap-2.5">
+                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-cyan/15 text-cyan">
+                  <ShoppingCart className="h-4 w-4" />
                 </span>
                 <div className="leading-tight">
-                  <p className="text-[13px] font-semibold text-white">
-                    {selectedItems.length} product{selectedItems.length > 1 ? 's' : ''} selected
+                  <h2 className="font-display text-[15px] font-bold">Your order</h2>
+                  <p className="text-[11px] text-white/45">
+                    {items.length} product{items.length === 1 ? '' : 's'}
                   </p>
-                  <button
-                    type="button"
-                    onClick={() => setSelected({})}
-                    className="text-[11px] text-white/45 underline-offset-2 transition hover:text-white/70 hover:underline"
-                  >
-                    Clear selection
-                  </button>
                 </div>
               </div>
               <button
                 type="button"
-                onClick={() => setOrderOpen(true)}
-                className="inline-flex items-center gap-2 rounded-xl bg-[#25D366] px-5 py-2.5 text-[13px] font-bold tracking-[0.04em] text-white uppercase transition hover:bg-[#20bd5a]"
+                onClick={onClose}
+                aria-label="Close"
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-white/5 text-white/70 transition hover:bg-white/10 hover:text-white"
               >
-                <WhatsAppGlyph className="h-5 w-5" />
-                <span className="hidden sm:inline">Review &amp; send order</span>
-                <span className="sm:hidden">Send order</span>
+                <X className="h-4 w-4" />
               </button>
             </div>
-          </motion.div>
-        ) : null}
-      </AnimatePresence>
 
-      <AnimatePresence>
-        {orderOpen ? (
-          <OrderModal
-            items={selectedItems}
-            onClose={() => setOrderOpen(false)}
-            onChangeQty={changeQty}
-            onRemove={removeFromOrder}
-            onSent={() => {
-              setOrderOpen(false)
-              setSelected({})
-            }}
-          />
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-5">
+              {items.length === 0 ? (
+                <div className="flex h-full flex-col items-center justify-center py-10 text-center">
+                  <ShoppingCart className="h-8 w-8 text-white/25" />
+                  <p className="mt-3 text-[13px] text-white/50">Your order is empty.</p>
+                </div>
+              ) : (
+                <ul className="space-y-3">
+                  {items.map((item) => (
+                    <li
+                      key={item.product.id}
+                      className="rounded-2xl border border-white/8 bg-white/[0.03] p-3.5"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          {item.product.catNo ? (
+                            <span className="font-mono text-[11px] font-semibold text-cyan">
+                              {item.product.catNo}
+                            </span>
+                          ) : null}
+                          <p className="truncate text-[13px] font-semibold text-white">
+                            {item.product.name || '—'}
+                          </p>
+                          <p className="mt-0.5 truncate text-[11px] text-white/45">
+                            {[item.product.strength, item.product.vialSize]
+                              .filter(Boolean)
+                              .join(' · ') || 'No specs'}
+                          </p>
+                        </div>
+                        <span className="shrink-0 font-display text-sm font-bold text-white">
+                          {formatPrice((item.product.price || 0) * item.qty)}
+                        </span>
+                      </div>
+                      <div className="mt-3 flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-1 rounded-lg bg-white/5 p-1">
+                          <button
+                            type="button"
+                            aria-label="Decrease"
+                            onClick={() => onChangeQty(item.product.id, item.qty - 1)}
+                            className="flex h-7 w-7 items-center justify-center rounded-md text-white/70 transition hover:bg-white/10"
+                          >
+                            <Minus className="h-3.5 w-3.5" />
+                          </button>
+                          <span className="w-7 text-center text-[13px] font-bold">{item.qty}</span>
+                          <button
+                            type="button"
+                            aria-label="Increase"
+                            onClick={() => onChangeQty(item.product.id, item.qty + 1)}
+                            className="flex h-7 w-7 items-center justify-center rounded-md text-white/70 transition hover:bg-white/10"
+                          >
+                            <Plus className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                        <button
+                          type="button"
+                          aria-label="Remove"
+                          onClick={() => onRemove(item.product.id)}
+                          className="flex h-8 w-8 items-center justify-center rounded-lg text-white/40 transition hover:bg-rose-500/15 hover:text-rose-400"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
+            {items.length > 0 ? (
+              <div className="shrink-0 border-t border-white/10 px-5 py-4">
+                <div className="mb-3 flex items-center justify-between">
+                  <span className="text-[13px] text-white/55">Subtotal</span>
+                  <span className="font-display text-lg font-bold text-cyan">
+                    {formatPrice(subtotal)}
+                  </span>
+                </div>
+                <p className="mb-3 text-[11px] text-white/40">
+                  Shipping is calculated at checkout from live carrier rates.
+                </p>
+                <button
+                  type="button"
+                  onClick={onCheckout}
+                  className="flex w-full items-center justify-center gap-2 rounded-xl bg-cyan px-4 py-3 text-[13px] font-bold tracking-[0.06em] text-navy uppercase transition hover:brightness-110"
+                >
+                  <CreditCard className="h-5 w-5" />
+                  Checkout
+                </button>
+                <button
+                  type="button"
+                  onClick={onClear}
+                  className="mt-2 w-full rounded-xl border border-white/10 py-2.5 text-[12px] font-semibold text-white/55 transition hover:border-white/25 hover:text-white/80"
+                >
+                  Clear order
+                </button>
+              </div>
+            ) : null}
+          </motion.aside>
+        </>
+      ) : null}
+    </AnimatePresence>,
+    document.body,
+  )
+}
+
+/* ------------------------------------------------------------------ */
+/* Order result (after Stripe redirect)                                */
+/* ------------------------------------------------------------------ */
+
+function ResultScreen({ status, order, onContinue }) {
+  const paid = status === 'success'
+  return (
+    <div className="grid min-h-dvh place-items-center bg-navy px-5 text-white">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="w-full max-w-md rounded-3xl border border-white/10 bg-white/[0.04] p-8 text-center shadow-2xl"
+      >
+        <span
+          className={`mx-auto flex h-16 w-16 items-center justify-center rounded-full ${
+            paid ? 'bg-cyan/15 text-cyan' : 'bg-rose-500/15 text-rose-400'
+          }`}
+        >
+          {paid ? <CheckCircle2 className="h-8 w-8" /> : <AlertCircle className="h-8 w-8" />}
+        </span>
+        <h1 className="mt-5 font-display text-2xl font-bold">
+          {paid ? 'Payment received' : 'Checkout cancelled'}
+        </h1>
+        <p className="mt-2 text-[13px] text-white/60">
+          {paid
+            ? `Thanks for your order${order?.orderNumber ? ` — ${order.orderNumber}` : ''}. We've emailed your receipt${
+                order?.contactEmail ? ` to ${order.contactEmail}` : ''
+              } and you'll get a tracking link once it ships.`
+            : 'Your payment was not completed and you have not been charged. You can review your order and try again.'}
+        </p>
+        {paid && order ? (
+          <div className="mt-5 rounded-xl border border-white/10 bg-white/[0.03] p-4 text-left text-[13px]">
+            <div className="flex items-center justify-between py-1 text-white/60">
+              <span>Total paid</span>
+              <span className="font-display text-base font-bold text-cyan">
+                {money(order.totalCents)}
+              </span>
+            </div>
+          </div>
         ) : null}
-      </AnimatePresence>
+        <button
+          type="button"
+          onClick={onContinue}
+          className="mt-6 w-full rounded-xl bg-cyan px-6 py-3 text-[13px] font-bold tracking-[0.06em] text-navy uppercase transition hover:brightness-110"
+        >
+          {paid ? 'Back to price list' : 'Return to price list'}
+        </button>
+      </motion.div>
     </div>
   )
 }
@@ -857,15 +858,41 @@ function Catalog({ categories, onLogout }) {
 /* ------------------------------------------------------------------ */
 
 export default function WholesalePage() {
-  const [categories, setCategories] = useState(null)
+  const [data, setData] = useState(null) // { categories, config }
   const [checking, setChecking] = useState(true)
+  const [result, setResult] = useState(null) // { status, order }
 
   const unlock = async (password) => {
-    const result = await api.post('/api/wholesale/unlock', { password })
+    const res = await api.post('/api/wholesale/unlock', { password })
     storePassword(password)
-    setCategories(result.categories || [])
-    return result
+    setData({ categories: res.categories || [], config: res.config || {} })
+    return res
   }
+
+  // Handle return from Stripe Checkout (?checkout=success|cancel).
+  // Ref guard: React Strict Mode remounts effects in dev and would confirm twice.
+  const confirmStarted = useRef(false)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const checkout = params.get('checkout')
+    if (!checkout) return
+    const orderId = params.get('orderId')
+    const sessionId = params.get('session_id')
+    const clean = () => window.history.replaceState({}, '', window.location.pathname)
+
+    if (checkout === 'success' && orderId && sessionId) {
+      if (confirmStarted.current) return
+      confirmStarted.current = true
+      api
+        .post('/api/wholesale/checkout/confirm', { orderId, sessionId })
+        .then((res) => setResult({ status: 'success', order: res.order }))
+        .catch(() => setResult({ status: 'success', order: null }))
+        .finally(clean)
+    } else {
+      setResult({ status: 'cancel', order: null })
+      clean()
+    }
+  }, [])
 
   useEffect(() => {
     let cancelled = false
@@ -878,8 +905,8 @@ export default function WholesalePage() {
     }
     api
       .post('/api/wholesale/unlock', { password: stored })
-      .then((result) => {
-        if (!cancelled) setCategories(result.categories || [])
+      .then((res) => {
+        if (!cancelled) setData({ categories: res.categories || [], config: res.config || {} })
       })
       .catch(() => {
         if (!cancelled) storePassword('')
@@ -894,10 +921,23 @@ export default function WholesalePage() {
 
   const logout = () => {
     storePassword('')
-    setCategories(null)
+    setData(null)
   }
 
-  const seo = <Seo title="Wholesale Prices" path="/other" noIndex />
+  const seo = <Seo title="Private Store" path="/other" noIndex />
+
+  if (result) {
+    return (
+      <>
+        {seo}
+        <ResultScreen
+          status={result.status}
+          order={result.order}
+          onContinue={() => setResult(null)}
+        />
+      </>
+    )
+  }
 
   if (checking) {
     return (
@@ -910,7 +950,7 @@ export default function WholesalePage() {
     )
   }
 
-  if (!categories) {
+  if (!data) {
     return (
       <>
         {seo}
@@ -922,7 +962,7 @@ export default function WholesalePage() {
   return (
     <>
       {seo}
-      <Catalog categories={categories} onLogout={logout} />
+      <Catalog categories={data.categories} config={data.config} onLogout={logout} />
     </>
   )
 }

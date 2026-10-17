@@ -5,6 +5,7 @@ import {
   ChevronLeft,
   BadgePercent,
   Beaker,
+  ClipboardList,
   Home,
   LayoutDashboard,
   Lock,
@@ -35,6 +36,7 @@ const NAV = {
     { to: '/admin/products', label: 'Products', icon: ShoppingBag },
     { to: '/admin/coa', label: 'COA library', icon: Beaker },
     { to: '/admin/wholesale', label: 'Secret page', icon: Lock },
+    { to: '/admin/store-orders', label: 'Other orders', icon: ClipboardList },
     { to: '/admin/orders', label: 'Orders', icon: Package },
     { to: '/admin/customers', label: 'Customers', icon: Users },
     { to: '/admin/discounts', label: 'Discounts & coupons', icon: BadgePercent },
@@ -52,20 +54,20 @@ function SidebarContent({ scope, collapsed, onNavigate, user, isAdmin, onLogout 
   return (
     <div className="flex h-full flex-col">
       <div
-        className={`flex shrink-0 flex-col items-center border-b border-white/8 px-3 pt-4 pb-3 ${
+        className={`flex shrink-0 flex-col items-center border-b border-white/8 px-3 pt-3 pb-2 xl:pt-4 xl:pb-3 ${
           collapsed ? 'lg:px-1.5 lg:pt-3 lg:pb-2.5' : ''
         }`}
       >
         <Link
           to="/"
           onClick={onNavigate}
-          className="flex w-full flex-col items-center gap-1.5 text-center"
+          className="flex w-full flex-col items-center gap-1 text-center xl:gap-1.5"
         >
           <img
             src="/images/logo.png"
             alt="Peptide Ops"
             className={`object-contain object-center ${
-              collapsed ? 'h-11 w-11' : 'h-16 w-auto max-w-[9rem]'
+              collapsed ? 'h-11 w-11' : 'h-11 w-auto max-w-[7rem] xl:h-16 xl:max-w-[9rem]'
             }`}
             draggable={false}
           />
@@ -77,7 +79,7 @@ function SidebarContent({ scope, collapsed, onNavigate, user, isAdmin, onLogout 
         </Link>
       </div>
 
-      <nav className="flex-1 space-y-1 overflow-y-auto p-3">
+      <nav className="scrollbar-slim flex-1 space-y-0.5 overflow-y-auto p-2 xl:space-y-1 xl:p-3">
         {items.map((item) => (
           <NavLink
             key={item.to}
@@ -86,7 +88,7 @@ function SidebarContent({ scope, collapsed, onNavigate, user, isAdmin, onLogout 
             onClick={onNavigate}
             title={collapsed ? item.label : undefined}
             className={({ isActive }) =>
-              `group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-[13px] font-medium transition ${
+              `group relative flex items-center gap-3 rounded-xl px-3 py-2 text-[13px] font-medium transition xl:py-2.5 ${
                 collapsed ? 'lg:justify-center lg:px-2' : ''
               } ${
                 isActive
@@ -101,12 +103,12 @@ function SidebarContent({ scope, collapsed, onNavigate, user, isAdmin, onLogout 
         ))}
       </nav>
 
-      <div className="shrink-0 space-y-1 border-t border-white/8 p-3">
+      <div className="shrink-0 space-y-0.5 border-t border-white/8 p-2 xl:space-y-1 xl:p-3">
         <Link
           to="/shop"
           onClick={onNavigate}
           title={collapsed ? 'Back to shop' : undefined}
-          className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-[13px] font-medium text-white/70 transition hover:bg-white/8 hover:text-white ${
+          className={`flex items-center gap-3 rounded-xl px-3 py-2 text-[13px] font-medium text-white/70 transition hover:bg-white/8 hover:text-white xl:py-2.5 ${
             collapsed ? 'lg:justify-center lg:px-2' : ''
           }`}
         >
@@ -117,7 +119,7 @@ function SidebarContent({ scope, collapsed, onNavigate, user, isAdmin, onLogout 
           type="button"
           onClick={onLogout}
           title={collapsed ? 'Log out' : undefined}
-          className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-[13px] font-medium text-white/70 transition hover:bg-white/8 hover:text-white ${
+          className={`flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-[13px] font-medium text-white/70 transition hover:bg-white/8 hover:text-white xl:py-2.5 ${
             collapsed ? 'lg:justify-center lg:px-2' : ''
           }`}
         >
@@ -126,7 +128,7 @@ function SidebarContent({ scope, collapsed, onNavigate, user, isAdmin, onLogout 
         </button>
 
         {!collapsed ? (
-          <div className="mt-2 flex items-center gap-2.5 rounded-xl bg-white/5 px-3 py-2.5">
+          <div className="mt-1 hidden items-center gap-2.5 rounded-xl bg-white/5 px-3 py-2 [@media(min-height:760px)]:flex xl:mt-2 xl:py-2.5">
             <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-cyan text-navy">
               <User className="h-4 w-4" strokeWidth={1.8} />
             </span>

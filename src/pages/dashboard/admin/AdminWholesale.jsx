@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import {
   ExternalLink,
   KeyRound,
+  Megaphone,
   Pencil,
   Plus,
   Tag,
@@ -23,6 +24,8 @@ import {
   PasswordInput,
   Reveal,
   Select,
+  Textarea,
+  Toggle,
 } from '../ui'
 
 const EMPTY_PRODUCT = {
@@ -31,6 +34,7 @@ const EMPTY_PRODUCT = {
   strength: '',
   vialSize: '',
   price: '',
+  inStock: true,
 }
 
 export default function AdminWholesale() {
@@ -47,9 +51,18 @@ export default function AdminWholesale() {
   const [pwConfirm, setPwConfirm] = useState('')
   const [pwBusy, setPwBusy] = useState(false)
 
+  // Storefront config (note / telegram)
+  const [config, setConfig] = useState({ note: '', telegramUrl: '' })
+  const [configBusy, setConfigBusy] = useState(false)
+
   // Category form
   const [newCategory, setNewCategory] = useState('')
   const [catBusy, setCatBusy] = useState(false)
+
+  // Category edit modal
+  const [categoryModal, setCategoryModal] = useState(null) // { category, confirmDelete }
+  const [categoryName, setCategoryName] = useState('')
+  const [categoryBusy, setCategoryBusy] = useState(false)
 
   // Product modal
   const [productModal, setProductModal] = useState(null) // { mode, product }
@@ -64,6 +77,12 @@ export default function AdminWholesale() {
       const list = result.categories || []
       setCategories(list)
       setActiveId((prev) => (list.some((c) => c.id === prev) ? prev : list[0]?.id || ''))
+      if (result.config) {
+        setConfig({
+          note: result.config.note || '',
+          telegramUrl: result.config.telegramUrl || '',
+        })
+      }
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Could not load the wholesale catalog.')
     } finally {
@@ -110,6 +129,25 @@ export default function AdminWholesale() {
     }
   }
 
+  /* ---- Storefront config ---- */
+  const saveConfig = async (event) => {
+    event.preventDefault()
+    if (configBusy) return
+    setConfigBusy(true)
+    try {
+      await api.patch('/api/wholesale/admin/config', {
+        note: config.note,
+        telegramUrl: config.telegramUrl.trim(),
+      })
+      toast.success('Storefront settings saved.', { title: 'Saved' })
+      await load()
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : 'Could not save settings.')
+    } finally {
+      setConfigBusy(false)
+    }
+  }
+
   /* ---- Categories ---- */
   const addCategory = async (event) => {
     event.preventDefault()
@@ -133,32 +171,49 @@ export default function AdminWholesale() {
     }
   }
 
-  const renameCategory = async (category) => {
-    const name = window.prompt('Rename category', category.name)
-    if (name === null) return
-    const trimmed = name.trim()
-    if (!trimmed || trimmed === category.name) return
+  const openEditCategory = (category, confirmDelete = false) => {
+    setCategoryName(category.name)
+    setCategoryModal({ category, confirmDelete })
+  }
+
+  const saveCategoryName = async () => {
+    if (categoryBusy || !categoryModal) return
+    const trimmed = categoryName.trim()
+    if (!trimmed) {
+      toast.error('Enter a category name.')
+      return
+    }
+    if (trimmed === categoryModal.category.name) {
+      setCategoryModal(null)
+      return
+    }
+    setCategoryBusy(true)
     try {
-      await api.patch(`/api/wholesale/admin/categories/${category.id}`, { name: trimmed })
-      toast.success('Category renamed.')
+      await api.patch(`/api/wholesale/admin/categories/${categoryModal.category.id}`, {
+        name: trimmed,
+      })
+      toast.success('Category renamed.', { title: 'Saved' })
+      setCategoryModal(null)
       await load()
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : 'Could not rename the category.')
+    } finally {
+      setCategoryBusy(false)
     }
   }
 
-  const deleteCategory = async (category) => {
-    const count = (category.products || []).length
-    const ok = window.confirm(
-      `Delete "${category.name}"${count ? ` and its ${count} product(s)` : ''}? This cannot be undone.`,
-    )
-    if (!ok) return
+  const confirmDeleteCategory = async () => {
+    if (categoryBusy || !categoryModal) return
+    setCategoryBusy(true)
     try {
-      await api.delete(`/api/wholesale/admin/categories/${category.id}`)
+      await api.delete(`/api/wholesale/admin/categories/${categoryModal.category.id}`)
       toast.success('Category deleted.')
+      setCategoryModal(null)
       await load()
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : 'Could not delete the category.')
+    } finally {
+      setCategoryBusy(false)
     }
   }
 
@@ -179,8 +234,29 @@ export default function AdminWholesale() {
       strength: product.strength || '',
       vialSize: product.vialSize || '',
       price: product.price != null ? String(product.price) : '',
+      inStock: product.inStock !== false,
     })
     setProductModal({ mode: 'edit', product })
+  }
+
+  /** Quick in-stock / out-of-stock flip from the table. */
+  const toggleStock = async (product) => {
+    const nextInStock = !product.inStock
+    // Optimistic update so the switch feels instant.
+    setCategories((prev) =>
+      prev.map((category) => ({
+        ...category,
+        products: (category.products || []).map((item) =>
+          item.id === product.id ? { ...item, inStock: nextInStock } : item,
+        ),
+      })),
+    )
+    try {
+      await api.patch(`/api/wholesale/admin/products/${product.id}`, { inStock: nextInStock })
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : 'Could not update availability.')
+      await load()
+    }
   }
 
   const saveProduct = async () => {
@@ -191,6 +267,7 @@ export default function AdminWholesale() {
       strength: productForm.strength.trim(),
       vialSize: productForm.vialSize.trim(),
       price: Number(productForm.price) || 0,
+      inStock: productForm.inStock !== false,
     }
     if (!payload.name && !payload.catNo) {
       toast.error('Add at least a cat. no or a name.')
@@ -234,7 +311,7 @@ export default function AdminWholesale() {
     <div className="mx-auto max-w-5xl">
       <PageHeading
         title="Secret page"
-        subtitle="Manage the private wholesale price list, its categories and access password."
+        subtitle="Manage the private price list, its categories and access password."
         actions={
           <Button as="a" href="/other" target="_blank" rel="noreferrer" variant="outline" size="sm">
             <ExternalLink className="h-4 w-4" />
@@ -289,6 +366,47 @@ export default function AdminWholesale() {
         </form>
       </Card>
 
+      {/* Storefront settings */}
+      <Card className="mb-6">
+        <div className="mb-4 flex items-center gap-2">
+          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-navy text-cyan">
+            <Megaphone className="h-4 w-4" strokeWidth={1.9} />
+          </span>
+          <div>
+            <h2 className="font-display text-[15px] font-bold text-ink">Storefront settings</h2>
+            <p className="text-[12px] text-muted">
+              Note banner and Telegram link on /other. Shipping rates come from USPS / UPS / FedEx at
+              checkout (same as the main shop).
+            </p>
+          </div>
+        </div>
+
+        <form onSubmit={saveConfig} className="space-y-4">
+          <Field label="Note banner" hint="Shown at the top of the price list.">
+            <Textarea
+              rows={3}
+              value={config.note}
+              onChange={(event) => setConfig((prev) => ({ ...prev, note: event.target.value }))}
+              placeholder="e.g. These are specialized items and aren't always in stock…"
+            />
+          </Field>
+
+          <Field label="Telegram link" hint="Optional. Leave blank to hide the Telegram button.">
+            <Input
+              value={config.telegramUrl}
+              onChange={(event) =>
+                setConfig((prev) => ({ ...prev, telegramUrl: event.target.value }))
+              }
+              placeholder="https://t.me/yourchannel"
+            />
+          </Field>
+
+          <Button type="submit" disabled={configBusy}>
+            {configBusy ? 'Saving…' : 'Save storefront settings'}
+          </Button>
+        </form>
+      </Card>
+
       {/* Categories */}
       <Card className="mb-6">
         <div className="mb-4 flex items-center gap-2">
@@ -312,7 +430,7 @@ export default function AdminWholesale() {
                 <Badge tone="USER">{(category.products || []).length}</Badge>
                 <button
                   type="button"
-                  onClick={() => renameCategory(category)}
+                  onClick={() => openEditCategory(category)}
                   className="text-muted transition hover:text-ink"
                   aria-label={`Rename ${category.name}`}
                 >
@@ -320,7 +438,7 @@ export default function AdminWholesale() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => deleteCategory(category)}
+                  onClick={() => openEditCategory(category, true)}
                   className="text-muted transition hover:text-rose-600"
                   aria-label={`Delete ${category.name}`}
                 >
@@ -407,6 +525,7 @@ export default function AdminWholesale() {
                   <th className="px-4 py-3">Strength</th>
                   <th className="px-4 py-3">Vial Size</th>
                   <th className="px-4 py-3 text-right">Price</th>
+                  <th className="px-4 py-3 text-center">In stock</th>
                   <th className="px-4 py-3 text-right">Actions</th>
                 </tr>
               </thead>
@@ -421,6 +540,26 @@ export default function AdminWholesale() {
                     <td className="px-4 py-3 text-muted">{product.vialSize || '—'}</td>
                     <td className="px-4 py-3 text-right font-semibold text-ink">
                       {formatPrice(product.price)}
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex justify-center">
+                        <button
+                          type="button"
+                          role="switch"
+                          aria-checked={product.inStock}
+                          aria-label={product.inStock ? 'Mark out of stock' : 'Mark in stock'}
+                          onClick={() => toggleStock(product)}
+                          className={`relative h-6 w-11 shrink-0 rounded-full transition ${
+                            product.inStock ? 'bg-cyan' : 'bg-black/15'
+                          }`}
+                        >
+                          <span
+                            className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform duration-200 ${
+                              product.inStock ? 'translate-x-5' : 'translate-x-0'
+                            }`}
+                          />
+                        </button>
+                      </div>
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center justify-end gap-1.5">
@@ -527,7 +666,83 @@ export default function AdminWholesale() {
               placeholder="e.g. 10ml or 100 tablets/bottle"
             />
           </Field>
+          <div className="sm:col-span-2">
+            <Toggle
+              checked={productForm.inStock !== false}
+              onChange={(value) => setProductForm((f) => ({ ...f, inStock: value }))}
+              label="In stock"
+              description="When off, the item still lists but shows as out of stock (customers order via WhatsApp)."
+            />
+          </div>
         </div>
+      </Modal>
+
+      <Modal
+        open={Boolean(categoryModal)}
+        onClose={() => (categoryBusy ? null : setCategoryModal(null))}
+        title={categoryModal?.confirmDelete ? 'Delete category' : 'Edit category'}
+        size="sm"
+        footer={
+          categoryModal?.confirmDelete ? (
+            <>
+              <Button
+                variant="ghost"
+                onClick={() => setCategoryModal((prev) => ({ ...prev, confirmDelete: false }))}
+                disabled={categoryBusy}
+              >
+                Back
+              </Button>
+              <Button variant="danger" onClick={confirmDeleteCategory} disabled={categoryBusy}>
+                <Trash2 className="h-4 w-4" />
+                {categoryBusy ? 'Deleting…' : 'Delete category'}
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button variant="ghost" onClick={() => setCategoryModal(null)} disabled={categoryBusy}>
+                Cancel
+              </Button>
+              <Button onClick={saveCategoryName} disabled={categoryBusy}>
+                {categoryBusy ? 'Saving…' : 'Save'}
+              </Button>
+            </>
+          )
+        }
+      >
+        {categoryModal?.confirmDelete ? (
+          <div className="space-y-2">
+            <p className="text-[14px] text-ink">
+              Delete <strong>{categoryModal.category.name}</strong>
+              {(categoryModal.category.products || []).length
+                ? ` and its ${(categoryModal.category.products || []).length} product(s)`
+                : ''}
+              ?
+            </p>
+            <p className="text-[13px] text-muted">This cannot be undone.</p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <Field label="Category name">
+              <Input
+                value={categoryName}
+                onChange={(event) => setCategoryName(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter') saveCategoryName()
+                }}
+                placeholder="e.g. Oils"
+                autoFocus
+              />
+            </Field>
+            <button
+              type="button"
+              onClick={() => setCategoryModal((prev) => ({ ...prev, confirmDelete: true }))}
+              className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-rose-600 transition hover:underline"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              Delete this category
+            </button>
+          </div>
+        )}
       </Modal>
     </div>
   )
