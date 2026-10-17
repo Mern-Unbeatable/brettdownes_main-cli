@@ -378,15 +378,6 @@ function Catalog({ categories, config, onLogout }) {
 
   return (
     <div className="min-h-screen bg-navy pb-28 text-white">
-      <aside
-        aria-label="Not home brew"
-        className="pointer-events-none fixed top-[5.75rem] bottom-8 left-2 z-20 hidden w-[5.25rem] flex-col items-center xl:flex xl:left-4 xl:w-24"
-      >
-        <div className="sticky top-[5.75rem]">
-          <NoHomeBrewBadge className="h-[4.75rem] w-[4.75rem] xl:h-[5.5rem] xl:w-[5.5rem]" />
-        </div>
-      </aside>
-
       {/* Header */}
       <header className="sticky top-0 z-30 border-b border-white/8 bg-navy/85 backdrop-blur-xl">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-5 py-4">
@@ -419,10 +410,6 @@ function Catalog({ categories, config, onLogout }) {
       </header>
 
       <main className="mx-auto max-w-6xl px-5 py-6">
-        <div className="mb-5 xl:hidden">
-          <NoHomeBrewBadge className="h-16 w-16 sm:h-[4.5rem] sm:w-[4.5rem]" />
-        </div>
-
         {/* Note banner */}
         {config?.note ? (
           <div className="mb-5 flex gap-3 rounded-2xl border border-cyan/25 bg-cyan/[0.06] px-4 py-3.5">
@@ -445,7 +432,7 @@ function Catalog({ categories, config, onLogout }) {
         ) : null}
 
         {/* Category tabs */}
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {categories.map((category) => (
             <button
               key={category.id}
@@ -468,6 +455,7 @@ function Catalog({ categories, config, onLogout }) {
               </span>
             </button>
           ))}
+          <NoHomeBrewBadge className="h-10 w-10 sm:h-11 sm:w-11" />
         </div>
 
         {/* Search */}
