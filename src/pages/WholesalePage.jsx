@@ -455,7 +455,7 @@ function Catalog({ categories, config, onLogout }) {
               </span>
             </button>
           ))}
-          <NoHomeBrewBadge className="h-10 w-10 sm:h-11 sm:w-11" />
+          <NoHomeBrewBadge className="h-[4.5rem] w-[4.5rem] sm:h-20 sm:w-20" />
         </div>
 
         {/* Search */}
