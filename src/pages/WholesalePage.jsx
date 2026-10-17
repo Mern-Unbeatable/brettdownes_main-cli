@@ -209,9 +209,6 @@ function LockScreen({ onUnlock }) {
               draggable={false}
             />
             <NoHomeBrewBadge className="mt-2.5 h-[4.5rem] w-[4.5rem] sm:mt-4 sm:h-24 sm:w-24" />
-            <p className="mt-2 max-w-[240px] text-[11px] leading-snug text-white/55 sm:mt-2.5 sm:text-[13px] sm:leading-relaxed">
-              Not home brew. Pharmacy manufactured, not underground labs.
-            </p>
             <h1 className="mt-3 font-display text-[22px] font-bold tracking-tight sm:mt-5 sm:text-[30px]">
               Private Access
             </h1>
@@ -385,20 +382,8 @@ function Catalog({ categories, config, onLogout }) {
         aria-label="Not home brew"
         className="pointer-events-none fixed top-[5.75rem] bottom-8 left-2 z-20 hidden w-[5.25rem] flex-col items-center xl:flex xl:left-4 xl:w-24"
       >
-        <div className="sticky top-[5.75rem] flex max-h-[calc(100dvh-7.5rem)] flex-col items-center gap-3 overflow-y-auto">
+        <div className="sticky top-[5.75rem]">
           <NoHomeBrewBadge className="h-[4.75rem] w-[4.75rem] xl:h-[5.5rem] xl:w-[5.5rem]" />
-          <p className="flex flex-col items-center gap-1.5 text-center font-display text-[12px] font-bold tracking-[0.18em] text-white/80 xl:text-[13px]">
-            <span>NOT</span>
-            <span>HOME</span>
-            <span>BREW</span>
-          </p>
-          <p className="flex flex-col items-center gap-1 text-center text-[9px] font-semibold leading-tight tracking-[0.12em] text-white/45 xl:text-[10px]">
-            {'Home brew means underground labs with no safety protocol. Everything here comes from a pharmacy manufacturer.'
-              .split(/\s+/)
-              .map((word, index) => (
-                <span key={`${word}-${index}`}>{word.replace(/\.$/, '')}</span>
-              ))}
-          </p>
         </div>
       </aside>
 
@@ -434,17 +419,8 @@ function Catalog({ categories, config, onLogout }) {
       </header>
 
       <main className="mx-auto max-w-6xl px-5 py-6">
-        <div className="mb-5 flex flex-col items-start gap-3 sm:flex-row sm:items-center xl:hidden">
+        <div className="mb-5 xl:hidden">
           <NoHomeBrewBadge className="h-16 w-16 sm:h-[4.5rem] sm:w-[4.5rem]" />
-          <div className="min-w-0">
-            <p className="font-display text-[15px] font-bold tracking-tight text-white">
-              Not home brew
-            </p>
-            <p className="mt-1 text-[13px] leading-relaxed text-white/65">
-              Home brew means underground labs with no safety protocol. Everything here comes from a
-              pharmacy manufacturer.
-            </p>
-          </div>
         </div>
 
         {/* Note banner */}
