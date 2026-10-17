@@ -60,6 +60,12 @@ function WhatsAppGlyph({ className = 'h-5 w-5' }) {
   )
 }
 
+function availableStock(product) {
+  if (product == null) return 0
+  if (Number.isFinite(Number(product.stock))) return Math.max(0, Math.trunc(Number(product.stock)))
+  return product.inStock ? 9999 : 0
+}
+
 function restockWhatsAppHref(product) {
   const ref = product?.catNo ? `[${product.catNo}] ` : ''
   const name = product?.name || product?.catNo || 'an item'
@@ -317,10 +323,12 @@ function Catalog({ categories, config, onLogout }) {
   )
 
   const addToOrder = (product) => {
-    if (!product.inStock) return
+    const max = availableStock(product)
+    if (max < 1) return
     setSelected((prev) => {
       const current = prev[product.id]
-      return { ...prev, [product.id]: { product, qty: current ? current.qty + 1 : 1 } }
+      const nextQty = Math.min(current ? current.qty + 1 : 1, max)
+      return { ...prev, [product.id]: { product, qty: nextQty } }
     })
   }
 
@@ -331,7 +339,8 @@ function Catalog({ categories, config, onLogout }) {
         delete next[id]
         return next
       }
-      return { ...prev, [id]: { ...prev[id], qty } }
+      const max = availableStock(prev[id]?.product)
+      return { ...prev, [id]: { ...prev[id], qty: Math.min(qty, max) } }
     })
   }
 
@@ -487,7 +496,7 @@ function Catalog({ categories, config, onLogout }) {
                         key={product.id}
                         className={`transition hover:bg-white/[0.04] ${
                           index % 2 ? 'bg-white/[0.012]' : ''
-                        } ${product.inStock ? '' : 'opacity-60'}`}
+                        } ${availableStock(product) > 0 ? '' : 'opacity-60'}`}
                       >
                         <td className="px-4 py-3 font-mono text-[12px] font-semibold text-cyan">
                           {product.catNo || '—'}
@@ -502,7 +511,7 @@ function Catalog({ categories, config, onLogout }) {
                         </td>
                         <td className="px-4 py-3">
                           <div className="flex justify-end">
-                            {product.inStock ? (
+                            {availableStock(product) > 0 ? (
                               <button
                                 type="button"
                                 onClick={() => addToOrder(product)}
@@ -543,7 +552,7 @@ function Catalog({ categories, config, onLogout }) {
                   <div
                     key={product.id}
                     className={`rounded-2xl border border-white/10 bg-white/[0.03] p-4 ${
-                      product.inStock ? '' : 'opacity-70'
+                      availableStock(product) > 0 ? '' : 'opacity-70'
                     }`}
                   >
                     <div className="flex items-start justify-between gap-3">
@@ -563,7 +572,7 @@ function Catalog({ categories, config, onLogout }) {
                         {formatPrice(product.price)}
                       </span>
                     </div>
-                    {product.inStock ? (
+                    {availableStock(product) > 0 ? (
                       <button
                         type="button"
                         onClick={() => addToOrder(product)}
@@ -744,8 +753,9 @@ function OrderDrawer({ open, items, subtotal, onClose, onChangeQty, onRemove, on
                           <button
                             type="button"
                             aria-label="Increase"
+                            disabled={item.qty >= availableStock(item.product)}
                             onClick={() => onChangeQty(item.product.id, item.qty + 1)}
-                            className="flex h-7 w-7 items-center justify-center rounded-md text-white/70 transition hover:bg-white/10"
+                            className="flex h-7 w-7 items-center justify-center rounded-md text-white/70 transition hover:bg-white/10 disabled:opacity-30"
                           >
                             <Plus className="h-3.5 w-3.5" />
                           </button>

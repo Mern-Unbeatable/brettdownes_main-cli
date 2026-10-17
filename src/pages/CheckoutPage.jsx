@@ -65,7 +65,12 @@ export default function CheckoutPage() {
         dose:
           [entry.product.strength, entry.product.vialSize].filter(Boolean).join(' · ') || '—',
         price: entry.product.price || 0,
-        qty: entry.qty,
+        qty: (() => {
+          const asked = Math.max(1, Number(entry.qty) || 1)
+          const stock = Number(entry.product.stock)
+          if (Number.isFinite(stock)) return Math.min(asked, Math.max(0, Math.trunc(stock)))
+          return asked
+        })(),
         image: entry.product.image || '',
         catNo: entry.product.catNo || '',
       })),

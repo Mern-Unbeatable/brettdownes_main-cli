@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   ExternalLink,
+  FileSpreadsheet,
   KeyRound,
   Megaphone,
   Pencil,
@@ -25,16 +26,16 @@ import {
   Reveal,
   Select,
   Textarea,
-  Toggle,
 } from '../ui'
 
 const EMPTY_PRODUCT = {
   catNo: '',
+  barcode: '',
   name: '',
   strength: '',
   vialSize: '',
   price: '',
-  inStock: true,
+  stock: '0',
 }
 
 export default function AdminWholesale() {
@@ -68,6 +69,8 @@ export default function AdminWholesale() {
   const [productModal, setProductModal] = useState(null) // { mode, product }
   const [productForm, setProductForm] = useState(EMPTY_PRODUCT)
   const [productBusy, setProductBusy] = useState(false)
+  const [importing, setImporting] = useState(false)
+  const fileRef = useRef(null)
 
   const load = async () => {
     setLoading(true)
@@ -230,32 +233,85 @@ export default function AdminWholesale() {
   const openEditProduct = (product) => {
     setProductForm({
       catNo: product.catNo || '',
+      barcode: product.barcode || '',
       name: product.name || '',
       strength: product.strength || '',
       vialSize: product.vialSize || '',
       price: product.price != null ? String(product.price) : '',
-      inStock: product.inStock !== false,
+      stock: String(product.stock ?? 0),
     })
     setProductModal({ mode: 'edit', product })
   }
 
-  /** Quick in-stock / out-of-stock flip from the table. */
-  const toggleStock = async (product) => {
-    const nextInStock = !product.inStock
-    // Optimistic update so the switch feels instant.
-    setCategories((prev) =>
-      prev.map((category) => ({
-        ...category,
-        products: (category.products || []).map((item) =>
-          item.id === product.id ? { ...item, inStock: nextInStock } : item,
-        ),
-      })),
-    )
+  const handleImport = async (event) => {
+    const file = event.target.files?.[0]
+    event.target.value = ''
+    if (!file) return
+
+    setImporting(true)
     try {
-      await api.patch(`/api/wholesale/admin/products/${product.id}`, { inStock: nextInStock })
-    } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : 'Could not update availability.')
+      const result = await api.upload('/api/wholesale/admin/import', file)
+      const { summary } = result
+      const notFound = summary.notFound || []
+
+      if (summary.variantsUpdated > 0) {
+        toast.success(
+          `${summary.variantsUpdated} item${summary.variantsUpdated === 1 ? '' : 's'} updated.`,
+          { title: 'Inventory updated' },
+        )
+      }
+
+      if (notFound.length) {
+        const preview = notFound
+          .slice(0, 8)
+          .map((entry) => entry.barcode)
+          .join(', ')
+        const extra = notFound.length > 8 ? ` (+${notFound.length - 8} more)` : ''
+        toast.warning(
+          `These barcodes were not found: ${preview}${extra}. Download a fresh template from Secret page.`,
+          { title: 'Barcode not found', duration: 14000 },
+        )
+      }
+
+      const rowErrors = summary.rowErrors || []
+      if (rowErrors.length) {
+        toast.warning(rowErrors.slice(0, 3).join(' '), {
+          title: 'Some rows skipped',
+          duration: 10000,
+        })
+      } else if (!notFound.length && summary.variantsUpdated === 0) {
+        toast.info('No rows to update in that file.', { title: 'Import complete' })
+      }
+
       await load()
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : 'Import failed.')
+    } finally {
+      setImporting(false)
+    }
+  }
+
+  const downloadTemplate = async () => {
+    try {
+      const base = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '')
+      const response = await fetch(`${base}/api/wholesale/admin/import/template`, {
+        credentials: 'include',
+      })
+      if (!response.ok) {
+        const payload = await response.json().catch(() => null)
+        throw new Error(payload?.error || 'Could not download the inventory template.')
+      }
+      const blob = await response.blob()
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = 'peptide-ops-other-inventory.xlsx'
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      URL.revokeObjectURL(url)
+    } catch (err) {
+      toast.error(err.message)
     }
   }
 
@@ -263,11 +319,12 @@ export default function AdminWholesale() {
     if (productBusy) return
     const payload = {
       catNo: productForm.catNo.trim(),
+      barcode: productForm.barcode.trim(),
       name: productForm.name.trim(),
       strength: productForm.strength.trim(),
       vialSize: productForm.vialSize.trim(),
       price: Number(productForm.price) || 0,
-      inStock: productForm.inStock !== false,
+      stock: Math.max(0, Math.trunc(Number(productForm.stock) || 0)),
     }
     if (!payload.name && !payload.catNo) {
       toast.error('Add at least a cat. no or a name.')
@@ -311,12 +368,35 @@ export default function AdminWholesale() {
     <div className="mx-auto max-w-5xl">
       <PageHeading
         title="Secret page"
-        subtitle="Manage the private price list, its categories and access password."
+        subtitle="Manage the private price list, stock, categories and access password."
         actions={
-          <Button as="a" href="/other" target="_blank" rel="noreferrer" variant="outline" size="sm">
-            <ExternalLink className="h-4 w-4" />
-            Open secret page
-          </Button>
+          <div className="flex flex-wrap items-center gap-2">
+            <input
+              ref={fileRef}
+              type="file"
+              accept=".xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv"
+              className="hidden"
+              onChange={handleImport}
+            />
+            <Button type="button" variant="outline" size="sm" onClick={downloadTemplate}>
+              <FileSpreadsheet className="h-4 w-4" />
+              Download template
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={importing}
+              onClick={() => fileRef.current?.click()}
+            >
+              <FileSpreadsheet className="h-4 w-4" />
+              {importing ? 'Importing…' : 'Import Excel'}
+            </Button>
+            <Button as="a" href="/other" target="_blank" rel="noreferrer" variant="outline" size="sm">
+              <ExternalLink className="h-4 w-4" />
+              Open secret page
+            </Button>
+          </div>
         }
       />
 
@@ -525,7 +605,7 @@ export default function AdminWholesale() {
                   <th className="px-4 py-3">Strength</th>
                   <th className="px-4 py-3">Vial Size</th>
                   <th className="px-4 py-3 text-right">Price</th>
-                  <th className="px-4 py-3 text-center">In stock</th>
+                  <th className="px-4 py-3 text-center">Stock</th>
                   <th className="px-4 py-3 text-right">Actions</th>
                 </tr>
               </thead>
@@ -541,25 +621,16 @@ export default function AdminWholesale() {
                     <td className="px-4 py-3 text-right font-semibold text-ink">
                       {formatPrice(product.price)}
                     </td>
-                    <td className="px-4 py-3">
-                      <div className="flex justify-center">
-                        <button
-                          type="button"
-                          role="switch"
-                          aria-checked={product.inStock}
-                          aria-label={product.inStock ? 'Mark out of stock' : 'Mark in stock'}
-                          onClick={() => toggleStock(product)}
-                          className={`relative h-6 w-11 shrink-0 rounded-full transition ${
-                            product.inStock ? 'bg-cyan' : 'bg-black/15'
-                          }`}
-                        >
-                          <span
-                            className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform duration-200 ${
-                              product.inStock ? 'translate-x-5' : 'translate-x-0'
-                            }`}
-                          />
-                        </button>
-                      </div>
+                    <td className="px-4 py-3 text-center">
+                      <span
+                        className={`inline-flex min-w-8 justify-center rounded-full px-2.5 py-0.5 text-[12px] font-bold ${
+                          (product.stock || 0) > 0
+                            ? 'bg-emerald-100 text-emerald-700'
+                            : 'bg-rose-100 text-rose-700'
+                        }`}
+                      >
+                        {product.stock ?? 0}
+                      </span>
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center justify-end gap-1.5">
@@ -635,6 +706,16 @@ export default function AdminWholesale() {
               placeholder="e.g. C250"
             />
           </Field>
+          <Field
+            label="Item barcode"
+            hint="Optional. Same as main shop Excel. Leave blank to match by cat. no."
+          >
+            <Input
+              value={productForm.barcode}
+              onChange={(event) => setProductForm((f) => ({ ...f, barcode: event.target.value }))}
+              placeholder="Matches inventory software"
+            />
+          </Field>
           <Field label="Price (USD)">
             <Input
               type="number"
@@ -666,14 +747,19 @@ export default function AdminWholesale() {
               placeholder="e.g. 10ml or 100 tablets/bottle"
             />
           </Field>
-          <div className="sm:col-span-2">
-            <Toggle
-              checked={productForm.inStock !== false}
-              onChange={(value) => setProductForm((f) => ({ ...f, inStock: value }))}
-              label="In stock"
-              description="When off, the item still lists but shows as out of stock (customers order via WhatsApp)."
+          <Field
+            label="Stock quantity"
+            hint="Customers cannot order more than this. 0 = out of stock."
+          >
+            <Input
+              type="number"
+              min="0"
+              step="1"
+              value={productForm.stock}
+              onChange={(event) => setProductForm((f) => ({ ...f, stock: event.target.value }))}
+              placeholder="0"
             />
-          </div>
+          </Field>
         </div>
       </Modal>
 
