@@ -30,22 +30,25 @@ export default function CheckoutSuccessPage() {
       }
 
       try {
-        const result = await api.post('/api/payments/confirm-session', {
-          orderId,
-          sessionId,
-        })
-
-        if (!active) return
-
-        if (result.paid) {
-          clearCart()
-          setOrder(result.order)
-          setStatus('success')
-          return
+        for (let attempt = 0; attempt < 8; attempt += 1) {
+          const result = await api.post('/api/payments/confirm-session', {
+            orderId,
+            sessionId,
+          })
+          if (!active) return
+          if (result.paid) {
+            clearCart()
+            setOrder(result.order)
+            setStatus('success')
+            return
+          }
+          await new Promise((resolve) => window.setTimeout(resolve, 2500))
         }
 
         setStatus('error')
-        setMessage('Payment is still processing. Refresh this page in a moment, or check your orders.')
+        setMessage(
+          'Payment is still processing. Refresh this page in a minute, or check your orders. If Stripe shows paid, the order will be marked paid automatically.',
+        )
       } catch (err) {
         if (!active) return
         setStatus('error')

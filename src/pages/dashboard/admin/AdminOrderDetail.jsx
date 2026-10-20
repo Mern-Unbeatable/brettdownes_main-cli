@@ -197,6 +197,20 @@ export default function AdminOrderDetail() {
     }
   }
 
+  const syncStripePayment = async () => {
+    if (isStore) return
+    setBusy(true)
+    try {
+      const data = await api.post(`${apiBase}/${id}/payment/sync`)
+      setOrder(adaptOrder(data.order, isStore))
+      toast.success('Stripe confirmed the charge. Order marked paid.', { title: 'Paid' })
+    } catch (err) {
+      toast.error(err.message)
+    } finally {
+      setBusy(false)
+    }
+  }
+
   if (loading && !order) {
     return showLoader ? (
       <LoadingBlock label="Loading order" />
@@ -512,9 +526,35 @@ export default function AdminOrderDetail() {
                     <option value="REFUNDED">Refunded</option>
                   </Select>
                 ) : (
-                  <div className="flex items-center justify-between rounded-xl border border-black/8 bg-fog px-3.5 py-2.5">
-                    <Badge>{order.paymentStatus}</Badge>
-                    <span className="text-[11px] font-medium text-muted">Locked</span>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between rounded-xl border border-black/8 bg-fog px-3.5 py-2.5">
+                      <Badge>{order.paymentStatus}</Badge>
+                      <span className="text-[11px] font-medium text-muted">
+                        {order.paymentStatus === 'UNPAID' ? 'Stripe' : 'Locked'}
+                      </span>
+                    </div>
+                    {order.paymentStatus === 'UNPAID' &&
+                    !isStore &&
+                    !['CANCELLED', 'REFUNDED'].includes(order.status) ? (
+                      <>
+                        <Button
+                          variant="outline"
+                          className="w-full"
+                          disabled={busy}
+                          onClick={syncStripePayment}
+                        >
+                          {busy ? 'Checking Stripe…' : 'Sync from Stripe'}
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          className="w-full"
+                          disabled={busy}
+                          onClick={() => changePayment('PAID')}
+                        >
+                          Mark paid
+                        </Button>
+                      </>
+                    ) : null}
                   </div>
                 )}
               </div>
