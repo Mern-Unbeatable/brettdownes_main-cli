@@ -46,9 +46,8 @@ export default function Gatekeeper({ onPass, initialMode = 'verify' }) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
-  const [company, setCompany] = useState('')
+  const [name, setName] = useState('')
   const [heardAboutUs, setHeardAboutUs] = useState('')
-  const [framework, setFramework] = useState('')
   const [otp, setOtp] = useState('')
   const [otpCooldown, setOtpCooldown] = useState(0)
   const [submitted, setSubmitted] = useState(false)
@@ -785,7 +784,7 @@ html[data-gate-locked="1"] #gatekeeper-root {
 
     const value = email.trim()
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
-      toast.error('Enter a valid approved email address.')
+      toast.error('Enter a valid email address.')
       return
     }
     if (!password.trim()) {
@@ -811,7 +810,7 @@ html[data-gate-locked="1"] #gatekeeper-root {
 
     const value = email.trim()
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
-      toast.error('Enter the approved email linked to your account.')
+      toast.error('Enter the email linked to your account.')
       return
     }
 
@@ -833,12 +832,12 @@ html[data-gate-locked="1"] #gatekeeper-root {
     e.preventDefault()
     if (busy) return
 
-    if (!company.trim() || !email.trim() || !password.trim() || !framework.trim()) {
-      toast.error('Complete all registration fields to continue.')
+    if (!name.trim() || !email.trim() || !password.trim()) {
+      toast.error('Enter your name, email, and password to continue.')
       return
     }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
-      toast.error('Enter a valid institutional email address.')
+      toast.error('Enter a valid email address.')
       return
     }
     if (password.trim().length < 8) {
@@ -849,11 +848,10 @@ html[data-gate-locked="1"] #gatekeeper-root {
     setBusy(true)
     try {
       await registerStart({
-        company: company.trim(),
+        name: name.trim(),
         email: email.trim().toLowerCase(),
         password,
         ...(heardAboutUs.trim() ? { heardAboutUs: heardAboutUs.trim() } : {}),
-        researchFramework: framework.trim(),
       })
       setOtp('')
       setOtpCooldown(60)
@@ -917,16 +915,16 @@ html[data-gate-locked="1"] #gatekeeper-root {
   const welcomeCopy =
     mode === 'register' || mode === 'otp'
       ? {
-          title: mode === 'otp' ? 'Verify email' : 'Join the network',
+          title: mode === 'otp' ? 'Verify email' : 'Create an account',
           text:
             mode === 'otp'
               ? 'Enter the one-time code we sent to confirm your address.'
-              : 'Create a verified research account to request compounds.',
+              : 'A short form — then we email a code to verify your address.',
         }
       : mode === 'reset'
         ? {
             title: 'Reset access',
-            text: 'We email a secure reset link to your approved address.',
+            text: 'We email a secure reset link to your address.',
           }
         : {
             title: 'Welcome',
@@ -994,23 +992,23 @@ html[data-gate-locked="1"] #gatekeeper-root {
             data-gate-enter
             className="font-display text-[14px] font-bold tracking-tight text-white uppercase sm:text-[18px] md:text-[20px] xl:text-[22px]"
           >
-            Portal Verification
+            Sign in
           </h1>
           <p data-gate-enter className="mt-0.5 max-w-md text-[9px] leading-snug text-white/80 sm:mt-1 sm:text-[11px] md:text-[12px]">
-            Enter your approved research email to unlock the catalog.
+            Use the email and password for your account.
           </p>
 
           <form data-gate-enter onSubmit={handleVerify} className="mt-1 w-full space-y-1 sm:mt-2 sm:space-y-2 md:mt-2.5">
             <label className="block">
               <span className="mb-0.5 block text-[8px] font-bold tracking-[0.18em] text-white uppercase sm:mb-1 sm:text-[10px]">
-                Approved Email Address
+                Email address
               </span>
               <input
                 type="email"
                 autoComplete="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="name@institution.com"
+                placeholder="you@example.com"
                 className="gate-input w-full rounded-lg border border-white/20 bg-white/[0.06] px-3 py-1.5 text-[12px] outline-none transition placeholder:text-white/40 focus:border-white/50 focus:bg-white/[0.08] sm:px-3.5 sm:py-2 sm:text-[13px]"
               />
             </label>
@@ -1075,8 +1073,7 @@ html[data-gate-locked="1"] #gatekeeper-root {
               Password Recovery
             </p>
             <p className="mt-1 text-[10px] leading-snug text-white md:mt-2 md:text-[13px] md:leading-relaxed">
-              Enter your approved research email. If an account exists, a secure reset link will be sent within a few
-              minutes.
+              Enter your email address. If an account exists, a secure reset link will be sent within a few minutes.
             </p>
           </div>
 
@@ -1118,14 +1115,14 @@ html[data-gate-locked="1"] #gatekeeper-root {
             <form data-gate-enter onSubmit={handleReset} className="mt-1.5 w-full space-y-1.5 md:mt-3 md:space-y-2">
               <label className="block">
                 <span className="mb-0.5 block text-[8px] font-bold tracking-[0.18em] text-white uppercase md:mb-1 md:text-[10px]">
-                  Approved Email Address
+                  Email address
                 </span>
                 <input
                   type="email"
                   autoComplete="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="name@institution.com"
+                  placeholder="you@example.com"
                   className="gate-input w-full rounded-lg border border-white/20 bg-white/[0.06] px-3 py-2 text-[13px] outline-none transition placeholder:text-white/40 focus:border-white/50 focus:bg-white/[0.08] md:px-3.5 md:py-2 md:text-[13px]"
                 />
               </label>
@@ -1234,20 +1231,35 @@ html[data-gate-locked="1"] #gatekeeper-root {
         </>
       ) : (
         <>
+          <div
+            data-gate-enter
+            className="mb-1 w-full rounded-xl border border-white/15 bg-white/10 p-1.5 text-left backdrop-blur-sm sm:mb-2 sm:rounded-2xl sm:p-2 md:mb-2.5 md:p-2.5"
+          >
+            <p className="font-display text-[8px] font-bold tracking-[0.18em] text-white uppercase sm:text-[10px]">
+              Registration Notice
+            </p>
+            <ul className="mt-0.5 space-y-0.5 sm:mt-1 sm:space-y-1">
+              {notices.map((item) => (
+                <li key={item.title} className="text-[9px] leading-snug text-white sm:text-[11px] sm:leading-snug md:text-[12px]">
+                  <span className="font-semibold">{item.title}:</span> {item.text}
+                </li>
+              ))}
+            </ul>
+          </div>
           <p
             data-gate-enter
             className="font-display text-[7px] font-bold tracking-[0.16em] text-white uppercase sm:text-[8px] md:text-[11px]"
           >
-            Secure Onboarding
+            Create account
           </p>
           <h1
             data-gate-enter
             className="mt-0.5 font-display text-[13px] font-bold tracking-tight text-white uppercase whitespace-nowrap sm:text-[15px] md:mt-1.5 md:text-[20px] xl:text-[22px]"
           >
-            Account Registration
+            Register
           </h1>
           <p data-gate-enter className="mt-0.5 max-w-md text-[9px] leading-snug text-white/80 sm:text-[10px] md:mt-1 md:text-[12px]">
-            We email a one-time code to verify your address, then apply access settings.
+            For research use only, business-to-business. We email a one-time code to verify your address.
           </p>
 
           {submitted ? (
@@ -1277,25 +1289,27 @@ html[data-gate-locked="1"] #gatekeeper-root {
             <form data-gate-enter onSubmit={handleRegister} className="mt-1.5 w-full space-y-1 sm:space-y-1.5 md:mt-3 md:space-y-2">
               <label className="block">
                 <span className="mb-0.5 block text-[7px] font-bold tracking-[0.16em] text-white uppercase sm:text-[8px] md:mb-1 md:text-[10px]">
-                  Company / Institution Name
+                  Name
                 </span>
                 <input
                   type="text"
-                  value={company}
-                  onChange={(e) => setCompany(e.target.value)}
-                  placeholder="Company, LLC, or Individual Research Identity"
+                  autoComplete="name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Your name"
                   className="gate-input w-full rounded-lg border border-white/20 bg-white/[0.06] px-2.5 py-1 text-[11px] outline-none transition placeholder:text-white/40 focus:border-white/50 sm:px-3 sm:py-1.5 sm:text-[12px] md:px-3.5 md:py-2 md:text-[13px]"
                 />
               </label>
               <label className="block">
                 <span className="mb-0.5 block text-[7px] font-bold tracking-[0.16em] text-white uppercase sm:text-[8px] md:mb-1 md:text-[10px]">
-                  Institutional Email
+                  Email address
                 </span>
                 <input
                   type="email"
+                  autoComplete="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="name@institution.com"
+                  placeholder="you@example.com"
                   className="gate-input w-full rounded-lg border border-white/20 bg-white/[0.06] px-2.5 py-1 text-[11px] outline-none transition placeholder:text-white/40 focus:border-white/50 sm:px-3 sm:py-1.5 sm:text-[12px] md:px-3.5 md:py-2 md:text-[13px]"
                 />
               </label>
@@ -1342,25 +1356,13 @@ html[data-gate-locked="1"] #gatekeeper-root {
                   </button>
                 </div>
               </label>
-              <label className="block">
-                <span className="mb-0.5 block text-[7px] font-bold tracking-[0.16em] text-white uppercase sm:text-[8px] md:mb-1 md:text-[10px]">
-                  Intended Evaluation Framework
-                </span>
-                <textarea
-                  rows={2}
-                  value={framework}
-                  onChange={(e) => setFramework(e.target.value)}
-                  placeholder="Briefly describe your research protocol or intended use."
-                  className="gate-input min-h-[48px] max-h-[64px] w-full resize-none rounded-lg border border-white/20 bg-white/[0.06] px-2.5 py-1.5 text-[11px] outline-none transition placeholder:text-white/40 focus:border-white/50 sm:min-h-[48px] sm:max-h-[56px] sm:px-3 sm:py-1.5 sm:text-[12px] md:min-h-[44px] md:max-h-[52px] md:px-3.5 md:py-2 md:text-[13px]"
-                />
-              </label>
               <button
                 type="submit"
                 disabled={busy}
                 className="flex w-full items-center justify-center gap-1.5 rounded-xl bg-cyan px-4 py-2 text-[11px] font-bold tracking-[0.08em] text-navy uppercase transition hover:brightness-110 disabled:opacity-60 sm:gap-2 sm:text-[12px] md:text-[13px]"
               >
                 <Sparkles className="h-3.5 w-3.5 sm:h-4 sm:w-4" strokeWidth={2.2} />
-                {busy ? 'Submitting…' : 'Submit Registration'}
+                {busy ? 'Submitting…' : 'Continue'}
               </button>
               <button
                 type="button"
