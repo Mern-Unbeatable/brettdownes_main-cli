@@ -134,7 +134,7 @@ function TelegramButton({ url, className = '' }) {
       href={url}
       target="_blank"
       rel="noopener noreferrer"
-      className={`inline-flex items-center gap-2 rounded-xl border border-[#2AABEE]/40 bg-[#2AABEE]/10 px-3.5 py-2 text-[12px] font-semibold text-[#2AABEE] transition hover:bg-[#2AABEE]/20 ${className}`}
+      className={`inline-flex shrink-0 items-center gap-2 rounded-xl border border-[#2AABEE]/40 bg-[#2AABEE]/10 px-3.5 py-2 text-[12px] font-semibold text-[#2AABEE] transition hover:bg-[#2AABEE]/20 ${className}`}
     >
       <Send className="h-4 w-4" />
       Telegram
@@ -154,7 +154,7 @@ function WhatsAppContactButton({ className = '' }) {
       href={gateWhatsAppHref()}
       target="_blank"
       rel="noopener noreferrer"
-      className={`inline-flex items-center gap-2 rounded-xl border border-[#25D366]/40 bg-[#25D366]/10 px-3.5 py-2 text-[12px] font-semibold text-[#25D366] transition hover:bg-[#25D366]/20 ${className}`}
+      className={`inline-flex shrink-0 items-center gap-2 rounded-xl border border-[#25D366]/40 bg-[#25D366]/10 px-3.5 py-2 text-[12px] font-semibold text-[#25D366] transition hover:bg-[#25D366]/20 ${className}`}
     >
       <WhatsAppGlyph className="h-4 w-4" />
       WhatsApp
@@ -229,10 +229,6 @@ function LockScreen({ onUnlock }) {
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-          onFocus={() => setKeyboardOpen(true)}
-          onBlur={(event) => {
-            if (!event.currentTarget.contains(event.relatedTarget)) setKeyboardOpen(false)
-          }}
           className="w-full max-w-md"
         >
           <div className="flex flex-col items-center text-center">
@@ -268,11 +264,13 @@ function LockScreen({ onUnlock }) {
                     if (error) setError('')
                   }}
                   onFocus={(event) => {
+                    setKeyboardOpen(true)
                     const el = event.currentTarget
                     window.setTimeout(() => {
                       el.scrollIntoView({ block: 'center', behavior: 'smooth' })
                     }, 300)
                   }}
+                  onBlur={() => setKeyboardOpen(false)}
                   placeholder="Enter password"
                   autoComplete="current-password"
                   name="private-access"
@@ -315,17 +313,20 @@ function LockScreen({ onUnlock }) {
               )}
               {busy ? 'Unlocking…' : 'Unlock Access'}
             </button>
-
-            <div className="mt-4 border-t border-white/10 pt-4 sm:mt-5">
-              <p className="text-center text-[11px] font-semibold leading-snug tracking-[0.03em] text-cyan sm:text-[12px] [text-shadow:0_0_6px_rgba(0,245,212,0.95),0_0_18px_rgba(0,245,212,0.55),0_0_36px_rgba(0,245,212,0.25)]">
-                Referred here or need the password? Message us for the current access code.
-              </p>
-              <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
-                <TelegramButton url={telegramUrl} />
-                <WhatsAppContactButton />
-              </div>
-            </div>
           </form>
+
+          <div className="mt-4 rounded-2xl border border-cyan/30 bg-cyan/[0.07] px-3 py-3 shadow-[0_0_24px_rgba(0,245,212,0.12)] sm:mt-5 sm:px-4 sm:py-3.5">
+            <p className="text-center text-[10px] leading-tight whitespace-nowrap text-white/90 sm:text-[11px]">
+              <span className="text-cyan [text-shadow:0_0_12px_rgba(0,245,212,0.65)]">
+                Referred here or need the password?
+              </span>{' '}
+              Message us for the current access code.
+            </p>
+            <div className="mt-3 flex min-h-[40px] flex-nowrap items-center justify-center gap-2">
+              {telegramUrl ? <TelegramButton url={telegramUrl} /> : null}
+              <WhatsAppContactButton />
+            </div>
+          </div>
 
           <p className="mt-3 flex items-center justify-center gap-2 text-[10px] font-medium tracking-[0.04em] text-white/40 sm:mt-5 sm:text-[11px]">
             <ShieldCheck className="h-4 w-4 text-cyan/70" />
