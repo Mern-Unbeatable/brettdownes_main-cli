@@ -317,7 +317,7 @@ function LockScreen({ onUnlock }) {
             </button>
 
             <div className="mt-4 border-t border-white/10 pt-4 sm:mt-5">
-              <p className="text-center text-[11px] leading-snug text-white/55">
+              <p className="text-center text-[11px] font-semibold leading-snug tracking-[0.03em] text-cyan sm:text-[12px] [text-shadow:0_0_6px_rgba(0,245,212,0.95),0_0_18px_rgba(0,245,212,0.55),0_0_36px_rgba(0,245,212,0.25)]">
                 Referred here or need the password? Message us for the current access code.
               </p>
               <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
