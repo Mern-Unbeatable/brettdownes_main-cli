@@ -142,6 +142,26 @@ function TelegramButton({ url, className = '' }) {
   )
 }
 
+function gateWhatsAppHref() {
+  const text =
+    'Hi — I need the private store access password (I was referred or the password may have changed).'
+  return `https://wa.me/${siteContact.whatsapp}?text=${encodeURIComponent(text)}`
+}
+
+function WhatsAppContactButton({ className = '' }) {
+  return (
+    <a
+      href={gateWhatsAppHref()}
+      target="_blank"
+      rel="noopener noreferrer"
+      className={`inline-flex items-center gap-2 rounded-xl border border-[#25D366]/40 bg-[#25D366]/10 px-3.5 py-2 text-[12px] font-semibold text-[#25D366] transition hover:bg-[#25D366]/20 ${className}`}
+    >
+      <WhatsAppGlyph className="h-4 w-4" />
+      WhatsApp
+    </a>
+  )
+}
+
 /* ------------------------------------------------------------------ */
 /* Lock screen                                                         */
 /* ------------------------------------------------------------------ */
@@ -152,6 +172,20 @@ function LockScreen({ onUnlock }) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [keyboardOpen, setKeyboardOpen] = useState(false)
+  const [telegramUrl, setTelegramUrl] = useState('')
+
+  useEffect(() => {
+    let cancelled = false
+    api
+      .get('/api/wholesale/gate')
+      .then((res) => {
+        if (!cancelled) setTelegramUrl(String(res.telegramUrl || '').trim())
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   const submit = async (event) => {
     event.preventDefault()
@@ -281,6 +315,16 @@ function LockScreen({ onUnlock }) {
               )}
               {busy ? 'Unlocking…' : 'Unlock Access'}
             </button>
+
+            <div className="mt-4 border-t border-white/10 pt-4 sm:mt-5">
+              <p className="text-center text-[11px] leading-snug text-white/55">
+                Referred here or need the password? Message us for the current access code.
+              </p>
+              <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
+                <TelegramButton url={telegramUrl} />
+                <WhatsAppContactButton />
+              </div>
+            </div>
           </form>
 
           <p className="mt-3 flex items-center justify-center gap-2 text-[10px] font-medium tracking-[0.04em] text-white/40 sm:mt-5 sm:text-[11px]">
