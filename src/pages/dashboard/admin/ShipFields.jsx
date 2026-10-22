@@ -7,7 +7,7 @@ function filled(value) {
   return text && text !== '—' && text !== '-'
 }
 
-export function shipRows(order) {
+export function shipRows(order, { customer = false } = {}) {
   const method =
     [order.carrier, order.service].filter(Boolean).join(' ') ||
     (order.shippingLabel ? String(order.shippingLabel) : '')
@@ -15,22 +15,36 @@ export function shipRows(order) {
     ? `${order.parcel.length} × ${order.parcel.width} × ${order.parcel.height} in · ${order.parcel.weightOz} oz`
     : ''
 
-  return [
-    ['Queue', order.queueNumber],
-    ['Order', order.orderNumber],
-    ['Method', method],
-    ['Shipping paid', Number.isFinite(order.shippingCents) ? formatCents(order.shippingCents) : ''],
-    ['Package', parcel],
-    ['Name', order.contactName],
-    ['Phone', order.contactPhone],
-    ['Email', order.contactEmail],
-    ['Address', order.address?.line1],
-    ['Address 2', order.address?.line2],
-    ['City', order.address?.city],
-    ['State', order.address?.state],
-    ['Zip', order.address?.zip],
-    ['Country', order.address?.country],
-  ].filter(([, value]) => filled(value))
+  const rows = customer
+    ? [
+        ['Name', order.contactName],
+        ['Phone', order.contactPhone],
+        ['Email', order.contactEmail],
+        ['Address', order.address?.line1],
+        ['Address 2', order.address?.line2],
+        ['City', order.address?.city],
+        ['State', order.address?.state],
+        ['Zip', order.address?.zip],
+        ['Country', order.address?.country],
+      ]
+    : [
+        ['Queue', order.queueNumber],
+        ['Order', order.orderNumber],
+        ['Method', method],
+        ['Shipping paid', Number.isFinite(order.shippingCents) ? formatCents(order.shippingCents) : ''],
+        ['Package', parcel],
+        ['Name', order.contactName],
+        ['Phone', order.contactPhone],
+        ['Email', order.contactEmail],
+        ['Address', order.address?.line1],
+        ['Address 2', order.address?.line2],
+        ['City', order.address?.city],
+        ['State', order.address?.state],
+        ['Zip', order.address?.zip],
+        ['Country', order.address?.country],
+      ]
+
+  return rows.filter(([, value]) => filled(value))
 }
 
 function CopyValue({ label, value }) {

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { ExternalLink, Search } from 'lucide-react'
+import { ExternalLink, Search, Star } from 'lucide-react'
 import { api, assetUrl, formatCents } from '../../../lib/api'
 import {
   Badge,
@@ -144,7 +144,7 @@ export default function UserOrders() {
               </ul>
 
               <div className="flex flex-wrap items-center justify-between gap-3 border-t border-black/6 bg-fog/50 px-5 py-4">
-                <div className="text-[12px] text-muted">
+                <div className="min-w-0 flex-1 text-[12px] text-muted">
                   {order.trackingCode ? (
                     <span>
                       {order.carrier} {order.service} ·{' '}
@@ -160,7 +160,24 @@ export default function UserOrders() {
                     'Tracking appears once the label is created'
                   )}
                 </div>
-                  <div className="flex items-center gap-2">
+                {order.status === 'DELIVERED' && order.paymentStatus === 'PAID' ? (
+                  order.reviewClaimStatus === 'APPROVED' ? (
+                    <p className="text-[12px] font-semibold text-emerald-600">$5 review credit added</p>
+                  ) : order.reviewClaimStatus === 'PENDING' ? (
+                    <p className="text-[12px] font-semibold text-amber-700">Review submitted</p>
+                  ) : (
+                    <Button
+                      as={Link}
+                      to={`/dashboard/reviews?order=${order.id}`}
+                      variant="outline"
+                      size="sm"
+                    >
+                      <Star className="h-3.5 w-3.5" />
+                      Review and get $5
+                    </Button>
+                  )
+                ) : null}
+                <div className="flex items-center gap-2">
                   {order.trackingUrl ? (
                     <Button
                       as="a"

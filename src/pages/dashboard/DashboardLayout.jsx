@@ -14,20 +14,24 @@ import {
   Package,
   Settings,
   ShoppingBag,
+  Star,
   User,
   Users,
   X,
 } from 'lucide-react'
+import { api } from '../../lib/api'
 import { useAuth } from '../../context/AuthContext'
 import { useToast } from '../../components/Toaster'
 import { lockBodyScroll, unlockBodyScroll } from '../../hooks/lockBodyScroll'
 import Seo from '../../components/Seo'
 import { pageSeo } from '../../data/seo'
+import DashboardSupport from './DashboardSupport'
 
 const NAV = {
   user: [
     { to: '/dashboard', end: true, label: 'Overview', icon: LayoutDashboard },
     { to: '/dashboard/orders', label: 'My orders', icon: Package },
+    { to: '/dashboard/reviews', label: 'Review credit', icon: Star },
     { to: '/dashboard/profile', label: 'Profile', icon: User },
     { to: '/dashboard/settings', label: 'Settings', icon: Settings },
   ],
@@ -39,6 +43,7 @@ const NAV = {
     { to: '/admin/store-orders', label: 'Other orders', icon: ClipboardList },
     { to: '/admin/orders', label: 'Orders', icon: Package },
     { to: '/admin/customers', label: 'Customers', icon: Users },
+    { to: '/admin/reviews', label: 'Review credit', icon: Star },
     { to: '/admin/discounts', label: 'Discounts & coupons', icon: BadgePercent },
     { to: '/admin/settings', label: 'Settings', icon: Settings },
     { to: '/admin/profile', label: 'Profile', icon: User },
@@ -47,27 +52,27 @@ const NAV = {
 
 const SIDEBAR_KEY = 'peptide-ops-sidebar-collapsed'
 
-function SidebarContent({ scope, collapsed, onNavigate, user, isAdmin, onLogout }) {
+function SidebarContent({ scope, collapsed, onNavigate, user, isAdmin, onLogout, reviewPending = 0 }) {
   const items = NAV[scope] || NAV.user
   const portalLabel = isAdmin && scope === 'admin' ? 'Admin portal' : 'Research portal'
 
   return (
     <div className="flex h-full flex-col">
       <div
-        className={`flex shrink-0 flex-col items-center border-b border-white/8 px-3 pt-3 pb-2 xl:pt-4 xl:pb-3 ${
-          collapsed ? 'lg:px-1.5 lg:pt-3 lg:pb-2.5' : ''
+        className={`flex shrink-0 flex-col items-center border-b border-white/8 px-3 pt-2.5 pb-1.5 ${
+          collapsed ? 'lg:px-1.5 lg:pt-2.5 lg:pb-2' : ''
         }`}
       >
         <Link
           to="/"
           onClick={onNavigate}
-          className="flex w-full flex-col items-center gap-1 text-center xl:gap-1.5"
+          className="flex w-full flex-col items-center gap-1 text-center"
         >
           <img
             src="/images/logo.png"
             alt="Peptide Ops"
             className={`object-contain object-center ${
-              collapsed ? 'h-11 w-11' : 'h-11 w-auto max-w-[7rem] xl:h-16 xl:max-w-[9rem]'
+              collapsed ? 'h-10 w-10' : 'h-10 w-auto max-w-[6.75rem] xl:h-[54px] xl:max-w-[8.25rem]'
             }`}
             draggable={false}
           />
@@ -79,7 +84,7 @@ function SidebarContent({ scope, collapsed, onNavigate, user, isAdmin, onLogout 
         </Link>
       </div>
 
-      <nav className="scrollbar-slim flex-1 space-y-0.5 overflow-y-auto p-2 xl:space-y-1 xl:p-3">
+      <nav className="flex flex-1 flex-col justify-center space-y-0.5 overflow-y-auto p-2 lg:overflow-hidden">
         {items.map((item) => (
           <NavLink
             key={item.to}
@@ -88,7 +93,7 @@ function SidebarContent({ scope, collapsed, onNavigate, user, isAdmin, onLogout 
             onClick={onNavigate}
             title={collapsed ? item.label : undefined}
             className={({ isActive }) =>
-              `group relative flex items-center gap-3 rounded-xl px-3 py-2 text-[13px] font-medium transition xl:py-2.5 ${
+              `group relative flex items-center gap-3 rounded-xl px-3 py-2 text-[13px] font-medium transition ${
                 collapsed ? 'lg:justify-center lg:px-2' : ''
               } ${
                 isActive
@@ -99,16 +104,26 @@ function SidebarContent({ scope, collapsed, onNavigate, user, isAdmin, onLogout 
           >
             <item.icon className="h-[18px] w-[18px] shrink-0" strokeWidth={1.8} />
             {!collapsed ? <span className="truncate">{item.label}</span> : null}
+            {item.to === '/admin/reviews' && reviewPending > 0 ? (
+              <span
+                className={`ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-rose-500 px-1.5 text-[10px] font-bold text-white ${
+                  collapsed ? 'lg:absolute lg:top-1 lg:right-1 lg:ml-0' : ''
+                }`}
+              >
+                {reviewPending > 99 ? '99+' : reviewPending}
+              </span>
+            ) : null}
           </NavLink>
         ))}
       </nav>
 
-      <div className="shrink-0 space-y-0.5 border-t border-white/8 p-2 xl:space-y-1 xl:p-3">
+      <div className="shrink-0 space-y-0.5 border-t border-white/8 p-2">
+        {scope === 'user' ? <DashboardSupport collapsed={collapsed} /> : null}
         <Link
           to="/shop"
           onClick={onNavigate}
           title={collapsed ? 'Back to shop' : undefined}
-          className={`flex items-center gap-3 rounded-xl px-3 py-2 text-[13px] font-medium text-white/70 transition hover:bg-white/8 hover:text-white xl:py-2.5 ${
+          className={`flex items-center gap-3 rounded-xl px-3 py-2 text-[13px] font-medium text-white/70 transition hover:bg-white/8 hover:text-white ${
             collapsed ? 'lg:justify-center lg:px-2' : ''
           }`}
         >
@@ -119,7 +134,7 @@ function SidebarContent({ scope, collapsed, onNavigate, user, isAdmin, onLogout 
           type="button"
           onClick={onLogout}
           title={collapsed ? 'Log out' : undefined}
-          className={`flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-[13px] font-medium text-white/70 transition hover:bg-white/8 hover:text-white xl:py-2.5 ${
+          className={`flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-[13px] font-medium text-white/70 transition hover:bg-white/8 hover:text-white ${
             collapsed ? 'lg:justify-center lg:px-2' : ''
           }`}
         >
@@ -128,7 +143,7 @@ function SidebarContent({ scope, collapsed, onNavigate, user, isAdmin, onLogout 
         </button>
 
         {!collapsed ? (
-          <div className="mt-1 hidden items-center gap-2.5 rounded-xl bg-white/5 px-3 py-2 [@media(min-height:760px)]:flex xl:mt-2 xl:py-2.5">
+          <div className="mt-1 hidden items-center gap-2.5 rounded-xl bg-white/5 px-3 py-2 [@media(min-height:820px)]:flex">
             <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-cyan text-navy">
               <User className="h-4 w-4" strokeWidth={1.8} />
             </span>
@@ -151,6 +166,7 @@ export default function DashboardLayout({ scope = 'user' }) {
   const toast = useToast()
   const location = useLocation()
 
+  const [reviewPending, setReviewPending] = useState(0)
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [collapsed, setCollapsed] = useState(() => {
     try {
@@ -175,6 +191,30 @@ export default function DashboardLayout({ scope = 'user' }) {
   }, [drawerOpen])
 
   useEffect(() => {
+    if (scope !== 'admin' || !isAdmin) return undefined
+    let cancelled = false
+    const loadCount = () => {
+      api
+        .get('/api/admin/reviews/count')
+        .then((result) => {
+          if (!cancelled) setReviewPending(Number(result.pending) || 0)
+        })
+        .catch(() => {})
+    }
+    const onPending = (event) => {
+      if (!cancelled) setReviewPending(Number(event.detail?.pending) || 0)
+    }
+    loadCount()
+    window.addEventListener('peptide:review-pending', onPending)
+    const timer = window.setInterval(loadCount, 20000)
+    return () => {
+      cancelled = true
+      window.removeEventListener('peptide:review-pending', onPending)
+      window.clearInterval(timer)
+    }
+  }, [scope, isAdmin, location.pathname])
+
+  useEffect(() => {
     setDrawerOpen(false)
     // Instant jump — avoid smooth-scroll + fade flash when opening an order
     window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
@@ -191,6 +231,7 @@ export default function DashboardLayout({ scope = 'user' }) {
     user,
     isAdmin,
     onLogout: handleLogout,
+    reviewPending,
   }
 
   return (

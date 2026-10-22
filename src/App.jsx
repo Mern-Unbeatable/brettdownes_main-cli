@@ -40,6 +40,7 @@ const CheckoutCancelPage = lazy(() => import('./pages/CheckoutCancelPage'))
 const DashboardLayout = lazy(() => import('./pages/dashboard/DashboardLayout'))
 const UserOverview = lazy(() => import('./pages/dashboard/user/UserOverview'))
 const UserOrders = lazy(() => import('./pages/dashboard/user/UserOrders'))
+const UserReviews = lazy(() => import('./pages/dashboard/user/UserReviews'))
 const UserOrderDetail = lazy(() => import('./pages/dashboard/user/UserOrderDetail'))
 const UserProfile = lazy(() => import('./pages/dashboard/user/UserProfile'))
 const AdminProfile = lazy(() => import('./pages/dashboard/admin/AdminProfile'))
@@ -50,6 +51,7 @@ const AdminProductEditor = lazy(() => import('./pages/dashboard/admin/AdminProdu
 const AdminOrders = lazy(() => import('./pages/dashboard/admin/AdminOrders'))
 const AdminOrderDetail = lazy(() => import('./pages/dashboard/admin/AdminOrderDetail'))
 const AdminCustomers = lazy(() => import('./pages/dashboard/admin/AdminCustomers'))
+const AdminReviews = lazy(() => import('./pages/dashboard/admin/AdminReviews'))
 const AdminSettings = lazy(() => import('./pages/dashboard/admin/AdminSettings'))
 const AdminDiscounts = lazy(() => import('./pages/dashboard/admin/AdminDiscounts'))
 const AdminCoa = lazy(() => import('./pages/dashboard/admin/AdminCoa'))
@@ -224,6 +226,7 @@ function AppShell() {
               <Route path="/dashboard" element={<DashboardLayout scope="user" />}>
                 <Route index element={<UserOverview />} />
                 <Route path="orders" element={<UserOrders />} />
+                <Route path="reviews" element={<UserReviews />} />
                 <Route path="orders/:id" element={<UserOrderDetail />} />
                 <Route path="profile" element={<UserProfile />} />
                 <Route path="settings" element={<UserSettings />} />
@@ -243,6 +246,7 @@ function AppShell() {
                 <Route path="orders" element={<AdminOrders />} />
                 <Route path="orders/:id" element={<AdminOrderDetail />} />
                 <Route path="customers" element={<AdminCustomers />} />
+                <Route path="reviews" element={<AdminReviews />} />
                 <Route path="discounts" element={<AdminDiscounts />} />
                 <Route path="settings" element={<AdminSettings />} />
                 <Route path="profile" element={<AdminProfile />} />

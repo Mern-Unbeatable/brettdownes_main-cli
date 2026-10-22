@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, ExternalLink, MapPin, Truck } from 'lucide-react'
 import { api, assetUrl, formatCents } from '../../../lib/api'
+import ShipFields from '../admin/ShipFields'
 import { useToast } from '../../../components/Toaster'
 import {
   Badge,
@@ -13,6 +14,8 @@ import {
   Reveal,
   formatDate,
 } from '../ui'
+
+const RUO = 'For Research Use Only; Not for Human Consumption.'
 
 export default function UserOrderDetail() {
   const { id } = useParams()
@@ -257,20 +260,8 @@ export default function UserOrderDetail() {
               <MapPin className="h-4 w-4 text-cyan-dim" />
               {order.fulfillment === 'PICKUP' ? 'Contact' : 'Delivery address'}
             </h2>
-            <div className="space-y-1 text-[13px] text-muted">
-              <p className="font-medium text-ink">{order.contactName}</p>
-              <p>{order.contactEmail}</p>
-              <p>{order.contactPhone}</p>
-              {order.address ? (
-                <div className="mt-3 border-t border-black/6 pt-3">
-                  <p>{order.address.line1}</p>
-                  {order.address.line2 ? <p>{order.address.line2}</p> : null}
-                  <p>
-                    {order.address.city}, {order.address.state} {order.address.zip}
-                  </p>
-                </div>
-              ) : null}
-            </div>
+            <ShipFields order={order} customer />
+            <p className="mt-3 text-[11px] leading-relaxed text-muted">{RUO}</p>
           </Card>
 
           {order.notes ? (
@@ -279,16 +270,6 @@ export default function UserOrderDetail() {
               <p className="text-[13px] leading-relaxed text-muted">{order.notes}</p>
             </Card>
           ) : null}
-
-          <Card>
-            <p className="text-[12px] leading-relaxed text-muted">
-              Need help with this order?{' '}
-              <Link to="/contact" className="font-semibold text-cyan-dim hover:text-ink">
-                Contact the team
-              </Link>
-              . For Research Use Only; Not for Human Consumption.
-            </p>
-          </Card>
         </div>
       </Reveal>
     </>

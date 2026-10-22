@@ -1,4 +1,4 @@
-import { Fragment, useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { ChevronLeft, ChevronRight, Download, Eye, Search } from 'lucide-react'
 import ShipFields from './ShipFields'
@@ -130,8 +130,7 @@ function NewOrdersPanel() {
                 </thead>
                 <tbody className="divide-y divide-black/5">
                   {orders.map((order) => (
-                    <Fragment key={order.id}>
-                    <tr className="transition hover:bg-fog/50">
+                    <tr key={order.id} className="transition hover:bg-fog/50">
                       <td className="px-5 py-3.5 font-display text-[16px] font-bold text-ink">
                         {order.queueNumber}
                       </td>
@@ -159,12 +158,6 @@ function NewOrdersPanel() {
                         </Link>
                       </td>
                     </tr>
-                    <tr className="hover:bg-transparent">
-                      <td colSpan={6} className="px-5 pt-0 pb-4">
-                        <ShipFields order={order} />
-                      </td>
-                    </tr>
-                    </Fragment>
                   ))}
                 </tbody>
               </table>
@@ -183,9 +176,6 @@ function NewOrdersPanel() {
                       {formatCents(order.shippingCents)}
                     </p>
                   </Link>
-                  <div className="px-5 pb-4">
-                    <ShipFields order={order} />
-                  </div>
                 </li>
               ))}
             </ul>

@@ -39,6 +39,13 @@ export default function UserOverview() {
 
   const { orders = [], stats = {} } = data || {}
   const recent = orders.slice(0, 5)
+  const canClaimReview = orders.some(
+    (order) =>
+      order.status === 'DELIVERED' &&
+      order.paymentStatus === 'PAID' &&
+      order.reviewClaimStatus !== 'APPROVED' &&
+      order.reviewClaimStatus !== 'PENDING',
+  )
 
   return (
     <>
@@ -71,6 +78,23 @@ export default function UserOverview() {
           icon={Wallet}
         />
       </Reveal>
+
+      {canClaimReview ? (
+        <Link
+          to="/dashboard/reviews"
+          className="mt-5 flex items-center justify-between gap-3 rounded-2xl border border-cyan/30 bg-cyan/10 px-5 py-4 transition hover:bg-cyan/15"
+        >
+          <span>
+            <span className="block font-display text-[15px] font-bold text-ink">
+              Claim $5 for a Trustpilot review
+            </span>
+            <span className="mt-0.5 block text-[12px] text-muted">
+              Your delivered orders are ready. Verify the review email, then we add account credit.
+            </span>
+          </span>
+          <ArrowRight className="h-4 w-4 shrink-0 text-ink" />
+        </Link>
+      ) : null}
 
       <div className="mt-6">
         <Card padded={false}>
