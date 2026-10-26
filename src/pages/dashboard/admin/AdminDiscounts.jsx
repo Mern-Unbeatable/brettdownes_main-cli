@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { BadgePercent, Gift, Pencil, Plus, Tag, Trash2 } from 'lucide-react'
+import { BadgePercent, Gift, Pencil, Plus, Search, Tag, Trash2 } from 'lucide-react'
 import { api, formatCents } from '../../../lib/api'
 import { useToast } from '../../../components/Toaster'
 import {
@@ -54,6 +54,7 @@ export default function AdminDiscounts() {
   const [error, setError] = useState(null)
   const [couponDraft, setCouponDraft] = useState(null)
   const [bogoDraft, setBogoDraft] = useState(null)
+  const [bogoProductSearch, setBogoProductSearch] = useState('')
   const [saving, setSaving] = useState(false)
 
   const load = useCallback(() => {
@@ -151,10 +152,19 @@ export default function AdminDiscounts() {
   const saveBogo = async () => {
     const draft = bogoDraft
     if (!draft) return
+    const name = draft.name.trim()
+    if (!name) {
+      toast.error('Enter a promotion name. The gray example text is not filled in automatically.')
+      return
+    }
+    if (!draft.productIds.length) {
+      toast.error('Select at least one eligible product.')
+      return
+    }
     setSaving(true)
     try {
       const payload = {
-        name: draft.name.trim(),
+        name,
         enabled: draft.enabled,
         productIds: draft.productIds,
         startsAt: draft.startsAt || null,
@@ -209,6 +219,18 @@ export default function AdminDiscounts() {
     return products.filter((product) => ids.has(product.id)).map((product) => product.name)
   }, [bogoDraft, products])
 
+  const filteredBogoProducts = useMemo(() => {
+    const q = bogoProductSearch.trim().toLowerCase()
+    if (!q) return products
+    return products.filter(
+      (product) =>
+        product.name.toLowerCase().includes(q) ||
+        String(product.slug || '')
+          .toLowerCase()
+          .includes(q),
+    )
+  }, [products, bogoProductSearch])
+
   if (loading) return <LoadingBlock label="Loading discounts" />
   if (error) return <ErrorBlock message={error} onRetry={load} />
 
@@ -223,7 +245,12 @@ export default function AdminDiscounts() {
               <Plus className="h-4 w-4" /> New coupon
             </Button>
           ) : tab === 'bogo' ? (
-            <Button onClick={() => setBogoDraft({ ...EMPTY_BOGO })}>
+            <Button
+              onClick={() => {
+                setBogoProductSearch('')
+                setBogoDraft({ ...EMPTY_BOGO })
+              }}
+            >
               <Plus className="h-4 w-4" /> New BOGO
             </Button>
           ) : (
@@ -298,7 +325,10 @@ export default function AdminDiscounts() {
                   <div className="flex gap-1">
                     <button
                       type="button"
-                      onClick={() => setBogoDraft({ ...promotion })}
+                      onClick={() => {
+                        setBogoProductSearch('')
+                        setBogoDraft({ ...promotion })
+                      }}
                       className="rounded-lg p-2 text-muted hover:bg-fog hover:text-ink"
                     >
                       <Pencil className="h-4 w-4" />
@@ -320,7 +350,16 @@ export default function AdminDiscounts() {
             icon={Gift}
             title="No BOGO promotions"
             message="Create a buy-one-get-one-free promo. Customers do not need a code — it applies automatically when eligible items are in the cart."
-            action={<Button onClick={() => setBogoDraft({ ...EMPTY_BOGO })}>Create BOGO</Button>}
+            action={
+              <Button
+                onClick={() => {
+                  setBogoProductSearch('')
+                  setBogoDraft({ ...EMPTY_BOGO })
+                }}
+              >
+                Create BOGO
+              </Button>
+            }
           />
         )
       ) : tab === 'discounts' ? (
@@ -493,51 +532,65 @@ export default function AdminDiscounts() {
       >
         {bogoDraft ? (
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Promotion name" className="sm:col-span-2">
+            <Field label="Promotion name (required)" className="sm:col-span-2">
               <Input
                 value={bogoDraft.name}
                 onChange={(event) =>
                   setBogoDraft((current) => ({ ...current, name: event.target.value }))
                 }
-                placeholder="GHK-Cu BOGO week"
+                placeholder="e.g. GHK-Cu BOGO week"
+                required
               />
             </Field>
             <Field
-              label="Eligible products"
+              label="Eligible products (required)"
               hint="Mix & match across selected products. Highest unit price is paid; lower unit in each pair is free."
               className="sm:col-span-2"
             >
+              <div className="relative mb-2">
+                <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted" />
+                <Input
+                  value={bogoProductSearch}
+                  onChange={(event) => setBogoProductSearch(event.target.value)}
+                  placeholder="Search products"
+                  className="pl-9"
+                />
+              </div>
               <div className="grid max-h-56 gap-2 overflow-y-auto rounded-xl border border-black/10 p-3 sm:grid-cols-2">
-                {products.map((product) => {
-                  const checked = bogoDraft.productIds.includes(product.id)
-                  return (
-                    <label
-                      key={product.id}
-                      className="flex items-center gap-2 rounded-lg bg-fog px-3 py-2 text-[12px] text-ink"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={checked}
-                        onChange={() =>
-                          setBogoDraft((current) => ({
-                            ...current,
-                            productIds: checked
-                              ? current.productIds.filter((id) => id !== product.id)
-                              : [...current.productIds, product.id],
-                          }))
-                        }
-                        className="accent-[#00c4ab]"
-                      />
-                      {product.name}
-                    </label>
-                  )
-                })}
+                {filteredBogoProducts.length ? (
+                  filteredBogoProducts.map((product) => {
+                    const checked = bogoDraft.productIds.includes(product.id)
+                    return (
+                      <label
+                        key={product.id}
+                        className="flex items-center gap-2 rounded-lg bg-fog px-3 py-2 text-[12px] text-ink"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={() =>
+                            setBogoDraft((current) => ({
+                              ...current,
+                              productIds: checked
+                                ? current.productIds.filter((id) => id !== product.id)
+                                : [...current.productIds, product.id],
+                            }))
+                          }
+                          className="accent-[#00c4ab]"
+                        />
+                        {product.name}
+                      </label>
+                    )
+                  })
+                ) : (
+                  <p className="sm:col-span-2 px-1 py-2 text-[12px] text-muted">No products match your search.</p>
+                )}
               </div>
               {selectedBogoProductNames.length ? (
                 <p className="mt-2 text-[11px] text-muted">{selectedBogoProductNames.length} selected</p>
               ) : null}
             </Field>
-            <Field label="Start date" hint="Optional.">
+            <Field label="Start date (optional)">
               <Input
                 type="date"
                 value={dateInput(bogoDraft.startsAt)}
@@ -546,7 +599,7 @@ export default function AdminDiscounts() {
                 }
               />
             </Field>
-            <Field label="End date" hint="Optional.">
+            <Field label="End date (optional)">
               <Input
                 type="date"
                 value={dateInput(bogoDraft.expiresAt)}
