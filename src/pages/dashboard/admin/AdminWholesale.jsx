@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
+  Download,
   ExternalLink,
   FileSpreadsheet,
   KeyRound,
@@ -70,6 +71,7 @@ export default function AdminWholesale() {
   const [productForm, setProductForm] = useState(EMPTY_PRODUCT)
   const [productBusy, setProductBusy] = useState(false)
   const [importing, setImporting] = useState(false)
+  const [exporting, setExporting] = useState(false)
   const fileRef = useRef(null)
 
   const load = async () => {
@@ -268,7 +270,7 @@ export default function AdminWholesale() {
           .join(', ')
         const extra = notFound.length > 8 ? ` (+${notFound.length - 8} more)` : ''
         toast.warning(
-          `These barcodes were not found: ${preview}${extra}. Download a fresh template from Secret page.`,
+          `These barcodes were not found: ${preview}${extra}. Export inventory from Secret page, edit Quantity, then import again.`,
           { title: 'Barcode not found', duration: 14000 },
         )
       }
@@ -291,15 +293,16 @@ export default function AdminWholesale() {
     }
   }
 
-  const downloadTemplate = async () => {
+  const exportInventory = async () => {
+    setExporting(true)
     try {
       const base = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '')
-      const response = await fetch(`${base}/api/wholesale/admin/import/template`, {
+      const response = await fetch(`${base}/api/wholesale/admin/import/export`, {
         credentials: 'include',
       })
       if (!response.ok) {
         const payload = await response.json().catch(() => null)
-        throw new Error(payload?.error || 'Could not download the inventory template.')
+        throw new Error(payload?.error || 'Could not export inventory.')
       }
       const blob = await response.blob()
       const url = URL.createObjectURL(blob)
@@ -310,8 +313,11 @@ export default function AdminWholesale() {
       link.click()
       link.remove()
       URL.revokeObjectURL(url)
+      toast.success('Inventory spreadsheet downloaded.', { title: 'Export ready' })
     } catch (err) {
       toast.error(err.message)
+    } finally {
+      setExporting(false)
     }
   }
 
@@ -378,9 +384,15 @@ export default function AdminWholesale() {
               className="hidden"
               onChange={handleImport}
             />
-            <Button type="button" variant="outline" size="sm" onClick={downloadTemplate}>
-              <FileSpreadsheet className="h-4 w-4" />
-              Download template
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={exporting}
+              onClick={exportInventory}
+            >
+              <Download className="h-4 w-4" />
+              {exporting ? 'Exporting…' : 'Export Excel'}
             </Button>
             <Button
               type="button"

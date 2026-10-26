@@ -1,6 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { ChevronLeft, ChevronRight, FileSpreadsheet, PackagePlus, Pencil, Search, Trash2 } from 'lucide-react'
+import {
+  ChevronLeft,
+  ChevronRight,
+  Download,
+  FileSpreadsheet,
+  PackagePlus,
+  Pencil,
+  Search,
+  Trash2,
+} from 'lucide-react'
 import { api, assetUrl, formatPrice } from '../../../lib/api'
 import { useToast } from '../../../components/Toaster'
 import { useCatalog } from '../../../context/CatalogContext'
@@ -35,6 +44,7 @@ export default function AdminProducts() {
   const [pendingDelete, setPendingDelete] = useState(null)
   const [busyId, setBusyId] = useState(null)
   const [importing, setImporting] = useState(false)
+  const [exporting, setExporting] = useState(false)
 
   const load = () => {
     setLoading(true)
@@ -145,8 +155,8 @@ export default function AdminProducts() {
         const extra = notFound.length > 8 ? ` (+${notFound.length - 8} more)` : ''
         const message =
           summary.variantsUpdated > 0
-            ? `These barcodes were not found on the site, so quantity was not updated: ${preview}${extra}. Use Admin → Products → Download template (Item barcode), not the old SKU file.`
-            : `No quantities were updated. Barcode not found: ${preview}${extra}. Download a fresh template from Admin → Products (Item barcode like bpc5), then upload again.`
+            ? `These barcodes were not found on the site, so quantity was not updated: ${preview}${extra}. Use Admin → Products → Export Excel (Item barcode), not the old SKU file.`
+            : `No quantities were updated. Barcode not found: ${preview}${extra}. Export inventory from Admin → Products (Item barcode like bpc5), edit Quantity, then upload again.`
 
         toast.warning(message, {
           title: 'Barcode not found',
@@ -173,15 +183,16 @@ export default function AdminProducts() {
     }
   }
 
-  const downloadTemplate = async () => {
+  const exportInventory = async () => {
+    setExporting(true)
     try {
       const base = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '')
-      const response = await fetch(`${base}/api/products/import/template`, {
+      const response = await fetch(`${base}/api/products/import/export`, {
         credentials: 'include',
       })
       if (!response.ok) {
         const payload = await response.json().catch(() => null)
-        throw new Error(payload?.error || 'Could not download the inventory template.')
+        throw new Error(payload?.error || 'Could not export inventory.')
       }
       const blob = await response.blob()
       const url = URL.createObjectURL(blob)
@@ -192,8 +203,11 @@ export default function AdminProducts() {
       link.click()
       link.remove()
       URL.revokeObjectURL(url)
+      toast.success('Inventory spreadsheet downloaded.', { title: 'Export ready' })
     } catch (err) {
       toast.error(err.message)
+    } finally {
+      setExporting(false)
     }
   }
 
@@ -211,9 +225,9 @@ export default function AdminProducts() {
               className="hidden"
               onChange={handleImport}
             />
-            <Button type="button" variant="outline" onClick={downloadTemplate}>
-              <FileSpreadsheet className="h-4 w-4" />
-              Download template
+            <Button type="button" variant="outline" disabled={exporting} onClick={exportInventory}>
+              <Download className="h-4 w-4" />
+              {exporting ? 'Exporting…' : 'Export Excel'}
             </Button>
             <Button
               type="button"
