@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { BadgePercent, Gift, Pencil, Plus, Search, Tag, Trash2 } from 'lucide-react'
-import { api, formatCents } from '../../../lib/api'
+import { api, assetUrl, formatCents } from '../../../lib/api'
 import { useToast } from '../../../components/Toaster'
 import {
   Badge,
@@ -212,12 +212,6 @@ export default function AdminDiscounts() {
     const ids = new Set(couponDraft.productIds)
     return products.filter((product) => ids.has(product.id)).map((product) => product.name)
   }, [couponDraft, products])
-
-  const selectedBogoProductNames = useMemo(() => {
-    if (!bogoDraft) return []
-    const ids = new Set(bogoDraft.productIds)
-    return products.filter((product) => ids.has(product.id)).map((product) => product.name)
-  }, [bogoDraft, products])
 
   const filteredBogoProducts = useMemo(() => {
     const q = bogoProductSearch.trim().toLowerCase()
@@ -542,11 +536,16 @@ export default function AdminDiscounts() {
                 required
               />
             </Field>
-            <Field
-              label="Eligible products (required)"
-              hint="Mix & match across selected products. Highest unit price is paid; lower unit in each pair is free."
-              className="sm:col-span-2"
-            >
+            <div className="sm:col-span-2">
+              <div className="mb-1.5 flex items-center justify-between gap-3">
+                <span className="text-[12px] font-semibold text-ink">Eligible products (required)</span>
+                <span className="shrink-0 text-[12px] font-semibold text-cyan-dim">
+                  {bogoDraft.productIds.length} selected
+                </span>
+              </div>
+              <p className="mb-2 text-[11px] text-muted">
+                Mix & match across selected products. Highest unit price is paid; lower unit in each pair is free.
+              </p>
               <div className="relative mb-2">
                 <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted" />
                 <Input
@@ -563,7 +562,7 @@ export default function AdminDiscounts() {
                     return (
                       <label
                         key={product.id}
-                        className="flex items-center gap-2 rounded-lg bg-fog px-3 py-2 text-[12px] text-ink"
+                        className="flex cursor-pointer items-center gap-2.5 rounded-lg bg-fog px-2.5 py-2 text-[12px] text-ink"
                       >
                         <input
                           type="checkbox"
@@ -578,7 +577,12 @@ export default function AdminDiscounts() {
                           }
                           className="accent-[#00c4ab]"
                         />
-                        {product.name}
+                        <img
+                          src={assetUrl(product.image)}
+                          alt=""
+                          className="h-9 w-9 shrink-0 rounded-lg border border-black/8 bg-white object-cover"
+                        />
+                        <span className="min-w-0 flex-1 leading-snug">{product.name}</span>
                       </label>
                     )
                   })
@@ -586,10 +590,7 @@ export default function AdminDiscounts() {
                   <p className="sm:col-span-2 px-1 py-2 text-[12px] text-muted">No products match your search.</p>
                 )}
               </div>
-              {selectedBogoProductNames.length ? (
-                <p className="mt-2 text-[11px] text-muted">{selectedBogoProductNames.length} selected</p>
-              ) : null}
-            </Field>
+            </div>
             <Field label="Start date (optional)">
               <Input
                 type="date"
