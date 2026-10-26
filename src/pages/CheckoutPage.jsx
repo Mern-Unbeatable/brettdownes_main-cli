@@ -25,7 +25,7 @@ import { useSettings } from '../context/SettingsContext'
 import { useToast } from '../components/Toaster'
 import { lockBodyScroll, unlockBodyScroll } from '../hooks/lockBodyScroll'
 import { api, assetUrl, formatCents, formatPrice } from '../lib/api'
-import { calculateBulkDiscount } from '../utils/discounts'
+import { calculateBogoDiscount, calculateBulkDiscount, pickAutomaticDiscount } from '../utils/discounts'
 import { groupRatesByCarrier } from '../utils/shipping'
 import Seo from '../components/Seo'
 import { pageSeo } from '../data/seo'
@@ -115,6 +115,7 @@ export default function CheckoutPage() {
   const [noticeProgress, setNoticeProgress] = useState(0)
   const [placedOrder, setPlacedOrder] = useState(null)
   const [discountTiers, setDiscountTiers] = useState([])
+  const [bogoPromotions, setBogoPromotions] = useState([])
   const [couponCode, setCouponCode] = useState('')
   const [appliedCoupon, setAppliedCoupon] = useState(null)
   const [couponLoading, setCouponLoading] = useState(false)
@@ -123,8 +124,14 @@ export default function CheckoutPage() {
   useEffect(() => {
     api
       .get('/api/discounts/public')
-      .then((data) => setDiscountTiers(data.tiers || []))
-      .catch(() => setDiscountTiers([]))
+      .then((data) => {
+        setDiscountTiers(data.tiers || [])
+        setBogoPromotions(data.bogoPromotions || [])
+      })
+      .catch(() => {
+        setDiscountTiers([])
+        setBogoPromotions([])
+      })
   }, [])
 
   useEffect(() => {
@@ -210,14 +217,18 @@ export default function CheckoutPage() {
   const shippingCents =
     fulfillment === 'PICKUP' ? 0 : selectedRate ? selectedRate.amountCents : 0
   const subtotalCents = Math.round(subtotal * 100)
-  const { discountCents: bulkDiscountCents, discountLabel } = otherMode
+  const autoDiscount = otherMode
     ? { discountCents: 0, discountLabel: '' }
-    : calculateBulkDiscount(items, discountTiers)
+    : pickAutomaticDiscount(
+        calculateBulkDiscount(items, discountTiers),
+        calculateBogoDiscount(items, bogoPromotions),
+      )
+  const discountLabel = autoDiscount.discountLabel || ''
   const cartSignature = items.map((item) => `${item.variantId}:${item.qty}`).sort().join('|')
   const currentCoupon =
     appliedCoupon?.cartSignature === cartSignature ? appliedCoupon : null
   const couponDiscountCents = currentCoupon?.discountCents || 0
-  const discountCents = Math.min(subtotalCents, bulkDiscountCents + couponDiscountCents)
+  const discountCents = Math.min(subtotalCents, autoDiscount.discountCents + couponDiscountCents)
   const merchandiseCents = Math.max(0, subtotalCents - discountCents)
   const availableCreditCents = otherMode ? 0 : Math.max(0, user?.creditCents || 0)
   const creditEligibleCents = Math.min(availableCreditCents, merchandiseCents)
@@ -1168,10 +1179,10 @@ export default function CheckoutPage() {
 
                 <div className="mt-5 space-y-2 border-t border-black/8 pt-4 text-sm">
                   <Row label="Subtotal" value={formatCents(subtotalCents)} />
-                  {bulkDiscountCents > 0 ? (
+                  {autoDiscount.discountCents > 0 ? (
                     <Row
-                      label={`Bulk reward${discountLabel ? ` (${discountLabel})` : ''}`}
-                      value={`-${formatCents(bulkDiscountCents)}`}
+                      label={`Promotion${discountLabel ? ` (${discountLabel})` : ''}`}
+                      value={`-${formatCents(autoDiscount.discountCents)}`}
                     />
                   ) : null}
                   {couponDiscountCents > 0 ? (

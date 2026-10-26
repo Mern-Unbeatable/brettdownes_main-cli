@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { BadgePercent, Pencil, Plus, Tag, Trash2 } from 'lucide-react'
+import { BadgePercent, Gift, Pencil, Plus, Tag, Trash2 } from 'lucide-react'
 import { api, formatCents } from '../../../lib/api'
 import { useToast } from '../../../components/Toaster'
 import {
@@ -16,6 +16,14 @@ import {
   Select,
   Toggle,
 } from '../ui'
+
+const EMPTY_BOGO = {
+  name: '',
+  enabled: true,
+  productIds: [],
+  startsAt: null,
+  expiresAt: null,
+}
 
 const EMPTY_COUPON = {
   code: '',
@@ -40,10 +48,12 @@ export default function AdminDiscounts() {
   const [tab, setTab] = useState('discounts')
   const [tiers, setTiers] = useState([])
   const [coupons, setCoupons] = useState([])
+  const [bogoPromotions, setBogoPromotions] = useState([])
   const [products, setProducts] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [couponDraft, setCouponDraft] = useState(null)
+  const [bogoDraft, setBogoDraft] = useState(null)
   const [saving, setSaving] = useState(false)
 
   const load = useCallback(() => {
@@ -56,6 +66,7 @@ export default function AdminDiscounts() {
       .then(([discountData, productData]) => {
         setTiers(discountData.tiers || [])
         setCoupons(discountData.coupons || [])
+        setBogoPromotions(discountData.bogoPromotions || [])
         setProducts(productData.products || [])
       })
       .catch((err) => setError(err.message))
@@ -137,6 +148,45 @@ export default function AdminDiscounts() {
     }
   }
 
+  const saveBogo = async () => {
+    const draft = bogoDraft
+    if (!draft) return
+    setSaving(true)
+    try {
+      const payload = {
+        name: draft.name.trim(),
+        enabled: draft.enabled,
+        productIds: draft.productIds,
+        startsAt: draft.startsAt || null,
+        expiresAt: draft.expiresAt ? `${draft.expiresAt}T23:59:59.999Z` : null,
+      }
+      const data = draft.id
+        ? await api.patch(`/api/discounts/admin/bogo/${draft.id}`, payload)
+        : await api.post('/api/discounts/admin/bogo', payload)
+      setBogoPromotions((current) =>
+        draft.id
+          ? current.map((entry) => (entry.id === draft.id ? data.promotion : entry))
+          : [data.promotion, ...current],
+      )
+      setBogoDraft(null)
+      toast.success('BOGO promotion saved.')
+    } catch (err) {
+      toast.error(err.message)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const deleteBogo = async (promotion) => {
+    try {
+      await api.delete(`/api/discounts/admin/bogo/${promotion.id}`)
+      setBogoPromotions((current) => current.filter((entry) => entry.id !== promotion.id))
+      toast.success('BOGO promotion removed.')
+    } catch (err) {
+      toast.error(err.message)
+    }
+  }
+
   const deleteCoupon = async (coupon) => {
     try {
       await api.delete(`/api/discounts/admin/coupons/${coupon.id}`)
@@ -153,6 +203,12 @@ export default function AdminDiscounts() {
     return products.filter((product) => ids.has(product.id)).map((product) => product.name)
   }, [couponDraft, products])
 
+  const selectedBogoProductNames = useMemo(() => {
+    if (!bogoDraft) return []
+    const ids = new Set(bogoDraft.productIds)
+    return products.filter((product) => ids.has(product.id)).map((product) => product.name)
+  }, [bogoDraft, products])
+
   if (loading) return <LoadingBlock label="Loading discounts" />
   if (error) return <ErrorBlock message={error} onRetry={load} />
 
@@ -160,11 +216,15 @@ export default function AdminDiscounts() {
     <>
       <PageHeading
         title="Discounts & coupons"
-        subtitle="Manage automatic bulk rewards and checkout coupon codes."
+        subtitle="Bulk rewards, auto BOGO promos, and checkout coupon codes."
         actions={
           tab === 'coupons' ? (
             <Button onClick={() => setCouponDraft({ ...EMPTY_COUPON })}>
               <Plus className="h-4 w-4" /> New coupon
+            </Button>
+          ) : tab === 'bogo' ? (
+            <Button onClick={() => setBogoDraft({ ...EMPTY_BOGO })}>
+              <Plus className="h-4 w-4" /> New BOGO
             </Button>
           ) : (
             <Button
@@ -192,6 +252,7 @@ export default function AdminDiscounts() {
       <div className="mb-5 flex gap-2 rounded-2xl bg-white p-1.5 shadow-sm">
         {[
           ['discounts', 'Automatic discounts', BadgePercent],
+          ['bogo', 'BOGO promos', Gift],
           ['coupons', 'Coupons', Tag],
         ].map(([value, label, Icon]) => (
           <button
@@ -207,7 +268,62 @@ export default function AdminDiscounts() {
         ))}
       </div>
 
-      {tab === 'discounts' ? (
+      {tab === 'bogo' ? (
+        bogoPromotions.length ? (
+          <div className="grid gap-4 lg:grid-cols-2">
+            {bogoPromotions.map((promotion) => (
+              <Card key={promotion.id}>
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <p className="font-display text-lg font-bold text-ink">{promotion.name}</p>
+                      <Badge tone={promotion.enabled ? 'ACTIVE' : 'BLOCKED'}>
+                        {promotion.enabled ? 'Active' : 'Disabled'}
+                      </Badge>
+                    </div>
+                    <p className="mt-1 text-[12px] text-muted">
+                      Buy one get one free · {promotion.productIds.length} product
+                      {promotion.productIds.length === 1 ? '' : 's'} · auto-applies at checkout
+                    </p>
+                    <p className="mt-2 text-[11px] text-muted">
+                      {promotion.startsAt
+                        ? `From ${dateInput(promotion.startsAt)}`
+                        : 'Starts anytime'}
+                      {' · '}
+                      {promotion.expiresAt
+                        ? `Until ${dateInput(promotion.expiresAt)}`
+                        : 'No end date'}
+                    </p>
+                  </div>
+                  <div className="flex gap-1">
+                    <button
+                      type="button"
+                      onClick={() => setBogoDraft({ ...promotion })}
+                      className="rounded-lg p-2 text-muted hover:bg-fog hover:text-ink"
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => deleteBogo(promotion)}
+                      className="rounded-lg p-2 text-muted hover:bg-rose-50 hover:text-rose-600"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+              </Card>
+            ))}
+          </div>
+        ) : (
+          <EmptyState
+            icon={Gift}
+            title="No BOGO promotions"
+            message="Create a buy-one-get-one-free promo. Customers do not need a code — it applies automatically when eligible items are in the cart."
+            action={<Button onClick={() => setBogoDraft({ ...EMPTY_BOGO })}>Create BOGO</Button>}
+          />
+        )
+      ) : tab === 'discounts' ? (
         <div className="space-y-4">
           {tiers.map((tier) => (
             <Card key={tier.id}>
@@ -305,7 +421,7 @@ export default function AdminDiscounts() {
             </Card>
           ))}
         </div>
-      ) : coupons.length ? (
+      ) : tab === 'coupons' && coupons.length ? (
         <div className="grid gap-4 lg:grid-cols-2">
           {coupons.map((coupon) => (
             <Card key={coupon.id}>
@@ -354,14 +470,101 @@ export default function AdminDiscounts() {
             </Card>
           ))}
         </div>
-      ) : (
+      ) : tab === 'coupons' ? (
         <EmptyState
           icon={Tag}
           title="No coupons yet"
           message="Create a code customers can apply during checkout."
           action={<Button onClick={() => setCouponDraft({ ...EMPTY_COUPON })}>Create coupon</Button>}
         />
-      )}
+      ) : null}
+
+      <Modal
+        open={Boolean(bogoDraft)}
+        onClose={() => setBogoDraft(null)}
+        title={bogoDraft?.id ? 'Edit BOGO promotion' : 'Create BOGO promotion'}
+        size="lg"
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setBogoDraft(null)}>Cancel</Button>
+            <Button disabled={saving} onClick={saveBogo}>{saving ? 'Saving…' : 'Save promotion'}</Button>
+          </>
+        }
+      >
+        {bogoDraft ? (
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="Promotion name" className="sm:col-span-2">
+              <Input
+                value={bogoDraft.name}
+                onChange={(event) =>
+                  setBogoDraft((current) => ({ ...current, name: event.target.value }))
+                }
+                placeholder="GHK-Cu BOGO week"
+              />
+            </Field>
+            <Field
+              label="Eligible products"
+              hint="Mix & match across selected products. Highest unit price is paid; lower unit in each pair is free."
+              className="sm:col-span-2"
+            >
+              <div className="grid max-h-56 gap-2 overflow-y-auto rounded-xl border border-black/10 p-3 sm:grid-cols-2">
+                {products.map((product) => {
+                  const checked = bogoDraft.productIds.includes(product.id)
+                  return (
+                    <label
+                      key={product.id}
+                      className="flex items-center gap-2 rounded-lg bg-fog px-3 py-2 text-[12px] text-ink"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() =>
+                          setBogoDraft((current) => ({
+                            ...current,
+                            productIds: checked
+                              ? current.productIds.filter((id) => id !== product.id)
+                              : [...current.productIds, product.id],
+                          }))
+                        }
+                        className="accent-[#00c4ab]"
+                      />
+                      {product.name}
+                    </label>
+                  )
+                })}
+              </div>
+              {selectedBogoProductNames.length ? (
+                <p className="mt-2 text-[11px] text-muted">{selectedBogoProductNames.length} selected</p>
+              ) : null}
+            </Field>
+            <Field label="Start date" hint="Optional.">
+              <Input
+                type="date"
+                value={dateInput(bogoDraft.startsAt)}
+                onChange={(event) =>
+                  setBogoDraft((current) => ({ ...current, startsAt: event.target.value || null }))
+                }
+              />
+            </Field>
+            <Field label="End date" hint="Optional.">
+              <Input
+                type="date"
+                value={dateInput(bogoDraft.expiresAt)}
+                onChange={(event) =>
+                  setBogoDraft((current) => ({ ...current, expiresAt: event.target.value || null }))
+                }
+              />
+            </Field>
+            <div className="flex items-end sm:col-span-2">
+              <Toggle
+                checked={bogoDraft.enabled}
+                onChange={(enabled) => setBogoDraft((current) => ({ ...current, enabled }))}
+                label="Promotion enabled"
+              />
+            </div>
+          </div>
+        ) : null}
+      </Modal>
 
       <Modal
         open={Boolean(couponDraft)}

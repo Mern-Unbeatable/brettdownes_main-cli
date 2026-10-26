@@ -40,3 +40,43 @@ export function calculateBulkDiscount(items, tiers = []) {
 
   return best
 }
+
+/** Same pairing logic as the API — highest unit paid, lower unit in each pair free. */
+export function calculateBogoDiscount(items, promotions = []) {
+  let discountCents = 0
+  const labels = []
+
+  for (const promo of promotions || []) {
+    const idSet = new Set(promo.productIds || [])
+    if (!idSet.size) continue
+
+    const units = []
+    for (const item of items || []) {
+      if (!idSet.has(item.productId)) continue
+      const unitCents = Math.round(Number(item.price || 0) * 100)
+      if (!unitCents) continue
+      for (let i = 0; i < Number(item.qty) || 0; i += 1) {
+        units.push(unitCents)
+      }
+    }
+
+    if (units.length < 2) continue
+    units.sort((a, b) => b - a)
+    let promoDiscount = 0
+    for (let i = 1; i < units.length; i += 2) {
+      promoDiscount += units[i]
+    }
+    if (promoDiscount > 0) {
+      discountCents += promoDiscount
+      labels.push(promo.name)
+    }
+  }
+
+  return { discountCents, discountLabel: labels.join(' + ') || null }
+}
+
+export function pickAutomaticDiscount(bulkDiscount, bogoDiscount) {
+  const bulk = bulkDiscount?.discountCents || 0
+  const bogo = bogoDiscount?.discountCents || 0
+  return bogo > bulk ? bogoDiscount : bulkDiscount
+}
