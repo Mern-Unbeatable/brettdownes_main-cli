@@ -55,6 +55,7 @@ export default function AdminDiscounts() {
   const [couponDraft, setCouponDraft] = useState(null)
   const [bogoDraft, setBogoDraft] = useState(null)
   const [bogoProductSearch, setBogoProductSearch] = useState('')
+  const [bogoErrors, setBogoErrors] = useState({})
   const [saving, setSaving] = useState(false)
 
   const load = useCallback(() => {
@@ -154,13 +155,18 @@ export default function AdminDiscounts() {
     if (!draft) return
     const name = draft.name.trim()
     if (!name) {
-      toast.error('Enter a promotion name. The gray example text is not filled in automatically.')
+      const message = 'Please enter the name of this promotion.'
+      setBogoErrors({ name: message })
+      toast.error(message)
       return
     }
     if (!draft.productIds.length) {
-      toast.error('Select at least one eligible product.')
+      const message = 'Please select at least one eligible product.'
+      setBogoErrors({ products: message })
+      toast.error(message)
       return
     }
+    setBogoErrors({})
     setSaving(true)
     try {
       const payload = {
@@ -242,6 +248,7 @@ export default function AdminDiscounts() {
             <Button
               onClick={() => {
                 setBogoProductSearch('')
+                setBogoErrors({})
                 setBogoDraft({ ...EMPTY_BOGO })
               }}
             >
@@ -321,6 +328,7 @@ export default function AdminDiscounts() {
                       type="button"
                       onClick={() => {
                         setBogoProductSearch('')
+                        setBogoErrors({})
                         setBogoDraft({ ...promotion })
                       }}
                       className="rounded-lg p-2 text-muted hover:bg-fog hover:text-ink"
@@ -348,6 +356,7 @@ export default function AdminDiscounts() {
               <Button
                 onClick={() => {
                   setBogoProductSearch('')
+                  setBogoErrors({})
                   setBogoDraft({ ...EMPTY_BOGO })
                 }}
               >
@@ -514,25 +523,41 @@ export default function AdminDiscounts() {
 
       <Modal
         open={Boolean(bogoDraft)}
-        onClose={() => setBogoDraft(null)}
+        onClose={() => {
+          setBogoDraft(null)
+          setBogoErrors({})
+        }}
         title={bogoDraft?.id ? 'Edit BOGO promotion' : 'Create BOGO promotion'}
         size="lg"
         footer={
           <>
-            <Button variant="ghost" onClick={() => setBogoDraft(null)}>Cancel</Button>
+            <Button
+              variant="ghost"
+              onClick={() => {
+                setBogoDraft(null)
+                setBogoErrors({})
+              }}
+            >
+              Cancel
+            </Button>
             <Button disabled={saving} onClick={saveBogo}>{saving ? 'Saving…' : 'Save promotion'}</Button>
           </>
         }
       >
         {bogoDraft ? (
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Promotion name (required)" className="sm:col-span-2">
+            <Field label="Promotion name (required)" error={bogoErrors.name} className="sm:col-span-2">
               <Input
                 value={bogoDraft.name}
-                onChange={(event) =>
+                onChange={(event) => {
+                  setBogoErrors((current) => ({ ...current, name: undefined }))
                   setBogoDraft((current) => ({ ...current, name: event.target.value }))
-                }
+                }}
                 placeholder="e.g. GHK-Cu BOGO week"
+                aria-invalid={Boolean(bogoErrors.name)}
+                className={
+                  bogoErrors.name ? 'border-rose-500 ring-2 ring-rose-200 focus:border-rose-500' : ''
+                }
                 required
               />
             </Field>
@@ -555,7 +580,14 @@ export default function AdminDiscounts() {
                   className="pl-9"
                 />
               </div>
-              <div className="grid max-h-56 gap-2 overflow-y-auto rounded-xl border border-black/10 p-3 sm:grid-cols-2">
+              {bogoErrors.products ? (
+                <p className="mb-2 text-[11px] font-medium text-rose-600">{bogoErrors.products}</p>
+              ) : null}
+              <div
+                className={`grid max-h-56 gap-2 overflow-y-auto rounded-xl border p-3 sm:grid-cols-2 ${
+                  bogoErrors.products ? 'border-rose-500 ring-2 ring-rose-200' : 'border-black/10'
+                }`}
+              >
                 {filteredBogoProducts.length ? (
                   filteredBogoProducts.map((product) => {
                     const checked = bogoDraft.productIds.includes(product.id)
@@ -567,14 +599,15 @@ export default function AdminDiscounts() {
                         <input
                           type="checkbox"
                           checked={checked}
-                          onChange={() =>
+                          onChange={() => {
+                            setBogoErrors((current) => ({ ...current, products: undefined }))
                             setBogoDraft((current) => ({
                               ...current,
                               productIds: checked
                                 ? current.productIds.filter((id) => id !== product.id)
                                 : [...current.productIds, product.id],
                             }))
-                          }
+                          }}
                           className="accent-[#00c4ab]"
                         />
                         <img
