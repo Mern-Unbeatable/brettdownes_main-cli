@@ -33,6 +33,7 @@ export function calculateBulkDiscount(items, tiers = []) {
       best = {
         discountCents,
         discountLabel: `${tier.percent}% — ${tier.detail}`,
+        discountType: 'bulk',
         tierId: tier.id,
       }
     }
@@ -44,7 +45,9 @@ export function calculateBulkDiscount(items, tiers = []) {
 /** Same pairing logic as the API — highest unit paid, lower unit in each pair free. */
 export function calculateBogoDiscount(items, promotions = []) {
   let discountCents = 0
+  let freeUnitCount = 0
   const labels = []
+  const eligibleProductIds = new Set()
 
   for (const promo of promotions || []) {
     const idSet = new Set(promo.productIds || [])
@@ -53,6 +56,7 @@ export function calculateBogoDiscount(items, promotions = []) {
     const units = []
     for (const item of items || []) {
       if (!idSet.has(item.productId)) continue
+      eligibleProductIds.add(item.productId)
       const unitCents = Math.round(Number(item.price || 0) * 100)
       if (!unitCents) continue
       for (let i = 0; i < Number(item.qty) || 0; i += 1) {
@@ -65,6 +69,7 @@ export function calculateBogoDiscount(items, promotions = []) {
     let promoDiscount = 0
     for (let i = 1; i < units.length; i += 2) {
       promoDiscount += units[i]
+      freeUnitCount += 1
     }
     if (promoDiscount > 0) {
       discountCents += promoDiscount
@@ -72,7 +77,14 @@ export function calculateBogoDiscount(items, promotions = []) {
     }
   }
 
-  return { discountCents, discountLabel: labels.join(' + ') || null }
+  return {
+    discountCents,
+    discountLabel: labels.join(' + ') || null,
+    discountType: discountCents > 0 ? 'bogo' : null,
+    displayTitle: 'Buy 2 Get 1 Free',
+    freeUnitCount,
+    eligibleProductIds: [...eligibleProductIds],
+  }
 }
 
 export function pickAutomaticDiscount(bulkDiscount, bogoDiscount) {

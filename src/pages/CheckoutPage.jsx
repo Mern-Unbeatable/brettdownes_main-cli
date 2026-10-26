@@ -9,6 +9,7 @@ import {
   CheckCircle2,
   CreditCard,
   FileCheck2,
+  Gift,
   Info,
   MapPin,
   RefreshCw,
@@ -217,12 +218,23 @@ export default function CheckoutPage() {
   const shippingCents =
     fulfillment === 'PICKUP' ? 0 : selectedRate ? selectedRate.amountCents : 0
   const subtotalCents = Math.round(subtotal * 100)
+  const bulkDiscount = useMemo(
+    () => calculateBulkDiscount(items, discountTiers),
+    [items, discountTiers],
+  )
+  const bogoDiscount = useMemo(
+    () => calculateBogoDiscount(items, bogoPromotions),
+    [items, bogoPromotions],
+  )
   const autoDiscount = otherMode
     ? { discountCents: 0, discountLabel: '' }
-    : pickAutomaticDiscount(
-        calculateBulkDiscount(items, discountTiers),
-        calculateBogoDiscount(items, bogoPromotions),
-      )
+    : pickAutomaticDiscount(bulkDiscount, bogoDiscount)
+  const bogoApplied =
+    !otherMode && autoDiscount.discountType === 'bogo' && autoDiscount.discountCents > 0
+  const bogoEligibleIds = useMemo(
+    () => new Set(bogoDiscount.eligibleProductIds || []),
+    [bogoDiscount.eligibleProductIds],
+  )
   const discountLabel = autoDiscount.discountLabel || ''
   const cartSignature = items.map((item) => `${item.variantId}:${item.qty}`).sort().join('|')
   const currentCoupon =
@@ -1084,27 +1096,57 @@ export default function CheckoutPage() {
               >
                 <h3 className="font-display text-lg font-bold text-ink">Order summary ({count})</h3>
                 <ul className="mt-5 space-y-4">
-                  {items.map((item) => (
-                    <li key={`${item.productId}-${item.variantId}`} className="flex gap-3">
-                      {item.image ? (
-                        <img
-                          src={assetUrl(item.image)}
-                          alt={item.name}
-                          className="h-14 w-14 rounded-xl bg-fog object-cover"
-                        />
-                      ) : null}
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-semibold text-ink">{item.name}</p>
-                        <p className="text-xs text-muted">
-                          {item.dose} × {item.qty}
+                  {items.map((item) => {
+                    const inBogoDeal = bogoApplied && bogoEligibleIds.has(item.productId)
+                    return (
+                      <li key={`${item.productId}-${item.variantId}`} className="flex gap-3">
+                        {item.image ? (
+                          <img
+                            src={assetUrl(item.image)}
+                            alt={item.name}
+                            className="h-14 w-14 rounded-xl bg-fog object-cover"
+                          />
+                        ) : null}
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-semibold text-ink">{item.name}</p>
+                          <p className="text-xs text-muted">
+                            {item.dose} × {item.qty}
+                          </p>
+                          {inBogoDeal ? (
+                            <span className="mt-1.5 inline-flex items-center gap-1 rounded-full bg-cyan/12 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-cyan-dim">
+                              <Gift className="h-3 w-3 shrink-0" aria-hidden />
+                              Buy 2 Get 1 Free
+                            </span>
+                          ) : null}
+                        </div>
+                        <p className="text-sm font-medium text-ink">
+                          {formatPrice(item.price * item.qty)}
                         </p>
-                      </div>
-                      <p className="text-sm font-medium text-ink">
-                        {formatPrice(item.price * item.qty)}
-                      </p>
-                    </li>
-                  ))}
+                      </li>
+                    )
+                  })}
                 </ul>
+
+                {bogoApplied ? (
+                  <div className="mt-4 rounded-2xl border border-cyan/30 bg-cyan/10 px-3.5 py-3">
+                    <p className="flex items-center gap-2 text-[13px] font-semibold text-ink">
+                      <Gift className="h-4 w-4 shrink-0 text-cyan-dim" aria-hidden />
+                      Buy 2 Get 1 Free applied
+                    </p>
+                    <p className="mt-1 text-[12px] leading-snug text-muted">
+                      {autoDiscount.freeUnitCount === 1
+                        ? '1 item is free'
+                        : `${autoDiscount.freeUnitCount} items are free`}{' '}
+                      — you pay the higher unit price in each pair; the lower-priced unit is free.
+                      Mix &amp; match across eligible products in your cart.
+                    </p>
+                    {discountLabel ? (
+                      <p className="mt-1.5 text-[11px] font-medium text-cyan-dim">
+                        Offer: {discountLabel}
+                      </p>
+                    ) : null}
+                  </div>
+                ) : null}
 
                 <div className="mt-5 rounded-2xl bg-fog p-3.5">
                   <label
@@ -1180,10 +1222,27 @@ export default function CheckoutPage() {
                 <div className="mt-5 space-y-2 border-t border-black/8 pt-4 text-sm">
                   <Row label="Subtotal" value={formatCents(subtotalCents)} />
                   {autoDiscount.discountCents > 0 ? (
-                    <Row
-                      label={`Promotion${discountLabel ? ` (${discountLabel})` : ''}`}
-                      value={`-${formatCents(autoDiscount.discountCents)}`}
-                    />
+                    autoDiscount.discountType === 'bogo' ? (
+                      <div className="space-y-0.5">
+                        <div className="flex items-center justify-between">
+                          <span className="text-muted">Buy 2 Get 1 Free</span>
+                          <span className="font-semibold text-emerald-700">
+                            -{formatCents(autoDiscount.discountCents)}
+                          </span>
+                        </div>
+                        <p className="text-[11px] leading-snug text-muted">
+                          {autoDiscount.freeUnitCount === 1
+                            ? '1 free item'
+                            : `${autoDiscount.freeUnitCount} free items`}
+                          {discountLabel ? ` · ${discountLabel}` : ''}
+                        </p>
+                      </div>
+                    ) : (
+                      <Row
+                        label={`Bulk discount${discountLabel ? ` (${discountLabel})` : ''}`}
+                        value={`-${formatCents(autoDiscount.discountCents)}`}
+                      />
+                    )
                   ) : null}
                   {couponDiscountCents > 0 ? (
                     <Row
