@@ -218,8 +218,9 @@ export default function UserReviews() {
                 {formatCents(data?.rewardCents || 500)} after a verified Trustpilot review
               </p>
               <p className="mt-1 max-w-xl text-[13px] leading-relaxed text-muted">
-                Leave the review with any email you control, then enter that same address here. We
-                email a code to prove it is yours. Staff checks Trustpilot and adds the credit to
+                Claim review credit here after delivery—delivered-order emails no longer include
+                Trustpilot prompts. Leave the review with any email you control, enter that address
+                here, and we email a code to verify it. Staff checks Trustpilot and adds credit to
                 your account.
               </p>
             </div>

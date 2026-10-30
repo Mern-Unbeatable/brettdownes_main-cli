@@ -105,6 +105,7 @@ export default function AdminReviews() {
     <>
       <PageHeading
         title="Review credit"
+        subtitle="Customers verify Trustpilot reviews from their dashboard Review credit page after delivery—not from delivery emails."
         actions={
           data?.trustpilotUrl ? (
             <a
