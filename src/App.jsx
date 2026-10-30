@@ -5,6 +5,7 @@ import {
   useLocation,
   useNavigationType,
   useSearchParams,
+  Navigate,
 } from 'react-router-dom'
 import { lazy, Suspense, useEffect, useLayoutEffect, useState } from 'react'
 import { HelmetProvider } from 'react-helmet-async'
@@ -30,6 +31,7 @@ import { AuthProvider, useAuth } from './context/AuthContext'
 import { SettingsProvider } from './context/SettingsContext'
 import { CatalogProvider } from './context/CatalogContext'
 import { RequireAdmin, RequireAuth } from './components/RouteGuards'
+import { REVIEW_CREDIT_ENABLED } from './config/reviewCredit'
 
 // Checkout pulls in Stripe.js and the dashboards are only for signed-in staff and
 // researchers, so neither belongs in the storefront's first-load bundle.
@@ -226,7 +228,12 @@ function AppShell() {
               <Route path="/dashboard" element={<DashboardLayout scope="user" />}>
                 <Route index element={<UserOverview />} />
                 <Route path="orders" element={<UserOrders />} />
-                <Route path="reviews" element={<UserReviews />} />
+                <Route
+                  path="reviews"
+                  element={
+                    REVIEW_CREDIT_ENABLED ? <UserReviews /> : <Navigate to="/dashboard" replace />
+                  }
+                />
                 <Route path="orders/:id" element={<UserOrderDetail />} />
                 <Route path="profile" element={<UserProfile />} />
                 <Route path="settings" element={<UserSettings />} />
@@ -246,7 +253,12 @@ function AppShell() {
                 <Route path="orders" element={<AdminOrders />} />
                 <Route path="orders/:id" element={<AdminOrderDetail />} />
                 <Route path="customers" element={<AdminCustomers />} />
-                <Route path="reviews" element={<AdminReviews />} />
+                <Route
+                  path="reviews"
+                  element={
+                    REVIEW_CREDIT_ENABLED ? <AdminReviews /> : <Navigate to="/admin" replace />
+                  }
+                />
                 <Route path="discounts" element={<AdminDiscounts />} />
                 <Route path="settings" element={<AdminSettings />} />
                 <Route path="profile" element={<AdminProfile />} />

@@ -15,6 +15,7 @@ import {
   Select,
   formatDate,
 } from '../ui'
+import { REVIEW_CREDIT_ENABLED } from '../../../config/reviewCredit'
 
 const STATUSES = ['ALL', 'PENDING', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED', 'REFUNDED']
 
@@ -160,7 +161,9 @@ export default function UserOrders() {
                     'Tracking appears once the label is created'
                   )}
                 </div>
-                {order.status === 'DELIVERED' && order.paymentStatus === 'PAID' ? (
+                {REVIEW_CREDIT_ENABLED &&
+                order.status === 'DELIVERED' &&
+                order.paymentStatus === 'PAID' ? (
                   order.reviewClaimStatus === 'APPROVED' ? (
                     <p className="text-[12px] font-semibold text-emerald-600">$5 review credit added</p>
                   ) : order.reviewClaimStatus === 'PENDING' ? (

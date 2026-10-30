@@ -26,28 +26,36 @@ import { lockBodyScroll, unlockBodyScroll } from '../../hooks/lockBodyScroll'
 import Seo from '../../components/Seo'
 import { pageSeo } from '../../data/seo'
 import DashboardSupport from './DashboardSupport'
+import { REVIEW_CREDIT_ENABLED } from '../../config/reviewCredit'
+
+const USER_NAV = [
+  { to: '/dashboard', end: true, label: 'Overview', icon: LayoutDashboard },
+  { to: '/dashboard/orders', label: 'My orders', icon: Package },
+  // Review credit — off for now (REVIEW_CREDIT_ENABLED in config/reviewCredit.js)
+  ...(REVIEW_CREDIT_ENABLED
+    ? [{ to: '/dashboard/reviews', label: 'Review credit', icon: Star }]
+    : []),
+  { to: '/dashboard/profile', label: 'Profile', icon: User },
+  { to: '/dashboard/settings', label: 'Settings', icon: Settings },
+]
+
+const ADMIN_NAV = [
+  { to: '/admin', end: true, label: 'Overview', icon: LayoutDashboard },
+  { to: '/admin/products', label: 'Products', icon: ShoppingBag },
+  { to: '/admin/coa', label: 'COA library', icon: Beaker },
+  { to: '/admin/wholesale', label: 'Secret page', icon: Lock },
+  { to: '/admin/store-orders', label: 'Other orders', icon: ClipboardList },
+  { to: '/admin/orders', label: 'Orders', icon: Package },
+  { to: '/admin/customers', label: 'Customers', icon: Users },
+  ...(REVIEW_CREDIT_ENABLED ? [{ to: '/admin/reviews', label: 'Review credit', icon: Star }] : []),
+  { to: '/admin/discounts', label: 'Discounts & coupons', icon: BadgePercent },
+  { to: '/admin/settings', label: 'Settings', icon: Settings },
+  { to: '/admin/profile', label: 'Profile', icon: User },
+]
 
 const NAV = {
-  user: [
-    { to: '/dashboard', end: true, label: 'Overview', icon: LayoutDashboard },
-    { to: '/dashboard/orders', label: 'My orders', icon: Package },
-    { to: '/dashboard/reviews', label: 'Review credit', icon: Star },
-    { to: '/dashboard/profile', label: 'Profile', icon: User },
-    { to: '/dashboard/settings', label: 'Settings', icon: Settings },
-  ],
-  admin: [
-    { to: '/admin', end: true, label: 'Overview', icon: LayoutDashboard },
-    { to: '/admin/products', label: 'Products', icon: ShoppingBag },
-    { to: '/admin/coa', label: 'COA library', icon: Beaker },
-    { to: '/admin/wholesale', label: 'Secret page', icon: Lock },
-    { to: '/admin/store-orders', label: 'Other orders', icon: ClipboardList },
-    { to: '/admin/orders', label: 'Orders', icon: Package },
-    { to: '/admin/customers', label: 'Customers', icon: Users },
-    { to: '/admin/reviews', label: 'Review credit', icon: Star },
-    { to: '/admin/discounts', label: 'Discounts & coupons', icon: BadgePercent },
-    { to: '/admin/settings', label: 'Settings', icon: Settings },
-    { to: '/admin/profile', label: 'Profile', icon: User },
-  ],
+  user: USER_NAV,
+  admin: ADMIN_NAV,
 }
 
 const SIDEBAR_KEY = 'peptide-ops-sidebar-collapsed'
@@ -191,7 +199,7 @@ export default function DashboardLayout({ scope = 'user' }) {
   }, [drawerOpen])
 
   useEffect(() => {
-    if (scope !== 'admin' || !isAdmin) return undefined
+    if (!REVIEW_CREDIT_ENABLED || scope !== 'admin' || !isAdmin) return undefined
     let cancelled = false
     const loadCount = () => {
       api

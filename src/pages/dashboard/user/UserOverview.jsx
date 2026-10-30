@@ -15,6 +15,7 @@ import {
   StatCard,
   formatDate,
 } from '../ui'
+import { REVIEW_CREDIT_ENABLED } from '../../../config/reviewCredit'
 
 export default function UserOverview() {
   const { user } = useAuth()
@@ -39,13 +40,15 @@ export default function UserOverview() {
 
   const { orders = [], stats = {} } = data || {}
   const recent = orders.slice(0, 5)
-  const canClaimReview = orders.some(
-    (order) =>
-      order.status === 'DELIVERED' &&
-      order.paymentStatus === 'PAID' &&
-      order.reviewClaimStatus !== 'APPROVED' &&
-      order.reviewClaimStatus !== 'PENDING',
-  )
+  const canClaimReview =
+    REVIEW_CREDIT_ENABLED &&
+    orders.some(
+      (order) =>
+        order.status === 'DELIVERED' &&
+        order.paymentStatus === 'PAID' &&
+        order.reviewClaimStatus !== 'APPROVED' &&
+        order.reviewClaimStatus !== 'PENDING',
+    )
 
   return (
     <>
