@@ -28,6 +28,7 @@ import { lockBodyScroll, unlockBodyScroll } from '../hooks/lockBodyScroll'
 import { api, assetUrl, formatCents, formatPrice } from '../lib/api'
 import { calculateBogoDiscount, calculateBulkDiscount, pickAutomaticDiscount } from '../utils/discounts'
 import { groupRatesByCarrier } from '../utils/shipping'
+import { INTERNATIONAL_COUNTRIES } from '../data/internationalCountries'
 import Seo from '../components/Seo'
 import { pageSeo } from '../data/seo'
 
@@ -1397,46 +1398,6 @@ function Field({ label, name, value, onChange, type = 'text', required, classNam
     </div>
   )
 }
-
-const INTERNATIONAL_COUNTRIES = [
-  { code: 'AR', name: 'Argentina' },
-  { code: 'AU', name: 'Australia' },
-  { code: 'AT', name: 'Austria' },
-  { code: 'BE', name: 'Belgium' },
-  { code: 'BR', name: 'Brazil' },
-  { code: 'CA', name: 'Canada' },
-  { code: 'CL', name: 'Chile' },
-  { code: 'CZ', name: 'Czechia' },
-  { code: 'DK', name: 'Denmark' },
-  { code: 'FI', name: 'Finland' },
-  { code: 'FR', name: 'France' },
-  { code: 'DE', name: 'Germany' },
-  { code: 'HK', name: 'Hong Kong' },
-  { code: 'IN', name: 'India' },
-  { code: 'IE', name: 'Ireland' },
-  { code: 'IL', name: 'Israel' },
-  { code: 'IT', name: 'Italy' },
-  { code: 'JP', name: 'Japan' },
-  { code: 'MY', name: 'Malaysia' },
-  { code: 'MX', name: 'Mexico' },
-  { code: 'NL', name: 'Netherlands' },
-  { code: 'NZ', name: 'New Zealand' },
-  { code: 'NO', name: 'Norway' },
-  { code: 'PH', name: 'Philippines' },
-  { code: 'PL', name: 'Poland' },
-  { code: 'PT', name: 'Portugal' },
-  { code: 'SA', name: 'Saudi Arabia' },
-  { code: 'SG', name: 'Singapore' },
-  { code: 'ZA', name: 'South Africa' },
-  { code: 'KR', name: 'South Korea' },
-  { code: 'ES', name: 'Spain' },
-  { code: 'SE', name: 'Sweden' },
-  { code: 'CH', name: 'Switzerland' },
-  { code: 'TW', name: 'Taiwan' },
-  { code: 'TH', name: 'Thailand' },
-  { code: 'AE', name: 'United Arab Emirates' },
-  { code: 'GB', name: 'United Kingdom' },
-]
 
 function OptionCard({ active, onClick, icon: Icon, title, text }) {
   return (
