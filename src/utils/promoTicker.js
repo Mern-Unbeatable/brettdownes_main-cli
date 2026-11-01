@@ -22,7 +22,12 @@ export function buildPromoTickerMessages(tiers = [], freeShippingThresholdCents 
     name: row.detail,
   })))
     .filter((tier) => tier.enabled !== false && tier.percent > 0)
-    .sort((a, b) => (a.minSubtotalCents || 0) - (b.minSubtotalCents || 0))
+    .sort((a, b) => {
+      const scopeOrder = (tier) => (tier.scope === 'KIT' ? 1 : 0)
+      const byScope = scopeOrder(a) - scopeOrder(b)
+      if (byScope !== 0) return byScope
+      return (a.minSubtotalCents || 0) - (b.minSubtotalCents || 0)
+    })
 
   for (const tier of orderTiers) {
     const min = tier.minSubtotalCents || 0

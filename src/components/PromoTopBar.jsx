@@ -15,7 +15,7 @@ const MOTION = { duration: 0.32, ease: [0.22, 1, 0.36, 1] }
 const MARQUEE_MIN_MESSAGES_DESKTOP = 6
 const DESKTOP_MEDIA = '(min-width: 1024px)'
 
-function PromoItem({ text }) {
+function PromoItem({ text, showSeparator }) {
   const isShipping = text.toLowerCase().includes('free delivery')
   const Icon = isShipping ? Truck : Tag
 
@@ -27,7 +27,9 @@ function PromoItem({ text }) {
       <span className="whitespace-nowrap text-[11px] font-semibold tracking-[0.06em] text-white/95 uppercase sm:text-[12px]">
         {text}
       </span>
-      <span className="h-1 w-1 shrink-0 rounded-full bg-cyan/50" aria-hidden />
+      {showSeparator ? (
+        <span className="h-1 w-1 shrink-0 rounded-full bg-cyan/50" aria-hidden />
+      ) : null}
     </span>
   )
 }
@@ -36,7 +38,11 @@ function MessageStrip({ messages }) {
   return (
     <span className="inline-flex shrink-0 items-center whitespace-nowrap">
       {messages.map((text, index) => (
-        <PromoItem key={`${text}-${index}`} text={text} />
+        <PromoItem
+          key={`${text}-${index}`}
+          text={text}
+          showSeparator={index < messages.length - 1}
+        />
       ))}
     </span>
   )
@@ -45,7 +51,8 @@ function MessageStrip({ messages }) {
 export default function PromoTopBar() {
   const { pathname } = useLocation()
   const settings = useSettings()
-  const [tiers, setTiers] = useState([])
+  /** null = still fetching; avoids flashing fallback copy before live tiers load */
+  const [tiers, setTiers] = useState(null)
   const viewportRef = useRef(null)
   const measureRef = useRef(null)
   const [mode, setMode] = useState('static')
@@ -57,7 +64,8 @@ export default function PromoTopBar() {
   const shellUi = useShellUi()
   const overlayOpen = shellUi?.overlayOpen ?? false
   const onStorefront = pathname !== '/'
-  const barVisible = onStorefront && !overlayOpen
+  const tiersReady = tiers !== null
+  const barVisible = onStorefront && !overlayOpen && tiersReady
 
   useEffect(() => {
     api
@@ -75,7 +83,7 @@ export default function PromoTopBar() {
   }, [])
 
   const messages = useMemo(
-    () => buildPromoTickerMessages(tiers, settings.freeShippingThresholdCents),
+    () => buildPromoTickerMessages(tiers ?? [], settings.freeShippingThresholdCents),
     [tiers, settings.freeShippingThresholdCents],
   )
 
@@ -87,10 +95,13 @@ export default function PromoTopBar() {
       const viewport = viewportRef.current
       if (!probe || !viewport) return
 
+      const viewportW = viewport.clientWidth
+      if (viewportW < 48) return
+
       const stripW = probe.offsetWidth
       if (stripW <= 0) return
 
-      const overflow = stripW > viewport.clientWidth + 2
+      const overflow = stripW > viewportW + 2
       const scroll = isDesktop
         ? messages.length >= MARQUEE_MIN_MESSAGES_DESKTOP
         : overflow

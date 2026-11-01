@@ -94,6 +94,10 @@ body {
     transform: none;
   }
 
+  .promo-marquee-track--live [aria-hidden='true'] {
+    display: none;
+  }
+
   .promo-top-bar-shimmer {
     animation: none;
   }
