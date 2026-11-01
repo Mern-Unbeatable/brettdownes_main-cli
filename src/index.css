@@ -38,6 +38,67 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+:root {
+  --site-promo-bar: 0px;
+}
+
+#app-shell {
+  transition: padding-top 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #app-shell {
+    transition: none;
+  }
+}
+
+@keyframes promo-marquee-slide {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+@keyframes promo-bar-shimmer {
+  from {
+    transform: translateX(-120%);
+  }
+  to {
+    transform: translateX(120%);
+  }
+}
+
+.promo-marquee-track {
+  will-change: transform;
+}
+
+.promo-marquee-track--live {
+  animation: promo-marquee-slide var(--promo-marquee-duration, 36s) linear infinite;
+}
+
+.promo-top-bar-shimmer {
+  background: linear-gradient(
+    105deg,
+    transparent 40%,
+    rgba(0, 245, 212, 0.08) 50%,
+    transparent 60%
+  );
+  animation: promo-bar-shimmer 5s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .promo-marquee-track--live {
+    animation: none;
+    transform: none;
+  }
+
+  .promo-top-bar-shimmer {
+    animation: none;
+  }
+}
+
 button:not(:disabled),
 [role='button']:not(:disabled),
 summary,

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { CreditCard, Mail, Plus, Save, Trash2 } from 'lucide-react'
 import { api } from '../../../lib/api'
 import { useToast } from '../../../components/Toaster'
@@ -14,6 +14,7 @@ import {
   Textarea,
   Toggle,
 } from '../ui'
+import { FreeDeliveryControls } from './FreeDeliveryAdminCard'
 
 function newLocation() {
   return {
@@ -33,6 +34,9 @@ export default function AdminSettings() {
   const [error, setError] = useState(null)
   const [saving, setSaving] = useState(false)
   const [emailDraft, setEmailDraft] = useState('')
+  const [freeDeliveryEnabled, setFreeDeliveryEnabled] = useState(false)
+  const [freeDeliveryMinDollars, setFreeDeliveryMinDollars] = useState(250)
+  const freeDeliveryRemembered = useRef(250)
 
   const load = () => {
     setLoading(true)
@@ -51,6 +55,12 @@ export default function AdminSettings() {
           ]
         }
         setSettings(next)
+        const shipCents = Number(next.freeShippingThresholdCents) || 0
+        const on = shipCents > 0
+        const dollars = on ? shipCents / 100 : freeDeliveryRemembered.current
+        if (on) freeDeliveryRemembered.current = dollars
+        setFreeDeliveryEnabled(on)
+        setFreeDeliveryMinDollars(dollars)
       })
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false))
@@ -137,9 +147,17 @@ export default function AdminSettings() {
         pickupAddress: locations[0],
         defaultParcel: settings.defaultParcel,
         handlingFeeCents: Number(settings.handlingFeeCents) || 0,
-        freeShippingThresholdCents: Number(settings.freeShippingThresholdCents) || 0,
+        freeShippingThresholdCents: freeDeliveryEnabled
+          ? Math.round(Math.max(1, freeDeliveryMinDollars) * 100)
+          : 0,
       })
       setSettings(data.settings)
+      const savedCents = Number(data.settings?.freeShippingThresholdCents) || 0
+      setFreeDeliveryEnabled(savedCents > 0)
+      if (savedCents > 0) {
+        freeDeliveryRemembered.current = savedCents / 100
+        setFreeDeliveryMinDollars(savedCents / 100)
+      }
       toast.success('Settings saved.', { title: 'Saved' })
     } catch (err) {
       toast.error(err.message)
@@ -273,6 +291,24 @@ export default function AdminSettings() {
               />
             </Field>
           </div>
+        </Card>
+
+        <Card className="xl:col-span-2">
+          <h2 className="mb-4 font-display text-[15px] font-bold text-ink">Free delivery</h2>
+          <FreeDeliveryControls
+            enabled={freeDeliveryEnabled}
+            amountDollars={freeDeliveryMinDollars}
+            onEnabledChange={(on) => {
+              if (!on) {
+                freeDeliveryRemembered.current = freeDeliveryMinDollars
+                setFreeDeliveryEnabled(false)
+                return
+              }
+              setFreeDeliveryMinDollars(freeDeliveryRemembered.current || 250)
+              setFreeDeliveryEnabled(true)
+            }}
+            onAmountChange={setFreeDeliveryMinDollars}
+          />
         </Card>
 
         <Card className="xl:col-span-2">

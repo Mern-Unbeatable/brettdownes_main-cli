@@ -1,10 +1,14 @@
-import { useEffect } from 'react'
+import { useEffect, useId } from 'react'
 import { createPortal } from 'react-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import { X } from 'lucide-react'
 import { lockBodyScroll, unlockBodyScroll } from '../hooks/lockBodyScroll'
+import { useShellOverlay } from '../context/ShellUiContext'
 
 export default function SideDrawer({ open, onClose, title, children }) {
+  const overlayId = useId()
+  useShellOverlay(overlayId, open)
+
   useEffect(() => {
     if (!open) return
 

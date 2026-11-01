@@ -2,10 +2,17 @@ import { Link } from 'react-router-dom'
 import { Minus, Plus, Trash2 } from 'lucide-react'
 import SideDrawer from './SideDrawer'
 import { useCart } from '../context/CartContext'
+import { useSettings } from '../context/SettingsContext'
 import { assetUrl, formatPrice } from '../lib/api'
+import { formatPromoDollars } from '../utils/promoTicker'
 
 export default function CartDrawer() {
   const { items, subtotal, cartOpen, closeCart, updateQty, removeItem } = useCart()
+  const settings = useSettings()
+  const threshold = Number(settings.freeShippingThresholdCents) || 0
+  const subtotalCents = Math.round(subtotal * 100)
+  const freeShippingRemainingCents =
+    threshold > 0 && subtotalCents < threshold ? threshold - subtotalCents : 0
 
   return (
     <SideDrawer open={cartOpen} onClose={closeCart} title="Your Cart">
@@ -73,6 +80,21 @@ export default function CartDrawer() {
             </ul>
 
             <div className="mt-6 border-t border-black/8 pt-5">
+              {threshold > 0 ? (
+                <p className="mb-3 rounded-xl bg-cyan/10 px-3 py-2 text-[12px] leading-relaxed text-ink">
+                  {subtotalCents >= threshold ? (
+                    <>
+                      <span className="font-semibold text-cyan-dim">Free delivery</span> unlocked on
+                      this order.
+                    </>
+                  ) : (
+                    <>
+                      Add {formatPromoDollars(freeShippingRemainingCents)} more for{' '}
+                      <span className="font-semibold">free delivery</span> ({formatPromoDollars(threshold)}+).
+                    </>
+                  )}
+                </p>
+              ) : null}
               <div className="mb-4 flex items-center justify-between text-sm">
                 <span className="text-muted">Subtotal</span>
                 <span className="font-display text-base font-semibold text-ink">

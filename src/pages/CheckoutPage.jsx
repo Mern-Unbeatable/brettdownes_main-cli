@@ -29,6 +29,7 @@ import { api, assetUrl, formatCents, formatPrice } from '../lib/api'
 import { calculateBogoDiscount, calculateBulkDiscount, pickAutomaticDiscount } from '../utils/discounts'
 import { groupRatesByCarrier } from '../utils/shipping'
 import { INTERNATIONAL_COUNTRIES } from '../data/internationalCountries'
+import { formatPromoDollars } from '../utils/promoTicker'
 import Seo from '../components/Seo'
 import { pageSeo } from '../data/seo'
 
@@ -247,6 +248,13 @@ export default function CheckoutPage() {
   const creditEligibleCents = Math.min(availableCreditCents, merchandiseCents)
   const creditCents = applyCredit ? creditEligibleCents : 0
   const totalCents = Math.max(0, merchandiseCents + shippingCents - creditCents)
+  const freeShipThresholdCents = Number(settings.freeShippingThresholdCents) || 0
+  const qualifiesFreeDelivery =
+    fulfillment === 'DELIVERY' && freeShipThresholdCents > 0 && subtotalCents >= freeShipThresholdCents
+  const freeDeliveryRemainingCents =
+    freeShipThresholdCents > 0 && subtotalCents < freeShipThresholdCents
+      ? freeShipThresholdCents - subtotalCents
+      : 0
 
   const applyCoupon = async () => {
     const code = couponCode.trim()
@@ -831,6 +839,24 @@ export default function CheckoutPage() {
                               Save this address for future orders
                             </span>
                           </label>
+                          ) : null}
+
+                          {freeShipThresholdCents > 0 && !otherMode ? (
+                            <p className="mt-4 rounded-2xl border border-cyan/25 bg-cyan/10 px-4 py-3 text-[12px] leading-relaxed text-ink">
+                              {qualifiesFreeDelivery ? (
+                                <>
+                                  <span className="font-semibold text-cyan-dim">Free delivery</span>{' '}
+                                  applies — your cart is {formatPromoDollars(freeShipThresholdCents)} or
+                                  more (before discounts). Select a rate below; shipping shows as $0.
+                                </>
+                              ) : (
+                                <>
+                                  Spend {formatPromoDollars(freeDeliveryRemainingCents)} more (
+                                  {formatPromoDollars(freeShipThresholdCents)}+ subtotal) for{' '}
+                                  <span className="font-semibold">free delivery</span>.
+                                </>
+                              )}
+                            </p>
                           ) : null}
 
                           <div className="mt-6">

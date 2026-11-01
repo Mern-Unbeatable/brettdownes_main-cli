@@ -10,7 +10,7 @@ const FALLBACK = {
   statementDescriptor: 'That 3D Printer Guy',
   pickupAddress: { id: 'default', name: 'Peptide Ops Logistics', lines: [] },
   pickupLocations: [{ id: 'default', name: 'Peptide Ops Logistics', lines: [] }],
-  freeShippingThresholdCents: 0,
+  freeShippingThresholdCents: 25_000,
   stripePublishableKey: '',
   stripeEnabled: false,
   shippingEnabled: false,

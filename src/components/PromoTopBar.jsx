@@ -1,0 +1,184 @@
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
+import { useLocation } from 'react-router-dom'
+import { AnimatePresence, motion } from 'framer-motion'
+import { Sparkles, Tag, Truck } from 'lucide-react'
+import { api } from '../lib/api'
+import { useSettings } from '../context/SettingsContext'
+import { useShellUi } from '../context/ShellUiContext'
+import { buildPromoTickerMessages } from '../utils/promoTicker'
+
+const BAR_HEIGHT_PX = 40
+const PX_PER_SECOND = 56
+const MOTION = { duration: 0.32, ease: [0.22, 1, 0.36, 1] }
+
+function PromoItem({ text }) {
+  const isShipping = text.toLowerCase().includes('free delivery')
+  const Icon = isShipping ? Truck : Tag
+
+  return (
+    <span className="inline-flex shrink-0 items-center gap-2.5 px-4 sm:px-5">
+      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-cyan/15 ring-1 ring-cyan/30">
+        <Icon className="h-3.5 w-3.5 text-cyan" strokeWidth={2.2} aria-hidden />
+      </span>
+      <span className="whitespace-nowrap text-[11px] font-semibold tracking-[0.06em] text-white/95 uppercase sm:text-[12px]">
+        {text}
+      </span>
+      <span className="h-1 w-1 shrink-0 rounded-full bg-cyan/50" aria-hidden />
+    </span>
+  )
+}
+
+function MessageStrip({ messages }) {
+  return (
+    <span className="inline-flex shrink-0 items-center whitespace-nowrap">
+      {messages.map((text, index) => (
+        <PromoItem key={`${text}-${index}`} text={text} />
+      ))}
+    </span>
+  )
+}
+
+export default function PromoTopBar() {
+  const { pathname } = useLocation()
+  const settings = useSettings()
+  const [tiers, setTiers] = useState([])
+  const viewportRef = useRef(null)
+  const measureRef = useRef(null)
+  const [mode, setMode] = useState('marquee')
+  const [durationSec, setDurationSec] = useState(32)
+
+  const shellUi = useShellUi()
+  const overlayOpen = shellUi?.overlayOpen ?? false
+  const onStorefront = pathname !== '/'
+  const barVisible = onStorefront && !overlayOpen
+
+  useEffect(() => {
+    api
+      .get('/api/discounts/public')
+      .then((data) => setTiers(data.tiers || []))
+      .catch(() => setTiers([]))
+  }, [])
+
+  const messages = useMemo(
+    () => buildPromoTickerMessages(tiers, settings.freeShippingThresholdCents),
+    [tiers, settings.freeShippingThresholdCents],
+  )
+
+  useLayoutEffect(() => {
+    if (!onStorefront) return undefined
+
+    const update = () => {
+      const probe = measureRef.current
+      const viewport = viewportRef.current
+      if (!probe || !viewport) return
+
+      const stripW = probe.offsetWidth
+      if (stripW <= 0) return
+
+      const overflow = stripW > viewport.clientWidth + 2
+      const scroll = messages.length > 1 || overflow
+
+      setMode(scroll ? 'marquee' : 'static')
+      if (scroll) setDurationSec(Math.max(16, stripW / PX_PER_SECOND))
+    }
+
+    update()
+    const id = window.requestAnimationFrame(update)
+    window.addEventListener('resize', update)
+    return () => {
+      window.cancelAnimationFrame(id)
+      window.removeEventListener('resize', update)
+    }
+  }, [messages, onStorefront, barVisible])
+
+  useEffect(() => {
+    const shell = document.getElementById('app-shell')
+    const height = barVisible ? BAR_HEIGHT_PX : 0
+
+    document.documentElement.style.setProperty('--site-promo-bar', `${height}px`)
+
+    if (shell) {
+      shell.style.transition = 'padding-top 0.32s cubic-bezier(0.22, 1, 0.36, 1)'
+      shell.style.paddingTop = barVisible ? `${BAR_HEIGHT_PX}px` : '0px'
+    }
+
+    return () => {
+      if (!onStorefront) {
+        document.documentElement.style.setProperty('--site-promo-bar', '0px')
+        if (shell) {
+          shell.style.paddingTop = ''
+          shell.style.transition = ''
+        }
+      }
+    }
+  }, [barVisible, onStorefront])
+
+  if (!onStorefront || typeof document === 'undefined') return null
+
+  return createPortal(
+    <>
+      <div
+        ref={measureRef}
+        className="pointer-events-none fixed top-0 -left-[9999px] opacity-0"
+        aria-hidden
+      >
+        <MessageStrip messages={messages} />
+      </div>
+
+      <AnimatePresence initial={false}>
+        {barVisible ? (
+          <motion.div
+            key="promo-top-bar"
+            className="promo-top-bar fixed inset-x-0 top-0 z-[10040] overflow-hidden border-b border-cyan/30 shadow-[0_4px_24px_rgba(0,245,212,0.1)]"
+            style={{ height: BAR_HEIGHT_PX }}
+            role="region"
+            aria-label="Store promotions"
+            initial={{ opacity: 0, y: -BAR_HEIGHT_PX }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -BAR_HEIGHT_PX }}
+            transition={MOTION}
+          >
+            <div className="absolute inset-0 bg-gradient-to-r from-navy via-[#0a1628] to-navy" aria-hidden />
+            <div className="promo-top-bar-shimmer absolute inset-0 opacity-35" aria-hidden />
+            <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-cyan/60 to-transparent" />
+
+            <div className="relative flex h-full items-stretch">
+              <div className="hidden shrink-0 items-center gap-1.5 border-r border-white/10 bg-navy/80 px-3 sm:flex">
+                <Sparkles className="h-3.5 w-3.5 text-cyan" strokeWidth={2.5} aria-hidden />
+                <span className="text-[9px] font-bold tracking-[0.18em] text-cyan uppercase">
+                  Offers
+                </span>
+              </div>
+
+              <div ref={viewportRef} className="relative min-w-0 flex-1 overflow-hidden">
+                {mode === 'marquee' ? (
+                  <>
+                    <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-8 bg-gradient-to-r from-[#0a1628] to-transparent sm:w-12" />
+                    <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-8 bg-gradient-to-l from-[#0a1628] to-transparent sm:w-12" />
+                    <div className="flex h-full items-center">
+                      <div
+                        className="promo-marquee-track promo-marquee-track--live flex w-max items-center"
+                        style={{ '--promo-marquee-duration': `${durationSec}s` }}
+                      >
+                        <MessageStrip messages={messages} />
+                        <span aria-hidden="true">
+                          <MessageStrip messages={messages} />
+                        </span>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex h-full items-center justify-center px-2 sm:px-3">
+                    <MessageStrip messages={messages} />
+                  </div>
+                )}
+              </div>
+            </div>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
+    </>,
+    document.body,
+  )
+}

@@ -23,10 +23,12 @@ import ResetPasswordPage from './pages/ResetPasswordPage'
 import NotFoundPage from './pages/NotFoundPage'
 import CartDrawer from './components/CartDrawer'
 import PromoModal from './components/PromoModal'
+import PromoTopBar from './components/PromoTopBar'
 import Gatekeeper from './components/Gatekeeper'
 import Analytics from './components/Analytics'
 import { ToastProvider } from './components/Toaster'
 import { CartProvider } from './context/CartContext'
+import { ShellUiProvider } from './context/ShellUiContext'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { SettingsProvider } from './context/SettingsContext'
 import { CatalogProvider } from './context/CatalogContext'
@@ -272,6 +274,7 @@ function AppShell() {
 
       {isAuthenticated && !isPortalRoute ? (
         <>
+          <PromoTopBar />
           <CartDrawer />
           <PromoModal />
         </>
@@ -293,7 +296,9 @@ export default function App() {
             <SettingsProvider>
               <CatalogProvider>
                 <CartProvider>
-                  <AppShell />
+                  <ShellUiProvider>
+                    <AppShell />
+                  </ShellUiProvider>
                 </CartProvider>
               </CatalogProvider>
             </SettingsProvider>

@@ -180,7 +180,7 @@ export default function Navbar() {
 
       {createPortal(
         <div
-          className={`sticky-nav-pill fixed top-5 left-1/2 z-[9999] -translate-x-1/2 transition-opacity duration-300 ${
+          className={`sticky-nav-pill fixed top-[calc(var(--site-promo-bar,0px)+1.25rem)] left-1/2 z-[9999] -translate-x-1/2 transition-opacity duration-300 ${
             isSticky
               ? 'pointer-events-auto opacity-100'
               : 'pointer-events-none opacity-0'

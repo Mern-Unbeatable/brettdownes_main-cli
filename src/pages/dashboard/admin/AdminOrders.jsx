@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { ChevronLeft, ChevronRight, Download, Eye, Search } from 'lucide-react'
 import ShipFields from './ShipFields'
+import { FreeDeliveryOrdersButton } from './FreeDeliveryAdminCard'
 import { api, formatCents, getAuthToken } from '../../../lib/api'
 import { useToast } from '../../../components/Toaster'
 import {
@@ -284,6 +285,7 @@ export default function AdminOrders() {
               ? `${data.total} order${data.total === 1 ? '' : 's'}`
               : 'Loading…'
         }
+        actions={<FreeDeliveryOrdersButton />}
       />
 
       <div className="mb-5 flex gap-2">

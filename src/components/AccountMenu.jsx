@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import { LayoutDashboard, LogOut, Package, Settings, ShieldCheck, User } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
+import { useShellOverlay } from '../context/ShellUiContext'
 import { useToast } from './Toaster'
 
 /**
@@ -15,6 +16,7 @@ export default function AccountMenu({ onBeforeNavigate, align = 'right', tone = 
   const navigate = useNavigate()
   const toast = useToast()
   const [open, setOpen] = useState(false)
+  useShellOverlay('account-menu', open)
   const [menuPos, setMenuPos] = useState({ top: 0, left: 0 })
   const wrapRef = useRef(null)
   const menuRef = useRef(null)
