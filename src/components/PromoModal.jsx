@@ -1,29 +1,67 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Link, useLocation } from 'react-router-dom'
 import { X } from 'lucide-react'
-import { siteContact } from '../data/site'
+import { bulkRewards as fallbackBulkRewards, siteContact } from '../data/site'
 import { api } from '../lib/api'
+import { useAuth } from '../context/AuthContext'
+import { useSettings } from '../context/SettingsContext'
+import { formatPromoDollars } from '../utils/promoTicker'
 import { lockBodyScroll, unlockBodyScroll } from '../hooks/lockBodyScroll'
 
 function whatsappHref() {
   return `https://wa.me/${siteContact.whatsapp}?text=${encodeURIComponent(siteContact.whatsappMessage)}`
 }
 
+function fallbackTiers() {
+  return fallbackBulkRewards.map((row, index) => ({
+    id: `fallback-${index}`,
+    percent: parseInt(String(row.save).replace(/\D/g, ''), 10) || 0,
+    detail: row.detail,
+  }))
+}
+
 export default function PromoModal() {
   const { pathname } = useLocation()
+  const { isAuthenticated, ready } = useAuth()
+  const settings = useSettings()
   const [open, setOpen] = useState(false)
   const [bulkRewards, setBulkRewards] = useState([])
   const isHome = pathname === '/'
 
+  const freeShipLine = useMemo(() => {
+    const cents = Number(settings.freeShippingThresholdCents) || 0
+    if (cents <= 0) return null
+    return `Free delivery on orders ${formatPromoDollars(cents)}+ (before discounts).`
+  }, [settings.freeShippingThresholdCents])
+
   useEffect(() => {
-    if (!isHome) return
+    if (!isHome) return undefined
+
+    if (!ready) return undefined
+
+    if (!isAuthenticated) {
+      setBulkRewards(fallbackTiers())
+      return undefined
+    }
+
+    let cancelled = false
     api
       .get('/api/discounts/public')
-      .then((data) => setBulkRewards(data.tiers || []))
-      .catch(() => setBulkRewards([]))
-  }, [isHome])
+      .then((data) => {
+        if (cancelled) return
+        const tiers = data.tiers?.length ? data.tiers : fallbackTiers()
+        setBulkRewards(tiers)
+      })
+      .catch(() => {
+        if (!cancelled) setBulkRewards(fallbackTiers())
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [isHome, isAuthenticated, ready])
 
   useEffect(() => {
     if (!isHome || !bulkRewards.length) {
@@ -107,6 +145,12 @@ export default function PromoModal() {
                 >
                   Bulk Tier Rewards
                 </h2>
+
+                {freeShipLine ? (
+                  <p className="mx-auto mt-3 max-w-md text-center text-[13px] font-semibold text-cyan-dim">
+                    {freeShipLine}
+                  </p>
+                ) : null}
 
                 <ul className="mt-6 grid gap-2.5 sm:mt-7 sm:grid-cols-3 sm:gap-3">
                   {bulkRewards.map((tier) => (

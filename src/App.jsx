@@ -276,9 +276,10 @@ function AppShell() {
         <>
           <PromoTopBar />
           <CartDrawer />
-          <PromoModal />
         </>
       ) : null}
+
+      {!isPortalRoute ? <PromoModal /> : null}
 
       {gateOpen ? (
         <Gatekeeper key={`${gateMountKey}-${gateInitialMode}`} initialMode={gateInitialMode} />
