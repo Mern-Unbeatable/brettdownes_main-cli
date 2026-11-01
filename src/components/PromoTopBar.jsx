@@ -11,6 +11,9 @@ import { buildPromoTickerMessages } from '../utils/promoTicker'
 const BAR_HEIGHT_PX = 40
 const PX_PER_SECOND = 56
 const MOTION = { duration: 0.32, ease: [0.22, 1, 0.36, 1] }
+/** Laptop/desktop: static ticker unless there are more than this many promo lines. */
+const MARQUEE_MIN_MESSAGES_DESKTOP = 6
+const DESKTOP_MEDIA = '(min-width: 1024px)'
 
 function PromoItem({ text }) {
   const isShipping = text.toLowerCase().includes('free delivery')
@@ -45,8 +48,11 @@ export default function PromoTopBar() {
   const [tiers, setTiers] = useState([])
   const viewportRef = useRef(null)
   const measureRef = useRef(null)
-  const [mode, setMode] = useState('marquee')
+  const [mode, setMode] = useState('static')
   const [durationSec, setDurationSec] = useState(32)
+  const [isDesktop, setIsDesktop] = useState(() =>
+    typeof window !== 'undefined' ? window.matchMedia(DESKTOP_MEDIA).matches : true,
+  )
 
   const shellUi = useShellUi()
   const overlayOpen = shellUi?.overlayOpen ?? false
@@ -58,6 +64,14 @@ export default function PromoTopBar() {
       .get('/api/discounts/public')
       .then((data) => setTiers(data.tiers || []))
       .catch(() => setTiers([]))
+  }, [])
+
+  useEffect(() => {
+    const mq = window.matchMedia(DESKTOP_MEDIA)
+    const sync = () => setIsDesktop(mq.matches)
+    sync()
+    mq.addEventListener('change', sync)
+    return () => mq.removeEventListener('change', sync)
   }, [])
 
   const messages = useMemo(
@@ -77,7 +91,9 @@ export default function PromoTopBar() {
       if (stripW <= 0) return
 
       const overflow = stripW > viewport.clientWidth + 2
-      const scroll = messages.length > 1 || overflow
+      const scroll = isDesktop
+        ? messages.length >= MARQUEE_MIN_MESSAGES_DESKTOP
+        : overflow
 
       setMode(scroll ? 'marquee' : 'static')
       if (scroll) setDurationSec(Math.max(16, stripW / PX_PER_SECOND))
@@ -90,7 +106,7 @@ export default function PromoTopBar() {
       window.cancelAnimationFrame(id)
       window.removeEventListener('resize', update)
     }
-  }, [messages, onStorefront, barVisible])
+  }, [messages, onStorefront, barVisible, isDesktop])
 
   useEffect(() => {
     const shell = document.getElementById('app-shell')
