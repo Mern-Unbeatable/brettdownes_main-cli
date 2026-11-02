@@ -88,7 +88,46 @@ body {
   animation: promo-bar-shimmer 5s ease-in-out infinite;
 }
 
+@keyframes promo-shipping-shine {
+  0%,
+  60% {
+    transform: translateX(-130%) skewX(-20deg);
+  }
+  100% {
+    transform: translateX(260%) skewX(-20deg);
+  }
+}
+
+@keyframes promo-shipping-truck {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(1.5px);
+  }
+}
+
+.promo-shipping-pill::after {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 40%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.28), transparent);
+  pointer-events: none;
+  animation: promo-shipping-shine 3.6s ease-in-out infinite;
+}
+
+.promo-shipping-truck {
+  animation: promo-shipping-truck 1.2s ease-in-out infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
+  .promo-shipping-pill::after,
+  .promo-shipping-truck {
+    animation: none;
+  }
+
   .promo-marquee-track--live {
     animation: none;
     transform: none;

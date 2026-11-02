@@ -9,9 +9,20 @@ export function formatPromoDollars(cents) {
   })
 }
 
-/** Build scrolling promo copy from live tiers + free-shipping threshold. */
+/**
+ * Build scrolling promo copy from live tiers + free-shipping threshold.
+ * Returns `{ kind: 'shipping' | 'discount', text, highlight? }` items; free delivery leads.
+ */
 export function buildPromoTickerMessages(tiers = [], freeShippingThresholdCents = 0) {
   const messages = []
+
+  if (freeShippingThresholdCents > 0) {
+    messages.push({
+      kind: 'shipping',
+      highlight: 'Free delivery',
+      text: `on orders ${formatPromoDollars(freeShippingThresholdCents)}+`,
+    })
+  }
 
   const orderTiers = (tiers.length ? tiers : fallbackBulkRewards.map((row, index) => ({
     id: `fallback-${index}`,
@@ -32,21 +43,22 @@ export function buildPromoTickerMessages(tiers = [], freeShippingThresholdCents 
   for (const tier of orderTiers) {
     const min = tier.minSubtotalCents || 0
     const detail = tier.detail || tier.name || ''
+    let text
     if (min > 0) {
-      messages.push(`Save ${tier.percent}% on orders ${formatPromoDollars(min)}+`)
+      text = `Save ${tier.percent}% on orders ${formatPromoDollars(min)}+`
     } else if (detail) {
-      messages.push(`Save ${tier.percent}% — ${detail}`)
+      text = `Save ${tier.percent}% — ${detail}`
     } else {
-      messages.push(`Save ${tier.percent}% on qualifying orders`)
+      text = `Save ${tier.percent}% on qualifying orders`
     }
-  }
-
-  if (freeShippingThresholdCents > 0) {
-    messages.push(`Free delivery on orders ${formatPromoDollars(freeShippingThresholdCents)}+`)
+    messages.push({ kind: 'discount', text })
   }
 
   if (!messages.length) {
-    messages.push('Bulk savings apply automatically at checkout — no coupon needed')
+    messages.push({
+      kind: 'discount',
+      text: 'Bulk savings apply automatically at checkout — no coupon needed',
+    })
   }
 
   return messages

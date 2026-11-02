@@ -15,21 +15,38 @@ const MOTION = { duration: 0.32, ease: [0.22, 1, 0.36, 1] }
 const MARQUEE_MIN_MESSAGES_DESKTOP = 6
 const DESKTOP_MEDIA = '(min-width: 1024px)'
 
-function PromoItem({ text, showSeparator }) {
-  const isShipping = text.toLowerCase().includes('free delivery')
-  const Icon = isShipping ? Truck : Tag
+function Separator() {
+  return <span className="h-1 w-1 shrink-0 rounded-full bg-cyan/50" aria-hidden />
+}
 
+/** Free delivery gets its own glowing pill so it stands apart from the discount lines. */
+function ShippingItem({ message, showSeparator }) {
+  return (
+    <span className="inline-flex shrink-0 items-center gap-4 px-3 sm:gap-5 sm:px-4">
+      <span className="promo-shipping-pill relative inline-flex items-center gap-2 overflow-hidden rounded-full border border-cyan/50 bg-gradient-to-r from-cyan/25 via-cyan/10 to-cyan/25 py-[3px] pr-3.5 pl-[3px] shadow-[0_0_14px_rgba(0,245,212,0.28)]">
+        <span className="flex h-[22px] w-[22px] items-center justify-center rounded-full bg-cyan shadow-[0_0_8px_rgba(0,245,212,0.6)]">
+          <Truck className="promo-shipping-truck h-3 w-3 text-navy" strokeWidth={2.6} aria-hidden />
+        </span>
+        <span className="whitespace-nowrap text-[11px] tracking-[0.06em] uppercase sm:text-[12px]">
+          <span className="font-extrabold text-cyan">{message.highlight}</span>{' '}
+          <span className="font-semibold text-white">{message.text}</span>
+        </span>
+      </span>
+      {showSeparator ? <Separator /> : null}
+    </span>
+  )
+}
+
+function DiscountItem({ message, showSeparator }) {
   return (
     <span className="inline-flex shrink-0 items-center gap-2.5 px-4 sm:px-5">
       <span className="flex h-6 w-6 items-center justify-center rounded-full bg-cyan/15 ring-1 ring-cyan/30">
-        <Icon className="h-3.5 w-3.5 text-cyan" strokeWidth={2.2} aria-hidden />
+        <Tag className="h-3.5 w-3.5 text-cyan" strokeWidth={2.2} aria-hidden />
       </span>
       <span className="whitespace-nowrap text-[11px] font-semibold tracking-[0.06em] text-white/95 uppercase sm:text-[12px]">
-        {text}
+        {message.text}
       </span>
-      {showSeparator ? (
-        <span className="h-1 w-1 shrink-0 rounded-full bg-cyan/50" aria-hidden />
-      ) : null}
+      {showSeparator ? <Separator /> : null}
     </span>
   )
 }
@@ -37,13 +54,16 @@ function PromoItem({ text, showSeparator }) {
 function MessageStrip({ messages }) {
   return (
     <span className="inline-flex shrink-0 items-center whitespace-nowrap">
-      {messages.map((text, index) => (
-        <PromoItem
-          key={`${text}-${index}`}
-          text={text}
-          showSeparator={index < messages.length - 1}
-        />
-      ))}
+      {messages.map((message, index) => {
+        const Item = message.kind === 'shipping' ? ShippingItem : DiscountItem
+        return (
+          <Item
+            key={`${message.kind}-${message.text}-${index}`}
+            message={message}
+            showSeparator={index < messages.length - 1}
+          />
+        )
+      })}
     </span>
   )
 }
