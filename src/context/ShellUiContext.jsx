@@ -7,6 +7,8 @@ export function ShellUiProvider({ children }) {
 
   const setOverlay = useCallback((id, open) => {
     setOverlays((prev) => {
+      // Bail out when nothing changes so consumers don't re-render in a loop
+      if (open ? prev.has(id) : !prev.has(id)) return prev
       const next = new Set(prev)
       if (open) next.add(id)
       else next.delete(id)
@@ -31,11 +33,12 @@ export function useShellUi() {
 
 /** Register a top-layer panel (cart, menu, account menu, etc.) while it is open. */
 export function useShellOverlay(id, open) {
-  const ctx = useShellUi()
+  // Depend on the stable setter only; the context value changes whenever an overlay toggles
+  const setOverlay = useShellUi()?.setOverlay
 
   useEffect(() => {
-    if (!ctx?.setOverlay) return undefined
-    ctx.setOverlay(id, open)
-    return () => ctx.setOverlay(id, false)
-  }, [ctx, id, open])
+    if (!setOverlay) return undefined
+    setOverlay(id, open)
+    return () => setOverlay(id, false)
+  }, [setOverlay, id, open])
 }
