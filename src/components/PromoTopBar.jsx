@@ -4,7 +4,7 @@ import { useLocation } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Sparkles, Tag, Truck } from 'lucide-react'
 import { api } from '../lib/api'
-import { useSettings } from '../context/SettingsContext'
+import { useSettings, useSettingsReady } from '../context/SettingsContext'
 import { useShellUi } from '../context/ShellUiContext'
 import { buildPromoTickerMessages } from '../utils/promoTicker'
 
@@ -84,7 +84,9 @@ export default function PromoTopBar() {
   const shellUi = useShellUi()
   const overlayOpen = shellUi?.overlayOpen ?? false
   const onStorefront = pathname !== '/'
-  const tiersReady = tiers !== null
+  const settingsReady = useSettingsReady()
+  // Wait for live tiers + settings so the fallback free-delivery copy never flashes
+  const tiersReady = tiers !== null && settingsReady
   const barVisible = onStorefront && !overlayOpen && tiersReady
 
   useEffect(() => {

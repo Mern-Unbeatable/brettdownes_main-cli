@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { CreditCard, Mail, Plus, Save, Trash2 } from 'lucide-react'
 import { api } from '../../../lib/api'
 import { useToast } from '../../../components/Toaster'
+import { useReloadSettings } from '../../../context/SettingsContext'
 import {
   Button,
   Card,
@@ -29,6 +30,7 @@ function newLocation() {
 
 export default function AdminSettings() {
   const toast = useToast()
+  const reloadSettings = useReloadSettings()
   const [settings, setSettings] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -158,6 +160,7 @@ export default function AdminSettings() {
         freeDeliveryRemembered.current = savedCents / 100
         setFreeDeliveryMinDollars(savedCents / 100)
       }
+      reloadSettings()
       toast.success('Settings saved.', { title: 'Saved' })
     } catch (err) {
       toast.error(err.message)

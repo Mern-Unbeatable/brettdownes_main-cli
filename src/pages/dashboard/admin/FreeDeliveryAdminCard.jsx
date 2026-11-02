@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { Truck } from 'lucide-react'
 import { api } from '../../../lib/api'
 import { useToast } from '../../../components/Toaster'
+import { useReloadSettings } from '../../../context/SettingsContext'
 import { Button, Field, Input, LoadingBlock, Modal, Toggle } from '../ui'
 
 const DEFAULT_DOLLARS = 250
@@ -103,6 +104,7 @@ function useFreeDeliverySettings({ toast, reloadKey = 0 }) {
 /** Compact control for the Orders page header — opens a modal. */
 export function FreeDeliveryOrdersButton() {
   const toast = useToast()
+  const reloadSettings = useReloadSettings()
   const [open, setOpen] = useState(false)
   const [saving, setSaving] = useState(false)
   const lastSavedCents = useRef(-1)
@@ -120,6 +122,7 @@ export function FreeDeliveryOrdersButton() {
       try {
         await api.patch('/api/settings', { freeShippingThresholdCents })
         lastSavedCents.current = freeShippingThresholdCents
+        reloadSettings()
         toast.success(
           nextEnabled
             ? `Free delivery on orders $${Math.round(nextDollars)}+ (before discounts).`
@@ -132,7 +135,7 @@ export function FreeDeliveryOrdersButton() {
         setSaving(false)
       }
     },
-    [toast],
+    [toast, reloadSettings],
   )
 
   useEffect(() => {
