@@ -69,7 +69,7 @@ function MessageStrip({ messages }) {
 }
 
 export default function PromoTopBar() {
-  const { pathname } = useLocation()
+  const { pathname, search } = useLocation()
   const settings = useSettings()
   /** null = still fetching; avoids flashing fallback copy before live tiers load */
   const [tiers, setTiers] = useState(null)
@@ -83,7 +83,12 @@ export default function PromoTopBar() {
 
   const shellUi = useShellUi()
   const overlayOpen = shellUi?.overlayOpen ?? false
-  const onStorefront = pathname !== '/'
+  // The private "Other" store (and its checkout handoff) gets no tier discounts
+  // or free delivery, so never advertise them there.
+  const onOtherStore =
+    pathname === '/other' ||
+    (pathname === '/checkout' && new URLSearchParams(search).get('from') === 'other')
+  const onStorefront = pathname !== '/' && !onOtherStore
   const settingsReady = useSettingsReady()
   // Wait for live tiers + settings so the fallback free-delivery copy never flashes
   const tiersReady = tiers !== null && settingsReady
